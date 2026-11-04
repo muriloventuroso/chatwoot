@@ -2,6 +2,7 @@ import { utcToZonedTime } from 'date-fns-tz';
 import {
   isOpenAllDay,
   isClosedAllDay,
+  isHoliday,
   isInWorkingHours,
   findNextAvailableSlotDetails,
   findNextAvailableSlotDiff,
@@ -539,6 +540,77 @@ describe('availabilityHelpers', () => {
         expect.any(String),
         '+05:30'
       );
+    });
+  });
+
+  describe('holidays', () => {
+    const mockMonday = (hours = 10) => {
+      const mockDate = new Date('2024-01-15T10:00:00.000Z'); // Monday, Jan 15
+      mockDate.getDay = vi.fn().mockReturnValue(1);
+      mockDate.getHours = vi.fn().mockReturnValue(hours);
+      mockDate.getMinutes = vi.fn().mockReturnValue(0);
+      vi.mocked(utcToZonedTime).mockReturnValue(mockDate);
+      return mockDate;
+    };
+
+    it('should detect specific and recurring holidays', () => {
+      mockMonday();
+
+      expect(
+        isHoliday(new Date(), 'UTC', [{ day: 15, month: 1, year: 2024 }])
+      ).toBe(true);
+      expect(
+        isHoliday(new Date(), 'UTC', [{ day: 15, month: 1, year: null }])
+      ).toBe(true);
+      expect(
+        isHoliday(new Date(), 'UTC', [{ day: 15, month: 1, year: 2025 }])
+      ).toBe(false);
+      expect(
+        isHoliday(new Date(), 'UTC', [{ day: 16, month: 1, year: null }])
+      ).toBe(false);
+      expect(isHoliday(new Date(), 'UTC', [])).toBe(false);
+    });
+
+    it('should be out of working hours on a holiday even within the weekly hours', () => {
+      mockMonday();
+
+      const workingHours = [{ dayOfWeek: 1, openHour: 9, closeHour: 17 }];
+      const holidays = [{ day: 15, month: 1, year: null }];
+
+      expect(isInWorkingHours(new Date(), 'UTC', workingHours, holidays)).toBe(
+        false
+      );
+      expect(isClosedAllDay(new Date(), 'UTC', workingHours, holidays)).toBe(
+        true
+      );
+      expect(
+        isOnline(true, new Date(), 'UTC', workingHours, true, holidays)
+      ).toBe(false);
+    });
+
+    it('should skip holidays when finding the next available slot', () => {
+      mockMonday(18);
+
+      const workingHours = [1, 2, 3, 4, 5].map(dayOfWeek => ({
+        dayOfWeek,
+        openHour: 9,
+        openMinutes: 0,
+        closeHour: 17,
+        closeMinutes: 0,
+      }));
+      // Tuesday Jan 16 is a holiday, so the next slot is Wednesday Jan 17 at 9 AM
+      const holidays = [{ day: 16, month: 1, year: 2024 }];
+
+      const slot = findNextAvailableSlotDetails(
+        new Date(),
+        'UTC',
+        workingHours,
+        holidays
+      );
+
+      expect(slot.dayOfWeek).toBe(3);
+      expect(slot.daysUntilOpen).toBe(2);
+      expect(slot.minutesUntilOpen).toBe(2340);
     });
   });
 

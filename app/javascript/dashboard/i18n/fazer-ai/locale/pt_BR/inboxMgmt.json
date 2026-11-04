@@ -265,6 +265,22 @@
       "INBOUND_PHONE": {
         "DESCRIPTION": "Permite que os clientes liguem para este número e que a chamada toque para os agentes aqui. Quando desativado, o Chatwoot não toca e as chamadas continuam tocando apenas no celular pareado. Os agentes ainda podem fazer chamadas de saída."
       }
+    },
+    "BUSINESS_HOURS": {
+      "HOLIDAYS": {
+        "TITLE": "Feriados",
+        "HELP": "Em um feriado, a caixa de entrada fica fechada o dia todo, independente do horário semanal. Se o feriado tiver uma mensagem própria, ela substitui a mensagem de indisponibilidade naquele dia.",
+        "EMPTY": "Nenhum feriado cadastrado.",
+        "ADD": "Adicionar feriado",
+        "NAME_LABEL": "Nome (opcional)",
+        "NAME_PLACEHOLDER": "ex.: Natal",
+        "DATE_LABEL": "Data",
+        "RECURRING_LABEL": "Repete todos os anos",
+        "MESSAGE_LABEL": "Mensagem (opcional)",
+        "MESSAGE_PLACEHOLDER": "Deixe vazio para usar a mensagem de indisponibilidade padrão",
+        "REMOVE": "Remover feriado",
+        "DATE_REQUIRED": "Escolha uma data para este feriado."
+      }
     }
   }
 }

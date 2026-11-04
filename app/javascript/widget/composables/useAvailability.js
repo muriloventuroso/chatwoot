@@ -24,6 +24,7 @@ export function useAvailability(agents = []) {
 
   const inboxConfig = computed(() => ({
     workingHours: channelConfig.value.workingHours?.map(useCamelCase) || [],
+    holidays: channelConfig.value.holidays?.map(useCamelCase) || [],
     workingHoursEnabled: channelConfig.value.workingHoursEnabled || false,
     timezone: channelConfig.value.timezone || DEFAULT_TIMEZONE,
     utcOffset:
@@ -44,7 +45,8 @@ export function useAvailability(agents = []) {
     checkInWorkingHours(
       currentTime.value,
       inboxConfig.value.utcOffset,
-      inboxConfig.value.workingHours
+      inboxConfig.value.workingHours,
+      inboxConfig.value.holidays
     )
   );
 
@@ -55,7 +57,8 @@ export function useAvailability(agents = []) {
       currentTime.value,
       inboxConfig.value.utcOffset,
       inboxConfig.value.workingHours,
-      hasOnlineAgents.value
+      hasOnlineAgents.value,
+      inboxConfig.value.holidays
     )
   );
 

@@ -265,6 +265,22 @@
       "INBOUND_PHONE": {
         "DESCRIPTION": "Permite que los clientes llamen a este número y que la llamada suene para los agentes aquí. Si está desactivado, Chatwoot no suena y la llamada sigue sonando solo en el teléfono vinculado. Los agentes aún pueden hacer llamadas salientes."
       }
+    },
+    "BUSINESS_HOURS": {
+      "HOLIDAYS": {
+        "TITLE": "Días festivos",
+        "HELP": "En un día festivo, la bandeja de entrada permanece cerrada todo el día, independientemente del horario semanal. Si el festivo tiene su propio mensaje, reemplaza el mensaje de no disponibilidad ese día.",
+        "EMPTY": "No hay días festivos registrados.",
+        "ADD": "Añadir festivo",
+        "NAME_LABEL": "Nombre (opcional)",
+        "NAME_PLACEHOLDER": "ej.: Navidad",
+        "DATE_LABEL": "Fecha",
+        "RECURRING_LABEL": "Se repite cada año",
+        "MESSAGE_LABEL": "Mensaje (opcional)",
+        "MESSAGE_PLACEHOLDER": "Déjelo vacío para usar el mensaje de no disponibilidad predeterminado",
+        "REMOVE": "Eliminar festivo",
+        "DATE_REQUIRED": "Elige una fecha para este festivo."
+      }
     }
   }
 }

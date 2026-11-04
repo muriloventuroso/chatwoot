@@ -1032,6 +1032,43 @@ RSpec.describe 'Inboxes API', type: :request do
         expect(inbox.reload.weekly_schedule.find { |schedule| schedule['day_of_week'] == 0 }['open_hour']).to eq 9
       end
 
+      it 'creates, updates and deletes holidays when administrator' do
+        patch "/api/v1/accounts/#{account.id}/inboxes/#{inbox.id}",
+              params: valid_params.merge({ holidays: [{ name: 'Christmas', day: 25, month: 12, year: nil, message: 'Merry Christmas' }] }),
+              headers: admin.create_new_auth_token
+
+        expect(response).to have_http_status(:success)
+        expect(response.parsed_body['holidays']).to contain_exactly(
+          hash_including('name' => 'Christmas', 'day' => 25, 'month' => 12, 'year' => nil, 'message' => 'Merry Christmas')
+        )
+
+        holiday = inbox.reload.inbox_holidays.first
+        patch "/api/v1/accounts/#{account.id}/inboxes/#{inbox.id}",
+              params: valid_params.merge({ holidays: [{ id: holiday.id, name: 'Christmas Day', day: 25, month: 12, year: 2026 }] }),
+              headers: admin.create_new_auth_token
+
+        expect(response).to have_http_status(:success)
+        expect(response.parsed_body['holidays']).to contain_exactly(
+          hash_including('id' => holiday.id, 'name' => 'Christmas Day', 'year' => 2026)
+        )
+
+        patch "/api/v1/accounts/#{account.id}/inboxes/#{inbox.id}",
+              params: valid_params.merge({ holidays: [] }),
+              headers: admin.create_new_auth_token
+
+        expect(response).to have_http_status(:success)
+        expect(inbox.reload.inbox_holidays).to be_empty
+      end
+
+      it 'rejects an invalid holiday date' do
+        patch "/api/v1/accounts/#{account.id}/inboxes/#{inbox.id}",
+              params: valid_params.merge({ holidays: [{ day: 31, month: 4, year: 2026 }] }),
+              headers: admin.create_new_auth_token
+
+        expect(response).to have_http_status(:unprocessable_entity)
+        expect(inbox.reload.inbox_holidays).to be_empty
+      end
+
       it 'updates the webwidget inbox to disallow the messages after conversation is resolved' do
         patch "/api/v1/accounts/#{account.id}/inboxes/#{inbox.id}",
               headers: admin.create_new_auth_token,

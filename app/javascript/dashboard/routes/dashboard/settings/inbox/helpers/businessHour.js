@@ -141,6 +141,50 @@ export const timeSlotTransform = timeSlots => {
   });
 };
 
+// Leap year used as the calendar for recurring holidays, so Feb 29 stays
+// selectable even though the year itself is discarded on save.
+const RECURRING_REFERENCE_YEAR = 2024;
+
+const padDatePart = value => String(value).padStart(2, '0');
+
+export const holidayParse = (holidays = []) => {
+  return holidays.map(holiday => {
+    const { id, name, message, day, month, year } = holiday;
+    return {
+      id: id || null,
+      name: name || '',
+      message: message || '',
+      recurring: !year,
+      date: `${year || RECURRING_REFERENCE_YEAR}-${padDatePart(month)}-${padDatePart(day)}`,
+    };
+  });
+};
+
+export const holidayTransform = (holidays = []) => {
+  return holidays.map(holiday => {
+    const [year, month, day] = holiday.date.split('-').map(Number);
+    return {
+      ...(holiday.id ? { id: holiday.id } : {}),
+      name: holiday.name || '',
+      message: holiday.message || '',
+      day,
+      month,
+      year: holiday.recurring ? null : year,
+    };
+  });
+};
+
+export const isValidHoliday = holiday => {
+  if (!holiday?.date) return false;
+  const [year, month, day] = holiday.date.split('-').map(Number);
+  const parsed = new Date(year, month - 1, day);
+  return (
+    parsed.getFullYear() === year &&
+    parsed.getMonth() === month - 1 &&
+    parsed.getDate() === day
+  );
+};
+
 export const timeZoneOptions = () => {
   return Object.keys(timeZoneData).map(key => ({
     label: key,

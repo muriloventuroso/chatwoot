@@ -4,6 +4,9 @@ import { utcToZonedTime } from 'date-fns-tz';
 const DAYS_IN_WEEK = 7;
 const MINUTES_IN_HOUR = 60;
 const MINUTES_IN_DAY = 24 * 60;
+// Upper bound when scanning ahead for the next open slot, so long holiday
+// stretches (e.g. Christmas through New Year) are skipped.
+const MAX_DAYS_TO_SEARCH = 366;
 
 // ---------------------------------------------------------------------------
 // Internal helper utilities
@@ -54,6 +57,34 @@ const getTodayConfig = (time, utcOffset, workingHours) => {
 };
 
 /**
+ * Check if a zoned date is a holiday. Holidays without a year repeat
+ * every year; a holiday with a year only applies to that specific date.
+ * @private
+ * @param {Date} date - Date already converted to the inbox timezone
+ * @param {Array} holidays
+ * @returns {boolean}
+ */
+const isHolidayDate = (date, holidays = []) =>
+  (holidays || []).some(
+    holiday =>
+      holiday.day === date.getDate() &&
+      holiday.month === date.getMonth() + 1 &&
+      (!holiday.year || holiday.year === date.getFullYear())
+  );
+
+/**
+ * Check if the given time falls on a holiday in the inbox timezone
+ * @param {Date|string} time
+ * @param {string} utcOffset
+ * @param {Array} holidays
+ * @returns {boolean}
+ */
+export const isHoliday = (time, utcOffset, holidays = []) => {
+  if (!holidays?.length) return false;
+  return isHolidayDate(getDateInTimezone(time, utcOffset), holidays);
+};
+
+/**
  * Check if current time is within working range, handling midnight crossing
  * @private
  * @param {number} currentMinutes
@@ -93,7 +124,14 @@ const getOpenDaysMap = workingHours =>
  * @param {Map<number, Object>} openDays - Map produced by `getOpenDaysMap`.
  * @returns {Object|null} Slot details (config, minutesUntilOpen, etc.) or `null`.
  */
-const checkTodayAvailability = (currentDay, currentMinutes, openDays) => {
+const checkTodayAvailability = (
+  currentDay,
+  currentMinutes,
+  openDays,
+  isHolidayToday = false
+) => {
+  if (isHolidayToday) return null;
+
   const todayConfig = openDays.get(currentDay);
   if (!todayConfig || todayConfig.openAllDay) return null;
 
@@ -123,13 +161,23 @@ const checkTodayAvailability = (currentDay, currentMinutes, openDays) => {
  * @param {Map<number, Object>} openDays - Map of open day configs.
  * @returns {Object|null} Details of the next slot or `null` if none found.
  */
-const findNextSlot = (currentDay, currentMinutes, openDays) =>
-  Array.from({ length: DAYS_IN_WEEK }, (_, i) => i + 1)
+const findNextSlot = (
+  currentDay,
+  currentMinutes,
+  openDays,
+  zonedDate,
+  holidays
+) =>
+  Array.from({ length: MAX_DAYS_TO_SEARCH }, (_, i) => i + 1)
     .map(daysAhead => {
       const targetDay = (currentDay + daysAhead) % DAYS_IN_WEEK;
       const config = openDays.get(targetDay);
 
       if (!config) return null;
+
+      const targetDate = new Date(zonedDate);
+      targetDate.setDate(targetDate.getDate() + daysAhead);
+      if (isHolidayDate(targetDate, holidays)) return null;
 
       // Calculate minutes until this slot opens
       const slotOpenMinutes = config.openAllDay
@@ -220,7 +268,13 @@ export const isOpenAllDay = (time, utcOffset, workingHours = []) => {
  * @param {Array} workingHours
  * @returns {boolean}
  */
-export const isClosedAllDay = (time, utcOffset, workingHours = []) => {
+export const isClosedAllDay = (
+  time,
+  utcOffset,
+  workingHours = [],
+  holidays = []
+) => {
+  if (isHoliday(time, utcOffset, holidays)) return true;
   const todayConfig = getTodayConfig(time, utcOffset, workingHours);
   return todayConfig?.closedAllDay === true;
 };
@@ -232,8 +286,14 @@ export const isClosedAllDay = (time, utcOffset, workingHours = []) => {
  * @param {Array} workingHours
  * @returns {boolean}
  */
-export const isInWorkingHours = (time, utcOffset, workingHours = []) => {
+export const isInWorkingHours = (
+  time,
+  utcOffset,
+  workingHours = [],
+  holidays = []
+) => {
   if (!workingHours.length) return false;
+  if (isHoliday(time, utcOffset, holidays)) return false;
 
   const todayConfig = getTodayConfig(time, utcOffset, workingHours);
   if (!todayConfig) return false;
@@ -269,7 +329,8 @@ export const isInWorkingHours = (time, utcOffset, workingHours = []) => {
 export const findNextAvailableSlotDetails = (
   time,
   utcOffset,
-  workingHours = []
+  workingHours = [],
+  holidays = []
 ) => {
   const date = getDateInTimezone(time, utcOffset);
   const currentDay = date.getDay();
@@ -284,12 +345,14 @@ export const findNextAvailableSlotDetails = (
   const todaySlot = checkTodayAvailability(
     currentDay,
     currentMinutes,
-    openDays
+    openDays,
+    isHolidayDate(date, holidays)
   );
 
   // Find the slot (today or next)
   const slotDetails =
-    todaySlot || findNextSlot(currentDay, currentMinutes, openDays);
+    todaySlot ||
+    findNextSlot(currentDay, currentMinutes, openDays, date, holidays);
 
   // Convert to user timezone for display
   return convertSlotToUserTimezone(time, utcOffset, slotDetails);
@@ -305,13 +368,19 @@ export const findNextAvailableSlotDetails = (
 export const findNextAvailableSlotDiff = (
   time,
   utcOffset,
-  workingHours = []
+  workingHours = [],
+  holidays = []
 ) => {
-  if (isInWorkingHours(time, utcOffset, workingHours)) {
+  if (isInWorkingHours(time, utcOffset, workingHours, holidays)) {
     return 0;
   }
 
-  const nextSlot = findNextAvailableSlotDetails(time, utcOffset, workingHours);
+  const nextSlot = findNextAvailableSlotDetails(
+    time,
+    utcOffset,
+    workingHours,
+    holidays
+  );
   return nextSlot ? nextSlot.minutesUntilOpen : null;
 };
 
@@ -329,12 +398,18 @@ export const isOnline = (
   time,
   utcOffset,
   workingHours,
-  hasOnlineAgents
+  hasOnlineAgents,
+  holidays = []
 ) => {
   if (!workingHoursEnabled) {
     return hasOnlineAgents;
   }
 
-  const inWorkingHours = isInWorkingHours(time, utcOffset, workingHours);
+  const inWorkingHours = isInWorkingHours(
+    time,
+    utcOffset,
+    workingHours,
+    holidays
+  );
   return inWorkingHours && hasOnlineAgents;
 };

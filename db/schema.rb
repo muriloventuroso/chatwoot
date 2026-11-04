@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.2].define(version: 2026_10_23_140150) do
+ActiveRecord::Schema[7.2].define(version: 2026_11_04_143755) do
   # These extensions should be enabled to support this database
   enable_extension "pg_stat_statements"
   enable_extension "pg_trgm"
@@ -1307,6 +1307,20 @@ ActiveRecord::Schema[7.2].define(version: 2026_10_23_140150) do
     t.index ["agent_capacity_policy_id", "inbox_id"], name: "idx_on_agent_capacity_policy_id_inbox_id_71c7ec4caf", unique: true
     t.index ["agent_capacity_policy_id"], name: "index_inbox_capacity_limits_on_agent_capacity_policy_id"
     t.index ["inbox_id"], name: "index_inbox_capacity_limits_on_inbox_id"
+  end
+
+  create_table "inbox_holidays", force: :cascade do |t|
+    t.bigint "inbox_id"
+    t.bigint "account_id"
+    t.string "name"
+    t.string "message"
+    t.integer "day", null: false
+    t.integer "month", null: false
+    t.integer "year"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["account_id"], name: "index_inbox_holidays_on_account_id"
+    t.index ["inbox_id"], name: "index_inbox_holidays_on_inbox_id"
   end
 
   create_table "inbox_members", id: :serial, force: :cascade do |t|

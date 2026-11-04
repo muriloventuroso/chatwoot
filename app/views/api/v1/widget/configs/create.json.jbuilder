@@ -21,6 +21,7 @@ json.website_channel_config do
   json.welcome_title @web_widget.welcome_title
   json.widget_color @web_widget.widget_color
   json.working_hours @web_widget.inbox.working_hours
+  json.holidays @web_widget.inbox.holiday_schedule
   json.working_hours_enabled @web_widget.inbox.working_hours_enabled
 end
 

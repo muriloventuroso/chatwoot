@@ -153,6 +153,36 @@ properties:
         open_all_day:
           type: boolean
           description: Whether the inbox is open for the entire day
+  holidays:
+    type: array
+    description: Holidays on which the inbox is closed all day, regardless of the weekly working hours
+    items:
+      type: object
+      properties:
+        id:
+          type: number
+          description: ID of the holiday
+        name:
+          type:
+            - string
+            - 'null'
+          description: Optional name of the holiday
+        message:
+          type:
+            - string
+            - 'null'
+          description: Optional message shown instead of the out of office message on this holiday
+        day:
+          type: number
+          description: Day of the month (1-31)
+        month:
+          type: number
+          description: Month of the year (1-12)
+        year:
+          type:
+            - number
+            - 'null'
+          description: Year of the holiday; null when it repeats every year
   timezone:
     type: string
     description: Timezone configuration for the inbox

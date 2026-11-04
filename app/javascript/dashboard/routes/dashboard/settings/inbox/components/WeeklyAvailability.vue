@@ -6,11 +6,15 @@ import SettingsToggleSection from 'dashboard/components-next/Settings/SettingsTo
 import SettingsFieldSection from 'dashboard/components-next/Settings/SettingsFieldSection.vue';
 import WootMessageEditor from 'dashboard/components/widgets/WootWriter/Editor.vue';
 import BusinessDay from './BusinessDay.vue';
+import HolidayList from './HolidayList.vue';
 import {
   timeSlotParse,
   timeSlotTransform,
   defaultTimeSlot,
   timeZoneOptions,
+  holidayParse,
+  holidayTransform,
+  isValidHoliday,
 } from '../helpers/businessHour';
 import NextButton from 'dashboard/components-next/button/Button.vue';
 import ComboBox from 'dashboard/components-next/combobox/ComboBox.vue';
@@ -25,6 +29,7 @@ export default {
     SettingsToggleSection,
     SettingsFieldSection,
     BusinessDay,
+    HolidayList,
     NextButton,
     WootMessageEditor,
     ComboBox,
@@ -51,13 +56,19 @@ export default {
         6: 'Saturday',
       },
       timeSlots: [...defaultTimeSlot],
+      holidays: [],
     };
   },
   computed: {
     ...mapGetters({ uiFlags: 'inboxes/getUIFlags' }),
     hasError() {
       if (!this.isBusinessHoursEnabled) return false;
-      return this.timeSlots.filter(slot => slot.from && !slot.valid).length > 0;
+      const hasInvalidSlot =
+        this.timeSlots.filter(slot => slot.from && !slot.valid).length > 0;
+      const hasInvalidHoliday = this.holidays.some(
+        holiday => !isValidHoliday(holiday)
+      );
+      return hasInvalidSlot || hasInvalidHoliday;
     },
     timeZones() {
       return [...timeZoneOptions()];
@@ -95,6 +106,7 @@ export default {
         working_hours_enabled: isEnabled = false,
         out_of_office_message: unavailableMessage,
         working_hours: timeSlots = [],
+        holidays = [],
         timezone: timeZone,
       } = this.inbox;
       const slots = timeSlotParse(timeSlots).length
@@ -103,6 +115,7 @@ export default {
       this.isBusinessHoursEnabled = isEnabled;
       this.unavailableMessage = unavailableMessage || '';
       this.timeSlots = slots;
+      this.holidays = holidayParse(holidays);
       this.timeZone =
         this.timeZones.find(item => timeZone === item.value) ||
         DEFAULT_TIMEZONE;
@@ -112,6 +125,9 @@ export default {
         item.day === slotIndex ? slotData : item
       );
     },
+    onHolidaysUpdate(holidays) {
+      this.holidays = holidays;
+    },
     async updateInbox() {
       try {
         const payload = {
@@ -120,6 +136,7 @@ export default {
           working_hours_enabled: this.isBusinessHoursEnabled,
           out_of_office_message: this.unavailableMessage,
           working_hours: timeSlotTransform(this.timeSlots),
+          holidays: holidayTransform(this.holidays),
           timezone: this.timeZone.value,
           channel: {},
         };
@@ -214,6 +231,18 @@ export default {
           </table>
         </div>
       </div>
+      <div v-if="isBusinessHoursEnabled" class="flex items-center my-8 py-1">
+        <div class="flex-1 h-px bg-n-weak" />
+        <span class="text-body-main text-n-slate-11 px-2">
+          {{ $t('INBOX_MGMT.BUSINESS_HOURS.HOLIDAYS.TITLE') }}
+        </span>
+        <div class="flex-1 h-px bg-n-weak" />
+      </div>
+      <HolidayList
+        v-if="isBusinessHoursEnabled"
+        :holidays="holidays"
+        @update="onHolidaysUpdate"
+      />
       <div class="w-full flex justify-end items-center py-4 mt-2">
         <NextButton
           type="submit"

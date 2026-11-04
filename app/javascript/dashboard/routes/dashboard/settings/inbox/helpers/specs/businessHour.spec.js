@@ -4,6 +4,9 @@ import {
   timeSlotParse,
   timeSlotTransform,
   timeZoneOptions,
+  holidayParse,
+  holidayTransform,
+  isValidHoliday,
 } from '../businessHour';
 
 describe('#generateTimeSlots', () => {
@@ -128,6 +131,63 @@ describe('#timeSlotTransform', () => {
         open_all_day: false,
       },
     ]);
+  });
+});
+
+describe('#holidayParse and #holidayTransform', () => {
+  it('parses a specific holiday into a dated entry', () => {
+    expect(
+      holidayParse([
+        {
+          id: 1,
+          name: 'Christmas 2026',
+          message: 'Closed',
+          day: 25,
+          month: 12,
+          year: 2026,
+        },
+      ])
+    ).toStrictEqual([
+      {
+        id: 1,
+        name: 'Christmas 2026',
+        message: 'Closed',
+        recurring: false,
+        date: '2026-12-25',
+      },
+    ]);
+  });
+
+  it('parses a recurring holiday using the leap reference year', () => {
+    expect(holidayParse([{ day: 29, month: 2, year: null }])).toStrictEqual([
+      { id: null, name: '', message: '', recurring: true, date: '2024-02-29' },
+    ]);
+  });
+
+  it('transforms entries back, discarding the year for recurring holidays', () => {
+    expect(
+      holidayTransform([
+        {
+          id: 2,
+          name: 'New Year',
+          message: '',
+          recurring: true,
+          date: '2024-01-01',
+        },
+        { name: '', message: '', recurring: false, date: '2027-01-01' },
+      ])
+    ).toStrictEqual([
+      { id: 2, name: 'New Year', message: '', day: 1, month: 1, year: null },
+      { name: '', message: '', day: 1, month: 1, year: 2027 },
+    ]);
+  });
+
+  it('validates holiday dates', () => {
+    expect(isValidHoliday({ date: '2026-12-25' })).toBe(true);
+    expect(isValidHoliday({ date: '2024-02-29', recurring: true })).toBe(true);
+    expect(isValidHoliday({ date: '2026-04-31' })).toBe(false);
+    expect(isValidHoliday({ date: '' })).toBe(false);
+    expect(isValidHoliday({})).toBe(false);
   });
 });
 

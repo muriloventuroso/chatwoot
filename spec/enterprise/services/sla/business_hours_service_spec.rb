@@ -84,6 +84,57 @@ RSpec.describe Sla::BusinessHoursService do
       end
     end
 
+    context 'when a holiday falls on a business day' do
+      it 'skips a specific holiday' do
+        create(:inbox_holiday, inbox: inbox, day: 25, month: 12, year: 2024, message: nil)
+
+        # Tuesday Dec 24 4:00 PM + 2 hours = Thursday Dec 26 10:00 AM (Dec 25 is a holiday)
+        start_time = Time.zone.parse('2024-12-24 16:00:00')
+        expected_deadline = Time.zone.parse('2024-12-26 10:00:00')
+
+        service = described_class.new(inbox: inbox, start_time: start_time, threshold_seconds: 2.hours)
+
+        expect(service.deadline.to_i).to eq(expected_deadline.to_i)
+      end
+
+      it 'skips a recurring holiday' do
+        create(:inbox_holiday, inbox: inbox, day: 1, month: 1, year: nil, message: nil)
+
+        # Tuesday Dec 31 4:00 PM + 2 hours = Thursday Jan 2 10:00 AM (Jan 1 is a holiday)
+        start_time = Time.zone.parse('2024-12-31 16:00:00')
+        expected_deadline = Time.zone.parse('2025-01-02 10:00:00')
+
+        service = described_class.new(inbox: inbox, start_time: start_time, threshold_seconds: 2.hours)
+
+        expect(service.deadline.to_i).to eq(expected_deadline.to_i)
+      end
+
+      it 'skips a holiday stretch at the end of the year' do
+        create(:inbox_holiday, inbox: inbox, day: 25, month: 12, year: nil, message: nil)
+        create(:inbox_holiday, inbox: inbox, day: 1, month: 1, year: nil, message: nil)
+
+        # Tuesday Dec 24 4:00 PM + 10 hours: 1h Tue, Wed is a holiday, 8h Thu, 1h Fri = Friday Dec 27 10:00 AM
+        start_time = Time.zone.parse('2024-12-24 16:00:00')
+        expected_deadline = Time.zone.parse('2024-12-27 10:00:00')
+
+        service = described_class.new(inbox: inbox, start_time: start_time, threshold_seconds: 10.hours)
+
+        expect(service.deadline.to_i).to eq(expected_deadline.to_i)
+      end
+
+      it 'starts counting after a holiday when the start time is on the holiday' do
+        create(:inbox_holiday, inbox: inbox, day: 25, month: 12, year: 2024, message: nil)
+
+        # Wednesday Dec 25 10:00 AM (holiday) + 2 hours = Thursday Dec 26 11:00 AM
+        start_time = Time.zone.parse('2024-12-25 10:00:00')
+        expected_deadline = Time.zone.parse('2024-12-26 11:00:00')
+
+        service = described_class.new(inbox: inbox, start_time: start_time, threshold_seconds: 2.hours)
+
+        expect(service.deadline.to_i).to eq(expected_deadline.to_i)
+      end
+    end
+
     context 'when threshold spans multiple days' do
       it 'calculates correctly across multiple business days' do
         # Monday 4:00 PM + 10 hours = Wednesday 10:00 AM

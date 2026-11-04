@@ -24,6 +24,7 @@ class Inbox::EventDataPresenter < SimpleDelegator
       out_of_office_message: out_of_office_message,
       working_hours_enabled: working_hours_enabled,
       working_hours: working_hours.as_json,
+      holidays: holiday_schedule,
 
       created_at: created_at,
       updated_at: updated_at,

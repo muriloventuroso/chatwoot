@@ -90,7 +90,27 @@ describe('useAvailability', () => {
       expect(mockIsInWorkingHours).toHaveBeenCalledWith(
         expect.any(Date),
         '+05:30',
-        workingHours
+        workingHours,
+        []
+      );
+    });
+
+    it('should pass holidays through to the availability helpers', () => {
+      const holidays = [{ day: 25, month: 12, year: null }];
+      window.chatwootWebChannel = {
+        workingHours,
+        holidays,
+        workingHoursEnabled: true,
+        utcOffset: '+05:30',
+      };
+
+      const { isInWorkingHours } = useAvailability();
+      expect(isInWorkingHours.value).toBe(true);
+      expect(mockIsInWorkingHours).toHaveBeenCalledWith(
+        expect.any(Date),
+        '+05:30',
+        workingHours,
+        holidays
       );
     });
 
@@ -105,7 +125,8 @@ describe('useAvailability', () => {
         expect.any(Date),
         '+05:30',
         workingHours,
-        true
+        true,
+        []
       );
     });
   });

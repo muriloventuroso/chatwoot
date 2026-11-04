@@ -265,6 +265,22 @@
       "INBOUND_PHONE": {
         "DESCRIPTION": "Let customers call this number and ring the agents here. When disabled, Chatwoot does not ring and calls keep ringing on the paired phone only. Agents can still place outbound calls."
       }
+    },
+    "BUSINESS_HOURS": {
+      "HOLIDAYS": {
+        "TITLE": "Holidays",
+        "HELP": "On a holiday the inbox is closed all day, regardless of the weekly hours. If a holiday has its own message, it replaces the unavailable message for that day.",
+        "EMPTY": "No holidays registered.",
+        "ADD": "Add holiday",
+        "NAME_LABEL": "Name (optional)",
+        "NAME_PLACEHOLDER": "e.g. Christmas",
+        "DATE_LABEL": "Date",
+        "RECURRING_LABEL": "Repeats every year",
+        "MESSAGE_LABEL": "Message (optional)",
+        "MESSAGE_PLACEHOLDER": "Leave empty to use the default unavailable message",
+        "REMOVE": "Remove holiday",
+        "DATE_REQUIRED": "Choose a date for this holiday."
+      }
     }
   }
 }
