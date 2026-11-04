@@ -454,6 +454,18 @@ Rails.application.routes.draw do
           end
           resource :notification_settings, only: [:show, :update]
 
+          resources :projects, only: [:index, :show, :create, :update, :destroy] do
+            resources :tasks, controller: 'project_tasks', only: [:index, :create]
+            resources :members, controller: 'project_members', only: [:index, :create, :destroy]
+          end
+          resources :project_tasks, only: [:show, :update, :destroy] do
+            member do
+              post :move
+            end
+            resources :comments, controller: 'project_task_comments', only: [:index, :create, :destroy]
+            resources :attachments, controller: 'project_task_attachments', only: [:create, :destroy]
+          end
+
           resources :teams do
             resources :team_members, only: [:index, :create] do
               collection do

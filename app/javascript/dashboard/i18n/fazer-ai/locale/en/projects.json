@@ -1,0 +1,132 @@
+{
+  "PROJECTS": {
+    "TITLE": "Projects",
+    "NEW_PROJECT": "New project",
+    "SEARCH_PLACEHOLDER": "Search projects",
+    "EMPTY": "No projects yet. Create your first project to get started.",
+    "NO_RESULTS": "No projects match your search.",
+    "TASKS_COUNT": "{count} task | {count} tasks",
+    "FILTERS": {
+      "ALL": "All projects",
+      "MINE": "My projects",
+      "STATUS_ALL": "All statuses"
+    },
+    "STATUS": {
+      "ACTIVE": "Active",
+      "COMPLETED": "Completed",
+      "ARCHIVED": "Archived"
+    },
+    "FORM": {
+      "CREATE_TITLE": "New project",
+      "EDIT_TITLE": "Edit project",
+      "NAME": "Name",
+      "NAME_PLACEHOLDER": "Project name",
+      "DESCRIPTION": "Description",
+      "DESCRIPTION_PLACEHOLDER": "What is this project about?",
+      "STATUS": "Status",
+      "COLOR": "Color",
+      "START_DATE": "Start date",
+      "END_DATE": "End date",
+      "SAVE": "Save project"
+    },
+    "ACTIONS": {
+      "EDIT": "Edit",
+      "DELETE": "Delete",
+      "ARCHIVE": "Archive",
+      "COMPLETE": "Mark as completed",
+      "VIEW": "Open project"
+    },
+    "DELETE": {
+      "TITLE": "Delete project",
+      "MESSAGE": "Are you sure you want to delete \"{name}\"? All tasks, subtasks and comments will be removed.",
+      "CONFIRM": "Delete"
+    },
+    "MESSAGES": {
+      "CREATE_SUCCESS": "Project created",
+      "CREATE_ERROR": "Could not create the project",
+      "UPDATE_SUCCESS": "Project updated",
+      "UPDATE_ERROR": "Could not update the project",
+      "DELETE_SUCCESS": "Project deleted",
+      "DELETE_ERROR": "Could not delete the project",
+      "LOAD_ERROR": "Could not load projects"
+    },
+    "MEMBERS": {
+      "TITLE": "Members",
+      "ADD": "Add members",
+      "EMPTY": "No members yet",
+      "SELECT_PLACEHOLDER": "Select agents",
+      "REMOVE": "Remove member"
+    },
+    "DETAILS": {
+      "BACK": "Back to projects",
+      "BOARD": "Board",
+      "LIST": "List",
+      "SEARCH_TASKS": "Search tasks",
+      "ALL_ASSIGNEES": "All assignees",
+      "ALL_PRIORITIES": "All priorities",
+      "ONLY_MINE": "Only mine",
+      "ADD_TASK": "Add task",
+      "NO_TASKS": "No tasks",
+      "OVERDUE": "Overdue",
+      "LOAD_ERROR": "Could not load this project",
+      "RETRY": "Try again"
+    },
+    "TASK": {
+      "STATUS": {
+        "TODO": "To do",
+        "IN_PROGRESS": "In progress",
+        "DONE": "Done"
+      },
+      "PRIORITY": {
+        "LOW": "Low",
+        "MEDIUM": "Medium",
+        "HIGH": "High"
+      },
+      "FORM": {
+        "TITLE": "Title",
+        "TITLE_PLACEHOLDER": "Task title",
+        "DESCRIPTION": "Description",
+        "DESCRIPTION_PLACEHOLDER": "Describe the task",
+        "STATUS": "Status",
+        "PRIORITY": "Priority",
+        "ASSIGNEE": "Assignee",
+        "UNASSIGNED": "Unassigned",
+        "DUE_DATE": "Due date",
+        "SAVE": "Save task",
+        "DELETE": "Delete task"
+      },
+      "SUBTASKS": {
+        "TITLE": "Subtasks",
+        "ADD_PLACEHOLDER": "Add a subtask and press Enter",
+        "EMPTY": "No subtasks yet",
+        "PROGRESS": "{done} of {total} done"
+      },
+      "COMMENTS": {
+        "TITLE": "Comments",
+        "ADD_PLACEHOLDER": "Write a comment",
+        "ADD": "Comment",
+        "EMPTY": "No comments yet",
+        "DELETE": "Delete comment"
+      },
+      "ATTACHMENTS": {
+        "TITLE": "Attachments",
+        "ADD": "Attach file",
+        "EMPTY": "No attachments yet",
+        "DELETE": "Remove attachment"
+      },
+      "MESSAGES": {
+        "CREATE_ERROR": "Could not create the task",
+        "UPDATE_ERROR": "Could not update the task",
+        "DELETE_ERROR": "Could not delete the task",
+        "MOVE_ERROR": "Could not move the task",
+        "COMMENT_ERROR": "Could not save the comment",
+        "ATTACHMENT_ERROR": "Could not attach the file"
+      },
+      "DELETE": {
+        "TITLE": "Delete task",
+        "MESSAGE": "Are you sure you want to delete \"{name}\"? Its subtasks, comments and attachments will be removed.",
+        "CONFIRM": "Delete"
+      }
+    }
+  }
+}

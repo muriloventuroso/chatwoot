@@ -1,0 +1,23 @@
+import { getters } from './getters';
+import { actions } from './actions';
+import { mutations } from './mutations';
+
+const state = {
+  projects: {},
+  tasks: {},
+  comments: {},
+  members: {},
+  uiFlags: {
+    isFetching: false,
+    isCreating: false,
+    isFetchingTasks: false,
+  },
+};
+
+export default {
+  namespaced: true,
+  state,
+  getters,
+  actions,
+  mutations,
+};

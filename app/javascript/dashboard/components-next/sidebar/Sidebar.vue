@@ -536,6 +536,13 @@ const menuItems = computed(() => {
       },
     },
     {
+      name: 'Projects',
+      label: t('SIDEBAR.PROJECTS'),
+      icon: 'i-lucide-folder-kanban',
+      to: accountScopedRoute('projects_list'),
+      activeOn: ['projects_list', 'project_details'],
+    },
+    {
       name: 'Captain',
       icon: 'i-woot-captain',
       label: t('SIDEBAR.CAPTAIN'),

@@ -1,0 +1,128 @@
+# == Schema Information
+#
+# Table name: project_tasks
+#
+#  id             :bigint           not null, primary key
+#  comments_count :integer          default(0), not null
+#  completed_at   :datetime
+#  description    :text
+#  due_date       :date
+#  position       :float            default(0.0), not null
+#  priority       :integer          default("medium"), not null
+#  status         :integer          default("todo"), not null
+#  title          :string           not null
+#  created_at     :datetime         not null
+#  updated_at     :datetime         not null
+#  account_id     :bigint           not null
+#  assignee_id    :bigint
+#  creator_id     :bigint
+#  parent_task_id :bigint
+#  project_id     :bigint           not null
+#
+# Indexes
+#
+#  index_project_tasks_on_account_id                       (account_id)
+#  index_project_tasks_on_assignee_id                      (assignee_id)
+#  index_project_tasks_on_creator_id                       (creator_id)
+#  index_project_tasks_on_parent_task_id                   (parent_task_id)
+#  index_project_tasks_on_project_id                       (project_id)
+#  index_project_tasks_on_project_parent_status_position   (project_id,parent_task_id,status,position)
+#
+class ProjectTask < ApplicationRecord
+  belongs_to :account
+  belongs_to :project
+  belongs_to :parent_task, class_name: 'ProjectTask', optional: true
+  belongs_to :assignee, class_name: 'User', optional: true
+  belongs_to :creator, class_name: 'User', optional: true
+
+  has_many :subtasks, class_name: 'ProjectTask', foreign_key: :parent_task_id, inverse_of: :parent_task, dependent: :destroy
+  has_many :comments, class_name: 'ProjectTaskComment', dependent: :destroy
+
+  has_many_attached :attachments
+
+  enum :status, { todo: 0, in_progress: 1, done: 2 }, validate: true
+  enum :priority, { low: 0, medium: 1, high: 2 }, validate: true
+
+  validates :title, presence: true, length: { maximum: 255 }
+  validate :parent_task_is_root
+  validate :parent_task_belongs_to_same_project
+  validate :assignee_belongs_to_account
+
+  before_validation :set_account_from_project
+  before_create :set_position, if: -> { position.to_f.zero? }
+  before_save :sync_completed_at
+
+  scope :root, -> { where(parent_task_id: nil) }
+  scope :ordered, -> { order(:position, :created_at) }
+
+  def subtasks_count
+    subtasks.size
+  end
+
+  def completed_subtasks_count
+    subtasks.count(&:done?)
+  end
+
+  # Moves the task to a status column at the given position, reordering
+  # only the tasks of the affected columns.
+  def move!(new_status:, new_position:)
+    transaction do
+      source_status = status
+      update!(status: new_status, position: new_position)
+
+      reorder_column(project_id: project_id, parent_task_id: parent_task_id, status: source_status) if source_status != new_status
+      reorder_column(project_id: project_id, parent_task_id: parent_task_id, status: new_status)
+    end
+    reload
+  end
+
+  private
+
+  def reorder_column(project_id:, parent_task_id:, status:)
+    tasks = self.class.where(project_id: project_id, parent_task_id: parent_task_id, status: status).ordered.lock
+    tasks.each_with_index do |task, index|
+      new_position = (index + 1).to_f
+      next if task.position == new_position
+
+      task.update_columns(position: new_position, updated_at: Time.current) # rubocop:disable Rails/SkipsModelValidations
+    end
+  end
+
+  def set_account_from_project
+    self.account_id = project.account_id if project.present?
+  end
+
+  def set_position
+    last_position = self.class.where(project_id: project_id, parent_task_id: parent_task_id, status: status).maximum(:position)
+    self.position = (last_position || 0).to_f + 1
+  end
+
+  def sync_completed_at
+    if status_changed?
+      self.completed_at = done? ? Time.current : nil
+    elsif done? && completed_at.blank?
+      self.completed_at = Time.current
+    end
+  end
+
+  def parent_task_is_root
+    return if parent_task.blank?
+    return if parent_task.parent_task_id.blank?
+
+    errors.add(:parent_task, 'cannot be a subtask')
+  end
+
+  def parent_task_belongs_to_same_project
+    return if parent_task.blank? || project_id.blank?
+    return if parent_task.project_id == project_id
+
+    errors.add(:parent_task, 'must belong to the same project')
+  end
+
+  def assignee_belongs_to_account
+    return if assignee.blank? || account_id.blank?
+    return if assignee.account_users.exists?(account_id: account_id)
+
+    errors.add(:assignee, 'must belong to the account')
+  end
+end

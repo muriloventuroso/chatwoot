@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.2].define(version: 2026_11_04_143755) do
+ActiveRecord::Schema[7.2].define(version: 2026_11_04_191155) do
   # These extensions should be enabled to support this database
   enable_extension "pg_stat_statements"
   enable_extension "pg_trgm"
@@ -1751,6 +1751,65 @@ ActiveRecord::Schema[7.2].define(version: 2026_11_04_143755) do
     t.index ["portal_id", "user_id"], name: "index_portals_members_on_portal_id_and_user_id", unique: true
     t.index ["portal_id"], name: "index_portals_members_on_portal_id"
     t.index ["user_id"], name: "index_portals_members_on_user_id"
+  end
+
+  create_table "project_members", force: :cascade do |t|
+    t.bigint "project_id", null: false
+    t.bigint "user_id", null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["project_id", "user_id"], name: "index_project_members_on_project_id_and_user_id", unique: true
+    t.index ["project_id"], name: "index_project_members_on_project_id"
+    t.index ["user_id"], name: "index_project_members_on_user_id"
+  end
+
+  create_table "project_task_comments", force: :cascade do |t|
+    t.bigint "project_task_id", null: false
+    t.bigint "author_id"
+    t.text "content", null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["author_id"], name: "index_project_task_comments_on_author_id"
+    t.index ["project_task_id"], name: "index_project_task_comments_on_project_task_id"
+  end
+
+  create_table "project_tasks", force: :cascade do |t|
+    t.bigint "account_id", null: false
+    t.bigint "project_id", null: false
+    t.bigint "parent_task_id"
+    t.string "title", null: false
+    t.text "description"
+    t.integer "status", default: 0, null: false
+    t.integer "priority", default: 1, null: false
+    t.bigint "assignee_id"
+    t.bigint "creator_id"
+    t.date "due_date"
+    t.float "position", default: 0.0, null: false
+    t.datetime "completed_at"
+    t.integer "comments_count", default: 0, null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["account_id"], name: "index_project_tasks_on_account_id"
+    t.index ["assignee_id"], name: "index_project_tasks_on_assignee_id"
+    t.index ["creator_id"], name: "index_project_tasks_on_creator_id"
+    t.index ["parent_task_id"], name: "index_project_tasks_on_parent_task_id"
+    t.index ["project_id", "parent_task_id", "status", "position"], name: "index_project_tasks_on_project_parent_status_position"
+    t.index ["project_id"], name: "index_project_tasks_on_project_id"
+  end
+
+  create_table "projects", force: :cascade do |t|
+    t.bigint "account_id", null: false
+    t.bigint "created_by_id"
+    t.string "name", null: false
+    t.text "description"
+    t.integer "status", default: 0, null: false
+    t.string "color"
+    t.date "start_date"
+    t.date "end_date"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["account_id"], name: "index_projects_on_account_id"
+    t.index ["created_by_id"], name: "index_projects_on_created_by_id"
   end
 
   create_table "recurring_scheduled_messages", force: :cascade do |t|

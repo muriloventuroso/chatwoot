@@ -43,6 +43,7 @@ import labels from './modules/labels';
 import macros from './modules/macros';
 import notifications from './modules/notifications';
 import portals from './modules/helpCenterPortals';
+import projects from './modules/projects';
 import reports from './modules/reports';
 import recurringScheduledMessages from './modules/recurringScheduledMessages';
 import scheduledMessages from './modules/scheduledMessages';
@@ -116,6 +117,7 @@ export default createStore({
     macros,
     notifications,
     portals,
+    projects,
     reports,
     recurringScheduledMessages,
     scheduledMessages,

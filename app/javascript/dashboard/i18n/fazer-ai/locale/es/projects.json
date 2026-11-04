@@ -1,0 +1,132 @@
+{
+  "PROJECTS": {
+    "TITLE": "Proyectos",
+    "NEW_PROJECT": "Nuevo proyecto",
+    "SEARCH_PLACEHOLDER": "Buscar proyectos",
+    "EMPTY": "Aún no hay proyectos. Crea tu primer proyecto para empezar.",
+    "NO_RESULTS": "Ningún proyecto coincide con la búsqueda.",
+    "TASKS_COUNT": "{count} tarea | {count} tareas",
+    "FILTERS": {
+      "ALL": "Todos los proyectos",
+      "MINE": "Mis proyectos",
+      "STATUS_ALL": "Todos los estados"
+    },
+    "STATUS": {
+      "ACTIVE": "Activo",
+      "COMPLETED": "Completado",
+      "ARCHIVED": "Archivado"
+    },
+    "FORM": {
+      "CREATE_TITLE": "Nuevo proyecto",
+      "EDIT_TITLE": "Editar proyecto",
+      "NAME": "Nombre",
+      "NAME_PLACEHOLDER": "Nombre del proyecto",
+      "DESCRIPTION": "Descripción",
+      "DESCRIPTION_PLACEHOLDER": "¿De qué trata este proyecto?",
+      "STATUS": "Estado",
+      "COLOR": "Color",
+      "START_DATE": "Fecha de inicio",
+      "END_DATE": "Fecha de finalización",
+      "SAVE": "Guardar proyecto"
+    },
+    "ACTIONS": {
+      "EDIT": "Editar",
+      "DELETE": "Eliminar",
+      "ARCHIVE": "Archivar",
+      "COMPLETE": "Completar",
+      "VIEW": "Abrir proyecto"
+    },
+    "DELETE": {
+      "TITLE": "Eliminar proyecto",
+      "MESSAGE": "¿Seguro que quieres eliminar \"{name}\"? Se eliminarán todas las tareas, subtareas y comentarios.",
+      "CONFIRM": "Eliminar"
+    },
+    "MESSAGES": {
+      "CREATE_SUCCESS": "Proyecto creado",
+      "CREATE_ERROR": "No se pudo crear el proyecto",
+      "UPDATE_SUCCESS": "Proyecto actualizado",
+      "UPDATE_ERROR": "No se pudo actualizar el proyecto",
+      "DELETE_SUCCESS": "Proyecto eliminado",
+      "DELETE_ERROR": "No se pudo eliminar el proyecto",
+      "LOAD_ERROR": "No se pudieron cargar los proyectos"
+    },
+    "MEMBERS": {
+      "TITLE": "Miembros",
+      "ADD": "Agregar miembros",
+      "EMPTY": "Aún no hay miembros",
+      "SELECT_PLACEHOLDER": "Selecciona los agentes",
+      "REMOVE": "Quitar miembro"
+    },
+    "DETAILS": {
+      "BACK": "Volver a proyectos",
+      "BOARD": "Tablero",
+      "LIST": "Lista",
+      "SEARCH_TASKS": "Buscar tareas",
+      "ALL_ASSIGNEES": "Todos los responsables",
+      "ALL_PRIORITIES": "Todas las prioridades",
+      "ONLY_MINE": "Solo mías",
+      "ADD_TASK": "Agregar tarea",
+      "NO_TASKS": "Sin tareas",
+      "OVERDUE": "Vencida",
+      "LOAD_ERROR": "No se pudo cargar este proyecto",
+      "RETRY": "Reintentar"
+    },
+    "TASK": {
+      "STATUS": {
+        "TODO": "Por hacer",
+        "IN_PROGRESS": "En progreso",
+        "DONE": "Hecho"
+      },
+      "PRIORITY": {
+        "LOW": "Baja",
+        "MEDIUM": "Media",
+        "HIGH": "Alta"
+      },
+      "FORM": {
+        "TITLE": "Título",
+        "TITLE_PLACEHOLDER": "Título de la tarea",
+        "DESCRIPTION": "Descripción",
+        "DESCRIPTION_PLACEHOLDER": "Describe la tarea",
+        "STATUS": "Estado",
+        "PRIORITY": "Prioridad",
+        "ASSIGNEE": "Responsable",
+        "UNASSIGNED": "Sin responsable",
+        "DUE_DATE": "Fecha límite",
+        "SAVE": "Guardar tarea",
+        "DELETE": "Eliminar tarea"
+      },
+      "SUBTASKS": {
+        "TITLE": "Subtareas",
+        "ADD_PLACEHOLDER": "Agrega una subtarea y pulsa Enter",
+        "EMPTY": "Aún no hay subtareas",
+        "PROGRESS": "{done} de {total} hechas"
+      },
+      "COMMENTS": {
+        "TITLE": "Comentarios",
+        "ADD_PLACEHOLDER": "Escribe un comentario",
+        "ADD": "Comentar",
+        "EMPTY": "Aún no hay comentarios",
+        "DELETE": "Eliminar comentario"
+      },
+      "ATTACHMENTS": {
+        "TITLE": "Adjuntos",
+        "ADD": "Adjuntar archivo",
+        "EMPTY": "Aún no hay adjuntos",
+        "DELETE": "Quitar adjunto"
+      },
+      "MESSAGES": {
+        "CREATE_ERROR": "No se pudo crear la tarea",
+        "UPDATE_ERROR": "No se pudo actualizar la tarea",
+        "DELETE_ERROR": "No se pudo eliminar la tarea",
+        "MOVE_ERROR": "No se pudo mover la tarea",
+        "COMMENT_ERROR": "No se pudo guardar el comentario",
+        "ATTACHMENT_ERROR": "No se pudo adjuntar el archivo"
+      },
+      "DELETE": {
+        "TITLE": "Eliminar tarea",
+        "MESSAGE": "¿Seguro que quieres eliminar \"{name}\"? Se eliminarán sus subtareas, comentarios y adjuntos.",
+        "CONFIRM": "Eliminar"
+      }
+    }
+  }
+}

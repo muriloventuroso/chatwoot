@@ -117,6 +117,11 @@ class User < ApplicationRecord
   has_many :notification_settings, dependent: :destroy_async
   has_many :notification_subscriptions, dependent: :destroy_async
   has_many :notifications, dependent: :destroy_async
+  has_many :project_members, dependent: :destroy_async
+  has_many :created_projects, foreign_key: 'created_by_id', class_name: 'Project', dependent: :nullify, inverse_of: :created_by
+  has_many :assigned_project_tasks, foreign_key: 'assignee_id', class_name: 'ProjectTask', dependent: :nullify, inverse_of: :assignee
+  has_many :created_project_tasks, foreign_key: 'creator_id', class_name: 'ProjectTask', dependent: :nullify, inverse_of: :creator
+  has_many :project_task_comments, foreign_key: 'author_id', dependent: :nullify, inverse_of: :author
   has_many :team_members, dependent: :destroy_async
   has_many :teams, through: :team_members
   has_many :articles, foreign_key: 'author_id', dependent: :nullify, inverse_of: :author
