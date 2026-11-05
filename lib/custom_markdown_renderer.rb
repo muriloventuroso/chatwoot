@@ -60,12 +60,12 @@ class CustomMarkdownRenderer < CommonMarker::HtmlRenderer
 
   def image(node)
     src = sanitized_href(node.url)
-    width = extract_image_width(src)
+    style = image_style(src)
     plain do
       out(%(<img src="#{src}"))
       out(' alt="', :children, '"')
       out(%( title="#{escape_html(node.title)}")) if node.title.present?
-      out(%( style="width: #{width}; max-width: 100%; height: auto;")) if width
+      out(%( style="#{style}")) if style
       out(' />')
     end
   end
@@ -129,6 +129,16 @@ class CustomMarkdownRenderer < CommonMarker::HtmlRenderer
 
   def extract_image_width(src)
     extract_px_param(src, 'cw_image_width')
+  end
+
+  # Markdown has no image alignment, so articles imported from another help center
+  # carry it as cw_image_align=center on the URL, the same way cw_image_width carries size.
+  def image_style(src)
+    width = extract_image_width(src)
+    styles = []
+    styles << "width: #{width}; max-width: 100%; height: auto;" if width
+    styles << 'display: block; margin-left: auto; margin-right: auto;' if query_param(src, 'cw_image_align') == 'center'
+    styles.join(' ').presence
   end
 
   def query_param(src, key)

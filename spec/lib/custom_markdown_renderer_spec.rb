@@ -362,6 +362,23 @@ describe CustomMarkdownRenderer do
       )
     end
 
+    it 'centers the image when cw_image_align is center' do
+      markdown = '![Sample](https://example.com/image.jpg?cw_image_width=340px&cw_image_align=center)'
+      expect(render_markdown(markdown)).to include(
+        'style="width: 340px; max-width: 100%; height: auto; display: block; margin-left: auto; margin-right: auto;"'
+      )
+    end
+
+    it 'centers an image without width' do
+      markdown = '![Sample](https://example.com/image.jpg?cw_image_align=center)'
+      expect(render_markdown(markdown)).to include('style="display: block; margin-left: auto; margin-right: auto;"')
+    end
+
+    it 'ignores other alignments' do
+      markdown = '![Sample](https://example.com/image.jpg?cw_image_align=left)'
+      expect(render_markdown(markdown)).not_to include('style=')
+    end
+
     it 'ignores a non-numeric width' do
       markdown = '![Sample](https://example.com/image.jpg?cw_image_width=auto)'
       expect(render_markdown(markdown)).not_to include('style=')
