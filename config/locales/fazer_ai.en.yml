@@ -189,3 +189,6 @@ en:
       handled_count: Handled conversations
       avg_customer_waiting_time: Avg customer waiting time
       resolution_count: Resolution Count
+  public_portal:
+    hero:
+      title: How can we help?
