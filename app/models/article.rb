@@ -38,6 +38,9 @@ class Article < ApplicationRecord
   include PgSearch::Model
   include LlmFormattable
 
+  # The search tsvector is as large as the content itself and only text_search reads it, in SQL.
+  self.ignored_columns += ['search_vector']
+
   has_many :associated_articles,
            class_name: :Article,
            foreign_key: :associated_article_id,
@@ -86,23 +89,20 @@ class Article < ApplicationRecord
   scope :order_by_position, -> { reorder(position: :asc) }
   scope :order_by_views, -> { reorder(views: :desc) }
 
-  # TODO: if text search slows down https://www.postgresql.org/docs/current/textsearch-features.html#TEXTSEARCH-UPDATE-TRIGGERS
-  # - the A, B and C are for weightage. See: https://github.com/Casecommons/pg_search#weighting
+  # - search_vector is a stored generated column (GIN indexed, see AddSearchVectorToArticles) that already holds the
+  #   unaccented title/description/content weighted A/B/C, so `against` only names the source columns.
+  #   Changing the weights or columns means changing that column. See: https://github.com/Casecommons/pg_search#weighting
   # - the normalization is for ensuring the long articles that mention the search term too many times are not ranked higher.
   #   it divides rank by log(document_length) to prevent longer articles from ranking higher just due to sizeSee: https://github.com/Casecommons/pg_search#normalization
-  # - the ranking is to ensure that articles with higher weightage are ranked higher
-  # - ignoring accents lets "configuracao" match "configuração" (unaccent extension)
+  # - ignoring accents unaccents the query so "configuracao" matches "configuração", like the column does
   pg_search_scope(
     :text_search,
-    against: {
-      title: 'A',
-      description: 'B',
-      content: 'C'
-    },
+    against: %i[title description content],
     using: {
       tsearch: {
         prefix: true,
-        normalization: 2
+        normalization: 2,
+        tsvector_column: 'search_vector'
       }
     },
     ignoring: :accents,

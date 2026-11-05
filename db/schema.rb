@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.2].define(version: 2026_11_05_150343) do
+ActiveRecord::Schema[7.2].define(version: 2026_11_05_175649) do
   # These extensions should be enabled to support this database
   enable_extension "pg_stat_statements"
   enable_extension "pg_trgm"
@@ -238,11 +238,13 @@ ActiveRecord::Schema[7.2].define(version: 2026_11_05_150343) do
     t.string "locale", default: "en", null: false
     t.string "draft_title"
     t.text "draft_content"
+    t.virtual "search_vector", type: :tsvector, as: "((setweight(to_tsvector('simple'::regconfig, f_unaccent((COALESCE(title, ''::character varying))::text)), 'A'::\"char\") || setweight(to_tsvector('simple'::regconfig, f_unaccent(COALESCE(description, ''::text))), 'B'::\"char\")) || setweight(to_tsvector('simple'::regconfig, f_unaccent(COALESCE(content, ''::text))), 'C'::\"char\"))", stored: true
     t.index ["account_id"], name: "index_articles_on_account_id"
     t.index ["associated_article_id"], name: "index_articles_on_associated_article_id"
     t.index ["author_id"], name: "index_articles_on_author_id"
     t.index ["category_id"], name: "index_articles_on_category_id"
     t.index ["portal_id"], name: "index_articles_on_portal_id"
+    t.index ["search_vector"], name: "index_articles_on_search_vector", using: :gin
     t.index ["slug"], name: "index_articles_on_slug", unique: true
     t.index ["status"], name: "index_articles_on_status"
     t.index ["views"], name: "index_articles_on_views"
