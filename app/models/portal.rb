@@ -129,6 +129,21 @@ class Portal < ApplicationRecord
     draft_locale_codes.include?(locale)
   end
 
+  # Picks the public locale that best matches the visitor's language tags (e.g. ["pt-BR", "en"]),
+  # in order of preference: exact tag, then bare language, then any variant of that language.
+  def locale_for_languages(languages)
+    locales = public_locale_codes.index_by { |locale| locale.downcase.tr('-', '_') }
+
+    languages.each do |language|
+      tag = language.downcase.tr('-', '_')
+      base = tag.split('_').first
+      match = locales[tag] || locales[base] || locales.find { |code, _| code.split('_').first == base }&.last
+      return match if match
+    end
+
+    default_locale
+  end
+
   def color
     self[:color].presence || DEFAULT_COLOR
   end

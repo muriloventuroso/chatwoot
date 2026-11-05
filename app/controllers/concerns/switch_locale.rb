@@ -40,7 +40,11 @@ module SwitchLocale
     @portal = Portal.find_by(custom_domain: domain)
     return unless @portal
 
-    @portal.default_locale
+    portal_locale_from_browser(@portal)
+  end
+
+  def portal_locale_from_browser(portal)
+    portal.locale_for_languages(browser.accept_language.map(&:full))
   end
 
   def locale_from_user

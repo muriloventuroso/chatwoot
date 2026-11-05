@@ -31,6 +31,17 @@ describe 'GET / on a help center custom domain', type: :request do
       expect(response.body).to include('sidebar-drawer-checkbox')
       expect(response.body).to include('Getting Started')
     end
+
+    it 'renders the locale that matches the browser language' do
+      portal.update!(config: { allowed_locales: %w[en pt_BR], default_locale: 'en', layout: 'documentation' })
+
+      host! portal.custom_domain
+      get '/', headers: { 'Accept-Language' => 'pt-BR,pt;q=0.9' }
+
+      expect(response).to have_http_status(:success)
+      expect(response.body).to include('Navegar por tópico')
+      expect(response.body).not_to include('Getting Started')
+    end
   end
 
   context 'when the portal uses the classic layout' do

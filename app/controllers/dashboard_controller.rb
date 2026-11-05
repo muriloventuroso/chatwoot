@@ -68,7 +68,7 @@ class DashboardController < ActionController::Base
     @portal = Portal.find_by(custom_domain: domain)
     return unless @portal
 
-    @locale = @portal.default_locale
+    @locale = portal_locale_from_browser(@portal)
     request.variant = :documentation if @portal.layout == 'documentation'
     load_home_data
     render 'public/api/v1/portals/show', layout: 'portal', portal: @portal and return

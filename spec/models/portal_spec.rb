@@ -151,4 +151,38 @@ RSpec.describe Portal do
       expect(portal.display_title).to eq('Help Center | Acme')
     end
   end
+
+  describe '#locale_for_languages' do
+    let!(:account) { create(:account) }
+    let(:portal) do
+      create(:portal, account_id: account.id, config: { allowed_locales: %w[en pt pt_BR es fr], default_locale: 'en', draft_locales: ['fr'] })
+    end
+
+    it 'prefers the exact language tag' do
+      expect(portal.locale_for_languages(%w[pt-BR en])).to eq('pt_BR')
+    end
+
+    it 'falls back to the bare language before another variant' do
+      expect(portal.locale_for_languages(%w[pt-PT en])).to eq('pt')
+    end
+
+    it 'matches another variant of the language when the portal has no bare locale' do
+      portal.update!(config: { allowed_locales: %w[en pt_BR], default_locale: 'en' })
+
+      expect(portal.locale_for_languages(%w[pt-PT en])).to eq('pt_BR')
+    end
+
+    it 'follows the visitor preference order' do
+      expect(portal.locale_for_languages(%w[de es-MX en])).to eq('es')
+    end
+
+    it 'skips drafted locales' do
+      expect(portal.locale_for_languages(%w[fr es])).to eq('es')
+    end
+
+    it 'returns the default locale when nothing matches' do
+      expect(portal.locale_for_languages(%w[de ja])).to eq('en')
+      expect(portal.locale_for_languages([])).to eq('en')
+    end
+  end
 end

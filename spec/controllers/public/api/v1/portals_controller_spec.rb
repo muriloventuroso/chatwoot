@@ -19,6 +19,14 @@ RSpec.describe Public::Api::V1::PortalsController, type: :request do
       expect(response).to redirect_to("/hc/#{portal.slug}/#{portal.default_locale}")
     end
 
+    it 'redirects to the portal locale that matches the browser language' do
+      portal.update!(config: { allowed_locales: %w[en pt_BR], default_locale: 'en' })
+
+      get "/hc/#{portal.slug}", headers: { 'Accept-Language' => 'pt-BR,pt;q=0.9,en;q=0.8' }
+
+      expect(response).to redirect_to("/hc/#{portal.slug}/pt_BR")
+    end
+
     it 'Show portal and categories belonging to the portal' do
       get "/hc/#{portal.slug}/en"
 

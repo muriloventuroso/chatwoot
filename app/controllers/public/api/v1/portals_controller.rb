@@ -31,6 +31,6 @@ class Public::Api::V1::PortalsController < Public::Api::V1::Portals::BaseControl
     return if params[:locale].present?
 
     portal
-    redirect_to "/hc/#{@portal.slug}/#{@portal.default_locale}"
+    redirect_to "/hc/#{@portal.slug}/#{portal_locale_from_browser(@portal)}"
   end
 end
