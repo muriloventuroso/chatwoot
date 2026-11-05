@@ -3,6 +3,9 @@ import SearchSuggestions from './SearchSuggestions.vue';
 import PublicSearchInput from './PublicSearchInput.vue';
 
 import ArticlesAPI from '../api/article';
+import { useAbortableRequest } from 'dashboard/composables/useAbortableRequest';
+
+const SEARCH_DEBOUNCE_MS = 300;
 
 export default {
   components: {
@@ -21,6 +24,10 @@ export default {
     },
   },
   emits: ['input', 'blur'],
+  setup() {
+    const { run: runSearch, abort: abortSearch } = useAbortableRequest();
+    return { runSearch, abortSearch };
+  },
   data() {
     return {
       searchTerm: '',
@@ -77,6 +84,7 @@ export default {
       if (this.typingTimer) {
         clearTimeout(this.typingTimer);
       }
+      this.abortSearch();
 
       if (this.normalizedSearchTerm === '') {
         this.searchResults = [];
@@ -89,7 +97,7 @@ export default {
       this.isLoading = true;
       this.typingTimer = setTimeout(() => {
         this.fetchArticlesByQuery();
-      }, 1000);
+      }, SEARCH_DEBOUNCE_MS);
     },
     onChange(e) {
       this.$emit('input', e.target.value);
@@ -123,20 +131,21 @@ export default {
         return;
       }
 
+      this.isLoading = true;
+      this.searchResults = [];
       try {
-        this.isLoading = true;
-        this.searchResults = [];
-        const { data } = await ArticlesAPI.searchArticles(
-          this.portalSlug,
-          this.localeCode,
-          query
+        const response = await this.runSearch(signal =>
+          ArticlesAPI.searchArticles(this.portalSlug, this.localeCode, query, {
+            signal,
+          })
         );
-        this.searchResults = data.payload;
+        // A newer keystroke cancelled this request and now owns the loading state.
+        if (!response) return;
+        this.searchResults = response.data.payload;
       } catch (error) {
         // Show something wrong message
-      } finally {
-        this.isLoading = false;
       }
+      this.isLoading = false;
     },
     handleSubmit() {
       const query = this.normalizedSearchTerm;

@@ -7,9 +7,14 @@ class ArticlesAPI {
     this.baseUrl = '';
   }
 
-  searchArticles(portalSlug, locale, query) {
-    let baseUrl = `${this.baseUrl}/hc/${portalSlug}/${locale}/articles.json?query=${query}&per_page=${SEARCH_SUGGESTIONS_LIMIT}`;
-    return axios.get(baseUrl);
+  searchArticles(portalSlug, locale, query, { signal } = {}) {
+    return axios.get(
+      `${this.baseUrl}/hc/${portalSlug}/${locale}/articles.json`,
+      {
+        params: { query, per_page: SEARCH_SUGGESTIONS_LIMIT },
+        signal,
+      }
+    );
   }
 }
 

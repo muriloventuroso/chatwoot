@@ -73,8 +73,34 @@ describe('PublicArticleSearch', () => {
     expect(ArticlesAPI.searchArticles).toHaveBeenCalledWith(
       'test-portal',
       'en',
-      'chatwoot'
+      'chatwoot',
+      { signal: expect.any(AbortSignal) }
     );
+  });
+
+  it('ignores a slower response for a query the user already changed', async () => {
+    const pending = {};
+    ArticlesAPI.searchArticles.mockImplementation(
+      (_slug, _locale, query, { signal }) =>
+        new Promise((resolve, reject) => {
+          pending[query] = resolve;
+          signal.addEventListener('abort', () =>
+            reject(new DOMException('Aborted', 'AbortError'))
+          );
+        })
+    );
+    const wrapper = buildWrapper();
+
+    wrapper.vm.onUpdateSearchTerm('ref');
+    vi.runAllTimers();
+    wrapper.vm.onUpdateSearchTerm('refund');
+    vi.runAllTimers();
+    pending.refund({ data: { payload: [{ id: 2 }] } });
+    pending.ref({ data: { payload: [{ id: 1 }] } });
+    await flushPromises();
+
+    expect(wrapper.vm.searchResults).toEqual([{ id: 2 }]);
+    expect(wrapper.vm.isLoading).toBe(false);
   });
 
   it('passes the trimmed search term to suggestions for highlighting', async () => {
