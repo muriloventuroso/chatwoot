@@ -5,12 +5,8 @@ class Api::V1::Accounts::ProjectTasksController < Api::V1::Accounts::BaseControl
   before_action -> { authorize(@project_task) }, only: [:move]
 
   def index
-    if params[:status].present? && ProjectTask.statuses.keys.exclude?(params[:status])
-      return render_could_not_create_error('Invalid status')
-    end
-    if params[:priority].present? && ProjectTask.priorities.keys.exclude?(params[:priority])
-      return render_could_not_create_error('Invalid priority')
-    end
+    return render_could_not_create_error('Invalid status') if params[:status].present? && ProjectTask.statuses.keys.exclude?(params[:status])
+    return render_could_not_create_error('Invalid priority') if params[:priority].present? && ProjectTask.priorities.keys.exclude?(params[:priority])
 
     @project_tasks = @project.tasks.root.includes(:assignee, :subtasks, attachments_attachments: :blob).ordered
     @project_tasks = filter_tasks(@project_tasks)

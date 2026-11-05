@@ -49,8 +49,8 @@ class ProjectTask < ApplicationRecord
   validate :assignee_belongs_to_account
 
   before_validation :set_account_from_project
-  before_create :set_position, if: -> { position.to_f.zero? }
   before_save :sync_completed_at
+  before_create :set_position, if: -> { position.to_f.zero? }
 
   scope :root, -> { where(parent_task_id: nil) }
   scope :ordered, -> { order(:position, :created_at) }

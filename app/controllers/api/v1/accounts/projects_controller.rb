@@ -3,9 +3,7 @@ class Api::V1::Accounts::ProjectsController < Api::V1::Accounts::BaseController
   before_action -> { check_authorization(Project) }
 
   def index
-    if params[:status].present? && Project.statuses.keys.exclude?(params[:status])
-      return render_could_not_create_error('Invalid status')
-    end
+    return render_could_not_create_error('Invalid status') if params[:status].present? && Project.statuses.keys.exclude?(params[:status])
 
     @projects = Current.account.projects.includes(:members, :root_tasks).ordered
     @projects = @projects.where(status: params[:status]) if params[:status].present?

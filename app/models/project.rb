@@ -26,7 +26,8 @@ class Project < ApplicationRecord
   has_many :project_members, dependent: :destroy
   has_many :members, through: :project_members, source: :user
   has_many :tasks, class_name: 'ProjectTask', dependent: :destroy
-  has_many :root_tasks, -> { where(parent_task_id: nil) }, class_name: 'ProjectTask', inverse_of: :project
+  # Read-only subset of `tasks`, which already destroys them.
+  has_many :root_tasks, -> { where(parent_task_id: nil) }, class_name: 'ProjectTask', inverse_of: :project, dependent: nil
 
   enum :status, { active: 0, completed: 1, archived: 2 }, validate: true
 

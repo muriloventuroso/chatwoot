@@ -46,7 +46,7 @@
 #  index_users_on_uid_and_provider        (uid,provider) UNIQUE
 #
 
-class User < ApplicationRecord
+class User < ApplicationRecord # rubocop:disable Metrics/ClassLength
   include AccessTokenable
   include Avatarable
   # Include default devise modules.
