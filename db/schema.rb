@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.2].define(version: 2026_11_04_191155) do
+ActiveRecord::Schema[7.2].define(version: 2026_11_05_150343) do
   # These extensions should be enabled to support this database
   enable_extension "pg_stat_statements"
   enable_extension "pg_trgm"
@@ -1320,6 +1320,7 @@ ActiveRecord::Schema[7.2].define(version: 2026_11_04_191155) do
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.index ["account_id"], name: "index_inbox_holidays_on_account_id"
+    t.index ["inbox_id", "month", "year", "day"], name: "index_inbox_holidays_on_inbox_id_and_month_and_year_and_day", unique: true, nulls_not_distinct: true
     t.index ["inbox_id"], name: "index_inbox_holidays_on_inbox_id"
   end
 

@@ -53,11 +53,11 @@ class Sla::BusinessHoursService
   end
 
   def specific_holiday_dates
-    @specific_holiday_dates ||= holidays.reject(&:recurring?).map { |holiday| Date.new(holiday.year, holiday.month, holiday.day) }.to_set
+    @specific_holiday_dates ||= holidays.reject(&:recurring?).to_set { |holiday| Date.new(holiday.year, holiday.month, holiday.day) }
   end
 
   def recurring_holiday_month_days
-    @recurring_holiday_month_days ||= holidays.select(&:recurring?).map { |holiday| [holiday.month, holiday.day] }.to_set
+    @recurring_holiday_month_days ||= holidays.select(&:recurring?).to_set { |holiday| [holiday.month, holiday.day] }
   end
 
   def holidays

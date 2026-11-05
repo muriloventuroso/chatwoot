@@ -10,7 +10,7 @@ class Integrations::Openai::ConversationSummaryService
   pattr_initialize [:conversation!, :user!]
 
   def self.summarizable?(conversation)
-    conversation.messages.where(message_type: [:incoming, :outgoing], private: false).exists?
+    conversation.messages.exists?(message_type: [:incoming, :outgoing], private: false)
   end
 
   def perform

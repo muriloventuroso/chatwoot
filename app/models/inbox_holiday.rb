@@ -15,8 +15,9 @@
 #
 # Indexes
 #
-#  index_inbox_holidays_on_account_id  (account_id)
-#  index_inbox_holidays_on_inbox_id    (inbox_id)
+#  index_inbox_holidays_on_account_id                           (account_id)
+#  index_inbox_holidays_on_inbox_id                             (inbox_id)
+#  index_inbox_holidays_on_inbox_id_and_month_and_year_and_day  (inbox_id,month,year,day) UNIQUE NULLS NOT DISTINCT
 #
 class InboxHoliday < ApplicationRecord
   # Leap year used to validate recurring dates, so Feb 29 is accepted and

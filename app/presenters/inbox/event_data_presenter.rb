@@ -1,5 +1,5 @@
 class Inbox::EventDataPresenter < SimpleDelegator
-  def push_data
+  def push_data # rubocop:disable Metrics/MethodLength
     {
       # Conversation thread config
       allow_messages_after_resolved: allow_messages_after_resolved,
