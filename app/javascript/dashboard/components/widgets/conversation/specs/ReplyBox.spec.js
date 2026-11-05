@@ -48,6 +48,8 @@ const buildStore = ({
   inboxes,
   isMetaMessageSendingDisabled = false,
   uiSettings = {},
+  // Administrators reply on any conversation, which keeps the assignment gate out of tests about something else.
+  currentRole = 'administrator',
 }) =>
   createStore({
     state: {
@@ -74,6 +76,7 @@ const buildStore = ({
     getters: {
       getSelectedChat: s => s.chat,
       getCurrentUser: () => ({ id: 7, name: 'Agent', accounts: [] }),
+      getCurrentRole: () => currentRole,
       getCurrentAccountId: () => 1,
       getMessageSignature: () => '',
       getUISettings: () => uiSettings,
@@ -112,6 +115,7 @@ const mountWith = ({
   inboxes,
   isMetaMessageSendingDisabled,
   uiSettings,
+  currentRole,
 }) => {
   const store = buildStore({
     inbox,
@@ -121,6 +125,7 @@ const mountWith = ({
     inboxes,
     isMetaMessageSendingDisabled,
     uiSettings,
+    currentRole,
   });
   const wrapper = shallowMount(ReplyBox, {
     global: {
@@ -154,6 +159,48 @@ const editor = wrapper =>
   wrapper.findComponent({ name: 'WootMessageEditor' }).props();
 
 describe('ReplyBox', () => {
+  describe('replying without the assignment', () => {
+    const typeAsAgent = async chat => {
+      const { wrapper } = mountWith({
+        inbox: { channel_type: 'Channel::WebWidget' },
+        chat,
+        currentRole: 'agent',
+      });
+      await flushPromises();
+      wrapper.vm.message = 'hello';
+      return wrapper;
+    };
+
+    it('blocks an agent from replying on a conversation assigned to nobody', async () => {
+      const wrapper = await typeAsAgent();
+
+      expect(wrapper.vm.isReplyButtonDisabled).toBe(true);
+    });
+
+    it('blocks an agent from replying on a colleague conversation', async () => {
+      const wrapper = await typeAsAgent({
+        meta: { sender: { id: 2 }, assignee: { id: 8 } },
+      });
+
+      expect(wrapper.vm.isReplyButtonDisabled).toBe(true);
+    });
+
+    it('still lets the agent write a private note', async () => {
+      const wrapper = await typeAsAgent();
+      wrapper.vm.replyType = REPLY_EDITOR_MODES.NOTE;
+
+      expect(wrapper.vm.isReplyButtonDisabled).toBe(false);
+    });
+
+    it('lets the assignee reply', async () => {
+      const wrapper = await typeAsAgent({
+        meta: { sender: { id: 2 }, assignee: { id: 7 } },
+      });
+
+      expect(wrapper.vm.isReplyButtonDisabled).toBe(false);
+    });
+  });
+
   describe('Instagram incident restriction', () => {
     it('opens in note mode and restores only the private-note draft', async () => {
       const { wrapper, store } = mountWith({

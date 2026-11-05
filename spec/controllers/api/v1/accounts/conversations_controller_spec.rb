@@ -666,6 +666,20 @@ RSpec.describe 'Conversations API', type: :request do
           expect(account.conversations.find_by(display_id: response_data[:id]).messages.outgoing.first.content).to eq 'hi'
         end
 
+        it 'refuses the message and keeps no conversation when it lands on another agent' do
+          colleague = create(:user, account: account, role: :agent)
+          create(:inbox_member, user: colleague, inbox: inbox)
+
+          expect do
+            post "/api/v1/accounts/#{account.id}/conversations",
+                 headers: agent.create_new_auth_token,
+                 params: { source_id: contact_inbox.source_id, assignee_id: colleague.id, message: { content: 'hi' } },
+                 as: :json
+          end.not_to change(Conversation, :count)
+
+          expect(response).to have_http_status(:unauthorized)
+        end
+
         it 'calls contact inbox builder if contact_id and inbox_id is present' do
           builder = double
           allow(Rails.configuration.dispatcher).to receive(:dispatch)
@@ -2063,7 +2077,8 @@ RSpec.describe 'Conversations API', type: :request do
 
       freeze_time do
         post "/api/v1/accounts/#{account.id}/conversations",
-             params: { inbox_id: channel.inbox.id, contact_id: contact.id, source_id: '558588246590', message: { content: 'Boa tarde' } },
+             params: { inbox_id: channel.inbox.id, contact_id: contact.id, source_id: '558588246590', assignee_id: agent.id,
+                       message: { content: 'Boa tarde' } },
              headers: agent.create_new_auth_token, as: :json
 
         expect(response).to have_http_status(:success)
@@ -2076,7 +2091,8 @@ RSpec.describe 'Conversations API', type: :request do
         .and_return({ 'jid' => '558588246590@s.whatsapp.net', 'exists' => true })
 
       post "/api/v1/accounts/#{account.id}/conversations",
-           params: { inbox_id: channel.inbox.id, contact_id: contact.id, source_id: '558588246590', message: { content: 'Boa tarde' } },
+           params: { inbox_id: channel.inbox.id, contact_id: contact.id, source_id: '558588246590', assignee_id: agent.id,
+                     message: { content: 'Boa tarde' } },
            headers: agent.create_new_auth_token, as: :json
 
       expect(response).to have_http_status(:success)

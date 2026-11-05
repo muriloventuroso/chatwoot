@@ -25,6 +25,28 @@ RSpec.describe ConversationPolicy, type: :policy do
     end
   end
 
+  permissions :reply? do
+    it 'allows an administrator on a conversation assigned to nobody' do
+      expect(subject).to permit(administrator_context, conversation)
+    end
+
+    it 'allows the agent the conversation is assigned to' do
+      conversation.update!(assignee: agent)
+
+      expect(subject).to permit(agent_context, conversation)
+    end
+
+    it 'denies an agent on a conversation assigned to nobody' do
+      expect(subject).not_to permit(agent_context, conversation)
+    end
+
+    it 'denies an agent on a conversation assigned to someone else' do
+      conversation.update!(assignee: administrator)
+
+      expect(subject).not_to permit(agent_context, conversation)
+    end
+  end
+
   permissions :index? do
     context 'when user is authenticated' do
       it 'allows index' do

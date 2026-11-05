@@ -243,6 +243,7 @@ export default {
     ...mapGetters({
       currentChat: 'getSelectedChat',
       currentUser: 'getCurrentUser',
+      currentRole: 'getCurrentRole',
       lastEmail: 'getLastEmailInSelectedChat',
       globalConfig: 'globalConfig/get',
       isMetaMessageSendingDisabled: 'globalConfig/isMetaMessageSendingDisabled',
@@ -451,8 +452,16 @@ export default {
     charactersRemaining() {
       return this.maxLength - this.message.length;
     },
+    // Mirrors ConversationPolicy#reply?: agents answer the contact only on their own conversations.
+    mustSelfAssignToReply() {
+      return (
+        !this.isPrivate &&
+        this.currentRole !== 'administrator' &&
+        this.currentChat?.meta?.assignee?.id !== this.currentUser.id
+      );
+    },
     isReplyButtonDisabled() {
-      if (this.isEditorDisabled) return true;
+      if (this.isEditorDisabled || this.mustSelfAssignToReply) return true;
       if (this.isATwitterInbox) return true;
       if (this.hasAttachments || this.hasRecordedAudio) return false;
 

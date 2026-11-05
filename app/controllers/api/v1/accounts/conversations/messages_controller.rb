@@ -2,6 +2,7 @@ class Api::V1::Accounts::Conversations::MessagesController < Api::V1::Accounts::
   include Events::Types
 
   before_action :ensure_api_inbox, only: :update
+  before_action :ensure_can_reply, only: :create
 
   def index
     @messages = message_finder.perform
@@ -200,6 +201,13 @@ class Api::V1::Accounts::Conversations::MessagesController < Api::V1::Accounts::
     message.announce_restored_body
   rescue StandardError => e
     Rails.logger.error "Failed to announce the restored content: #{e.message}"
+  end
+
+  # Notes and contact-side messages an API integration posts are not a reply to the contact.
+  def ensure_can_reply
+    return if ActiveModel::Type::Boolean.new.cast(params[:private]) || params[:message_type].to_s == 'incoming'
+
+    authorize @conversation, :reply?
   end
 
   # API inbox check

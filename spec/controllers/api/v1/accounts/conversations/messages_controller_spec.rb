@@ -20,6 +20,7 @@ RSpec.describe 'Conversation Messages API', type: :request do
 
       before do
         create(:inbox_member, inbox: conversation.inbox, user: agent)
+        conversation.update!(assignee: agent)
       end
 
       it 'creates a new outgoing message' do
@@ -229,6 +230,36 @@ RSpec.describe 'Conversation Messages API', type: :request do
                                       }
                                     } }))
         end
+      end
+    end
+
+    context 'when the agent is not the assignee' do
+      let(:agent) { create(:user, account: account, role: :agent) }
+      let(:url) { api_v1_account_conversation_messages_url(account_id: account.id, conversation_id: conversation.display_id) }
+
+      before { create(:inbox_member, inbox: inbox, user: agent) }
+
+      it 'refuses a reply to the contact' do
+        post url, params: { content: 'test-message' }, headers: agent.create_new_auth_token, as: :json
+
+        expect(response).to have_http_status(:unauthorized)
+        expect(conversation.messages).to be_empty
+      end
+
+      it 'still takes a private note' do
+        post url, params: { content: 'test-message', private: true }, headers: agent.create_new_auth_token, as: :json
+
+        expect(response).to have_http_status(:success)
+        expect(conversation.messages.last.private).to be(true)
+      end
+
+      it 'lets an administrator reply' do
+        administrator = create(:user, account: account, role: :administrator)
+
+        post url, params: { content: 'test-message' }, headers: administrator.create_new_auth_token, as: :json
+
+        expect(response).to have_http_status(:success)
+        expect(conversation.messages.outgoing.count).to eq(1)
       end
     end
 
@@ -535,6 +566,7 @@ RSpec.describe 'Conversation Messages API', type: :request do
 
     before do
       create(:inbox_member, inbox: conversation.inbox, user: agent)
+      conversation.update!(assignee: agent)
       allow(Rails.logger).to receive(:error)
     end
 

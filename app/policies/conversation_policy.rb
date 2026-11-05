@@ -11,6 +11,11 @@ class ConversationPolicy < ApplicationPolicy
     administrator? || agent_bot? || agent_can_view_conversation?
   end
 
+  # Only the assignee talks to the contact; admins may step in anywhere, private notes are not gated.
+  def reply?
+    administrator? || agent_bot? || assigned_to_user?
+  end
+
   # Narrower than `show?`, which lets any bot in the account read any conversation. A read
   # receipt is not a read: it puts the blue tick on the contact's phone, so it is limited to
   # the bot that actually serves the thread.
