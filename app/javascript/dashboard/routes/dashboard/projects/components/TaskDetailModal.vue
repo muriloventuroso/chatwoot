@@ -11,6 +11,7 @@ import Dialog from 'dashboard/components-next/dialog/Dialog.vue';
 import Icon from 'dashboard/components-next/icon/Icon.vue';
 import Input from 'dashboard/components-next/input/Input.vue';
 import TextArea from 'dashboard/components-next/textarea/TextArea.vue';
+import ProjectSelect from './ProjectSelect.vue';
 import {
   nextColumnPosition,
   progressWidthClass,
@@ -28,6 +29,25 @@ const { t } = useI18n();
 const store = useStore();
 const { isAdmin } = useAdmin();
 const currentUserId = useMapGetter('getCurrentUserID');
+
+const statusOptions = computed(() =>
+  TASK_STATUSES.map(status => ({
+    value: status,
+    label: t(`PROJECTS.TASK.STATUS.${status.toUpperCase()}`),
+  }))
+);
+
+const priorityOptions = computed(() =>
+  TASK_PRIORITIES.map(priority => ({
+    value: priority,
+    label: t(`PROJECTS.TASK.PRIORITY.${priority.toUpperCase()}`),
+  }))
+);
+
+const assigneeOptions = computed(() => [
+  { value: '', label: t('PROJECTS.TASK.FORM.UNASSIGNED') },
+  ...props.agents.map(agent => ({ value: agent.id, label: agent.name })),
+]);
 
 const dialogRef = ref(null);
 const deleteDialogRef = ref(null);
@@ -287,41 +307,12 @@ defineExpose({ open, close });
           auto-height
         />
         <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
-          <select
-            v-model="form.status"
-            class="h-10 px-3 text-sm border rounded-lg bg-n-solid-1 border-n-weak text-n-slate-12"
-          >
-            <option
-              v-for="status in TASK_STATUSES"
-              :key="status"
-              :value="status"
-            >
-              {{ t(`PROJECTS.TASK.STATUS.${status.toUpperCase()}`) }}
-            </option>
-          </select>
-          <select
-            v-model="form.priority"
-            class="h-10 px-3 text-sm border rounded-lg bg-n-solid-1 border-n-weak text-n-slate-12"
-          >
-            <option
-              v-for="priority in TASK_PRIORITIES"
-              :key="priority"
-              :value="priority"
-            >
-              {{ t(`PROJECTS.TASK.PRIORITY.${priority.toUpperCase()}`) }}
-            </option>
-          </select>
-          <select
+          <ProjectSelect v-model="form.status" :options="statusOptions" />
+          <ProjectSelect v-model="form.priority" :options="priorityOptions" />
+          <ProjectSelect
             v-model="form.assignee_id"
-            class="h-10 px-3 text-sm border rounded-lg bg-n-solid-1 border-n-weak text-n-slate-12"
-          >
-            <option value="">
-              {{ t('PROJECTS.TASK.FORM.UNASSIGNED') }}
-            </option>
-            <option v-for="agent in agents" :key="agent.id" :value="agent.id">
-              {{ agent.name }}
-            </option>
-          </select>
+            :options="assigneeOptions"
+          />
           <Input v-model="form.due_date" type="date" />
         </div>
         <div class="flex items-center justify-between gap-3">

@@ -7,6 +7,7 @@ import Button from 'dashboard/components-next/button/Button.vue';
 import Dialog from 'dashboard/components-next/dialog/Dialog.vue';
 import Input from 'dashboard/components-next/input/Input.vue';
 import TextArea from 'dashboard/components-next/textarea/TextArea.vue';
+import ProjectSelect from './ProjectSelect.vue';
 import {
   PROJECT_COLOR_CLASS,
   PROJECT_COLORS,
@@ -27,6 +28,13 @@ const form = reactive({
   start_date: '',
   end_date: '',
 });
+
+const statusOptions = computed(() =>
+  PROJECT_STATUSES.map(status => ({
+    value: status,
+    label: t(`PROJECTS.STATUS.${status.toUpperCase()}`),
+  }))
+);
 
 const isEditing = computed(() => editingId.value !== null);
 const isFormInvalid = computed(() => !form.name.trim());
@@ -105,18 +113,7 @@ defineExpose({ open, close });
           <label class="text-sm font-medium text-n-slate-12">
             {{ t('PROJECTS.FORM.STATUS') }}
           </label>
-          <select
-            v-model="form.status"
-            class="w-full h-10 px-3 text-sm border rounded-lg bg-n-solid-1 border-n-weak text-n-slate-12"
-          >
-            <option
-              v-for="status in PROJECT_STATUSES"
-              :key="status"
-              :value="status"
-            >
-              {{ t(`PROJECTS.STATUS.${status.toUpperCase()}`) }}
-            </option>
-          </select>
+          <ProjectSelect v-model="form.status" :options="statusOptions" />
         </div>
         <div class="flex flex-col gap-1">
           <label class="text-sm font-medium text-n-slate-12">

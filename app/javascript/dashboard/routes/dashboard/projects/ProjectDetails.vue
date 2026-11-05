@@ -14,6 +14,7 @@ import Spinner from 'dashboard/components-next/spinner/Spinner.vue';
 import { SET_PROJECT_TASK } from 'dashboard/store/modules/projects/types';
 import ProjectBoard from './components/ProjectBoard.vue';
 import ProjectFormModal from './components/ProjectFormModal.vue';
+import ProjectSelect from './components/ProjectSelect.vue';
 import TaskDetailModal from './components/TaskDetailModal.vue';
 import TaskListView from './components/TaskListView.vue';
 import {
@@ -34,7 +35,6 @@ const searchQuery = ref('');
 const assigneeFilter = ref('');
 const priorityFilter = ref('');
 const onlyMine = ref(false);
-const memberToAdd = ref('');
 const formModalRef = ref(null);
 const taskModalRef = ref(null);
 const isLoading = ref(false);
@@ -73,10 +73,27 @@ const filteredTasks = computed(() => {
   });
 });
 
-const availableAgents = computed(() => {
+const toAgentOption = agent => ({ value: agent.id, label: agent.name });
+
+const addMemberOptions = computed(() => {
   const memberIds = new Set(members.value.map(member => member.user_id));
-  return agents.value.filter(agent => !memberIds.has(agent.id));
+  return agents.value
+    .filter(agent => !memberIds.has(agent.id))
+    .map(toAgentOption);
 });
+
+const assigneeOptions = computed(() => [
+  { value: '', label: t('PROJECTS.DETAILS.ALL_ASSIGNEES') },
+  ...agents.value.map(toAgentOption),
+]);
+
+const priorityOptions = computed(() => [
+  { value: '', label: t('PROJECTS.DETAILS.ALL_PRIORITIES') },
+  ...TASK_PRIORITIES.map(priority => ({
+    value: priority,
+    label: t(`PROJECTS.TASK.PRIORITY.${priority.toUpperCase()}`),
+  })),
+]);
 
 const loadProject = async () => {
   isLoading.value = true;
@@ -181,14 +198,12 @@ const handleUpdateTask = async ({ task, changes }) => {
 const openTask = task => taskModalRef.value?.open({ task });
 const openNewTask = () => taskModalRef.value?.open({ status: 'todo' });
 
-const addMember = async () => {
-  if (!memberToAdd.value) return;
+const addMember = async userId => {
   try {
     await store.dispatch('projects/addMembers', {
       projectId: projectId.value,
-      userIds: [Number(memberToAdd.value)],
+      userIds: [userId],
     });
-    memberToAdd.value = '';
   } catch (error) {
     useAlert(t('PROJECTS.MESSAGES.UPDATE_ERROR'));
   }
@@ -318,22 +333,13 @@ const projectDates = computed(() => {
                 <Icon icon="i-lucide-x" class="size-3" />
               </button>
             </div>
-            <select
-              v-model="memberToAdd"
-              class="h-8 px-2 text-sm border rounded-md bg-n-solid-1 border-n-weak text-n-slate-12"
-              @change="addMember"
-            >
-              <option value="">
-                {{ t('PROJECTS.MEMBERS.ADD') }}
-              </option>
-              <option
-                v-for="agent in availableAgents"
-                :key="agent.id"
-                :value="agent.id"
-              >
-                {{ agent.name }}
-              </option>
-            </select>
+            <ProjectSelect
+              model-value=""
+              :options="addMemberOptions"
+              :placeholder="t('PROJECTS.MEMBERS.ADD')"
+              trigger-class="h-8 bg-n-solid-1 text-n-slate-12"
+              @update:model-value="addMember"
+            />
           </div>
         </div>
         <div class="flex flex-col gap-3 lg:flex-row lg:items-center">
@@ -356,32 +362,8 @@ const projectDates = computed(() => {
             class="lg:max-w-xs"
             :placeholder="t('PROJECTS.DETAILS.SEARCH_TASKS')"
           />
-          <select
-            v-model="assigneeFilter"
-            class="h-10 px-3 text-sm border rounded-lg bg-n-solid-1 border-n-weak text-n-slate-12"
-          >
-            <option value="">
-              {{ t('PROJECTS.DETAILS.ALL_ASSIGNEES') }}
-            </option>
-            <option v-for="agent in agents" :key="agent.id" :value="agent.id">
-              {{ agent.name }}
-            </option>
-          </select>
-          <select
-            v-model="priorityFilter"
-            class="h-10 px-3 text-sm border rounded-lg bg-n-solid-1 border-n-weak text-n-slate-12"
-          >
-            <option value="">
-              {{ t('PROJECTS.DETAILS.ALL_PRIORITIES') }}
-            </option>
-            <option
-              v-for="priority in TASK_PRIORITIES"
-              :key="priority"
-              :value="priority"
-            >
-              {{ t(`PROJECTS.TASK.PRIORITY.${priority.toUpperCase()}`) }}
-            </option>
-          </select>
+          <ProjectSelect v-model="assigneeFilter" :options="assigneeOptions" />
+          <ProjectSelect v-model="priorityFilter" :options="priorityOptions" />
           <label class="flex items-center gap-2 text-sm text-n-slate-12">
             <input v-model="onlyMine" type="checkbox" />
             {{ t('PROJECTS.DETAILS.ONLY_MINE') }}

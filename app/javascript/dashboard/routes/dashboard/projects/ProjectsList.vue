@@ -13,6 +13,7 @@ import Dialog from 'dashboard/components-next/dialog/Dialog.vue';
 import Input from 'dashboard/components-next/input/Input.vue';
 import Spinner from 'dashboard/components-next/spinner/Spinner.vue';
 import ProjectFormModal from './components/ProjectFormModal.vue';
+import ProjectSelect from './components/ProjectSelect.vue';
 import {
   PROJECT_COLOR_CLASS,
   PROJECT_STATUSES,
@@ -46,6 +47,14 @@ const fetchProjects = async () => {
 };
 
 onMounted(fetchProjects);
+
+const statusOptions = computed(() => [
+  { value: '', label: t('PROJECTS.FILTERS.STATUS_ALL') },
+  ...PROJECT_STATUSES.map(status => ({
+    value: status,
+    label: t(`PROJECTS.STATUS.${status.toUpperCase()}`),
+  })),
+]);
 
 const filteredProjects = computed(() => {
   const query = searchQuery.value.trim();
@@ -140,22 +149,11 @@ const colorClass = project =>
           class="md:max-w-sm"
           :placeholder="t('PROJECTS.SEARCH_PLACEHOLDER')"
         />
-        <select
+        <ProjectSelect
           v-model="statusFilter"
-          class="h-10 px-3 text-sm border rounded-lg bg-n-solid-1 border-n-weak text-n-slate-12"
-          @change="fetchProjects"
-        >
-          <option value="">
-            {{ t('PROJECTS.FILTERS.STATUS_ALL') }}
-          </option>
-          <option
-            v-for="status in PROJECT_STATUSES"
-            :key="status"
-            :value="status"
-          >
-            {{ t(`PROJECTS.STATUS.${status.toUpperCase()}`) }}
-          </option>
-        </select>
+          :options="statusOptions"
+          @update:model-value="fetchProjects"
+        />
         <label class="flex items-center gap-2 text-sm text-n-slate-12">
           <input v-model="onlyMine" type="checkbox" @change="fetchProjects" />
           {{ t('PROJECTS.FILTERS.MINE') }}
