@@ -201,6 +201,14 @@ RSpec.describe Article do
         expect(records.count).to eq(2)
       end
 
+      it 'matches text_search queries regardless of accents' do
+        create(:article, category_id: category_1.id, slug: 'configuracao', title: 'Configuração da conta', portal_id: portal_1.id,
+                         author_id: user.id)
+
+        expect(portal_1.articles.search({ query: 'configuracao' }).pluck(:slug)).to eq(['configuracao'])
+        expect(portal_1.articles.search({ query: 'cônfiguração' }).pluck(:slug)).to eq(['configuracao'])
+      end
+
       it 'returns data with text_search query and locale' do
         params = { query: 'title', locale: 'es' }
         records = portal_2.articles.search(params)

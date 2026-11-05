@@ -91,6 +91,7 @@ class Article < ApplicationRecord
   # - the normalization is for ensuring the long articles that mention the search term too many times are not ranked higher.
   #   it divides rank by log(document_length) to prevent longer articles from ranking higher just due to sizeSee: https://github.com/Casecommons/pg_search#normalization
   # - the ranking is to ensure that articles with higher weightage are ranked higher
+  # - ignoring accents lets "configuracao" match "configuração" (unaccent extension)
   pg_search_scope(
     :text_search,
     against: {
@@ -104,6 +105,7 @@ class Article < ApplicationRecord
         normalization: 2
       }
     },
+    ignoring: :accents,
     ranked_by: ':tsearch'
   )
 
