@@ -56,7 +56,9 @@ import {
 import fileUploadMixin from 'dashboard/mixins/fileUploadMixin';
 import {
   appendSignature,
+  getEffectiveChannelType,
   getReplyVariables,
+  stripUnsupportedMarkdown,
 } from 'dashboard/helper/editorHelper';
 import { useCopilotReply } from 'dashboard/composables/useCopilotReply';
 import { useMacroExecution } from 'dashboard/composables/useMacroExecution';
@@ -866,6 +868,10 @@ export default {
       this.onNewConversationModalActive
     );
     emitter.on(CMD_AI_ASSIST, this.executeCopilotAction);
+    emitter.on(
+      BUS_EVENTS.INSERT_INTO_RICH_EDITOR,
+      this.onInsertWhileCopilotActive
+    );
   },
   unmounted() {
     document.removeEventListener('paste', this.onPaste);
@@ -875,6 +881,10 @@ export default {
       this.onNewConversationModalActive
     );
     emitter.off(CMD_AI_ASSIST, this.executeCopilotAction);
+    emitter.off(
+      BUS_EVENTS.INSERT_INTO_RICH_EDITOR,
+      this.onInsertWhileCopilotActive
+    );
   },
   methods: {
     openContactInfoTemplateModal() {
@@ -1677,6 +1687,23 @@ export default {
       const acceptedMessage = this.copilot.accept();
       this.message = acceptedMessage;
       this.setCopilotAcceptedMessage(acceptedMessage);
+    },
+    onInsertWhileCopilotActive(content) {
+      if (!this.copilot.isActive.value) return;
+      this.copilot.reset();
+      const channelType = getEffectiveChannelType(
+        this.channelType,
+        this.inbox?.medium || ''
+      );
+      const insert = stripUnsupportedMarkdown(
+        content,
+        this.isPrivate ? 'Context::PrivateNote' : channelType,
+        false
+      );
+      // The signature is added at send time, so the draft has none to keep below the insert.
+      this.message = this.message.trim()
+        ? `${this.message.trimEnd()}\n${insert}`
+        : insert;
     },
   },
 };
