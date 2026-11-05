@@ -1,10 +1,14 @@
 <script setup>
-import { computed, onUnmounted } from 'vue';
+import { computed, onUnmounted, useTemplateRef } from 'vue';
 import { useToggle } from '@vueuse/core';
 import { useStore } from 'vuex';
+import { useRouter } from 'vue-router';
 import { useMapGetter } from 'dashboard/composables/store';
 import { useKeyboardEvents } from 'dashboard/composables/useKeyboardEvents';
 import { useAlert } from 'dashboard/composables';
+import { useAdmin } from 'dashboard/composables/useAdmin';
+import { useUISettings } from 'dashboard/composables/useUISettings';
+import { useConversationRoutePath } from 'dashboard/composables/useConversationRoutePath';
 import { useI18n } from 'vue-i18n';
 import { emitter } from 'shared/helpers/mitt';
 import wootConstants from 'dashboard/constants/globals';
@@ -12,6 +16,7 @@ import EmailTranscriptModal from './EmailTranscriptModal.vue';
 import ResolveAction from '../../buttons/ResolveAction.vue';
 import ButtonV4 from 'dashboard/components-next/button/Button.vue';
 import DropdownMenu from 'dashboard/components-next/dropdown-menu/DropdownMenu.vue';
+import Dialog from 'dashboard/components-next/dialog/Dialog.vue';
 
 import {
   CMD_MUTE_CONVERSATION,
@@ -23,7 +28,12 @@ import {
 
 // No props needed as we're getting currentChat from the store directly
 const store = useStore();
+const router = useRouter();
 const { t } = useI18n();
+const { isAdmin } = useAdmin();
+const { updateUISettings } = useUISettings();
+const { buildConversationListPath } = useConversationRoutePath();
+const deleteDialogRef = useTemplateRef('deleteDialogRef');
 
 const [showEmailActionsModal, toggleEmailModal] = useToggle(false);
 const [showActionsDropdown, toggleDropdown] = useToggle(false);
@@ -94,15 +104,67 @@ const actionMenuItems = computed(() => {
     });
   }
 
-  items.push({
-    icon: 'i-lucide-share',
-    label: t('CONTACT_PANEL.SEND_TRANSCRIPT'),
-    action: 'send_transcript',
-    value: 'send_transcript',
-  });
+  items.push(
+    {
+      icon: 'i-lucide-mail',
+      label: t('CONVERSATION.CARD_CONTEXT_MENU.MARK_AS_UNREAD'),
+      action: 'mark_unread',
+      value: 'mark_unread',
+    },
+    // Assignee, team, priority and labels live in the side panel, which is the only place a phone
+    // or the single-column layout can reach them: the list's right-click menu needs a mouse.
+    {
+      icon: 'i-lucide-sliders-horizontal',
+      label: t('CONVERSATION_SIDEBAR.ACCORDION.CONVERSATION_ACTIONS'),
+      action: 'conversation_actions',
+      value: 'conversation_actions',
+    },
+    {
+      icon: 'i-lucide-share',
+      label: t('CONTACT_PANEL.SEND_TRANSCRIPT'),
+      action: 'send_transcript',
+      value: 'send_transcript',
+    }
+  );
+
+  if (isAdmin.value) {
+    items.push({
+      icon: 'i-lucide-trash-2',
+      label: t('CONVERSATION.CARD_CONTEXT_MENU.DELETE'),
+      action: 'delete',
+      value: 'delete',
+    });
+  }
 
   return items;
 });
+
+const markAsUnread = async () => {
+  try {
+    await store.dispatch('markMessagesUnread', { id: currentChat.value.id });
+    router.push(buildConversationListPath());
+  } catch {
+    // Same as the list's context menu: a failed mark leaves the conversation as it was.
+  }
+};
+
+const openConversationActions = () =>
+  updateUISettings({
+    is_contact_sidebar_open: true,
+    is_copilot_panel_open: false,
+    is_conv_actions_open: true,
+  });
+
+const deleteConversation = async () => {
+  try {
+    await store.dispatch('deleteConversation', currentChat.value.id);
+    deleteDialogRef.value.close();
+    router.push(buildConversationListPath());
+    useAlert(t('CONVERSATION.SUCCESS_DELETE_CONVERSATION'));
+  } catch {
+    useAlert(t('CONVERSATION.FAIL_DELETE_CONVERSATION'));
+  }
+};
 
 const handleActionClick = ({ action }) => {
   toggleDropdown(false);
@@ -117,6 +179,12 @@ const handleActionClick = ({ action }) => {
     togglePin();
   } else if (action === 'send_transcript') {
     toggleEmailModal();
+  } else if (action === 'mark_unread') {
+    markAsUnread();
+  } else if (action === 'conversation_actions') {
+    openConversationActions();
+  } else if (action === 'delete') {
+    deleteDialogRef.value.open();
   }
 };
 
@@ -177,6 +245,18 @@ onUnmounted(() => {
       :show="showEmailActionsModal"
       :current-chat="currentChat"
       @cancel="toggleEmailModal"
+    />
+    <Dialog
+      ref="deleteDialogRef"
+      type="alert"
+      :title="
+        $t('CONVERSATION.DELETE_CONVERSATION.TITLE', {
+          conversationId: currentChat.id,
+        })
+      "
+      :description="$t('CONVERSATION.DELETE_CONVERSATION.DESCRIPTION')"
+      :confirm-button-label="$t('CONVERSATION.DELETE_CONVERSATION.CONFIRM')"
+      @confirm="deleteConversation"
     />
   </div>
 </template>
