@@ -55,7 +55,7 @@ const handleError = () => {
       </div>
       <video
         controls
-        class="rounded-lg skip-context-menu"
+        class="block max-h-80 rounded-lg skip-context-menu"
         :src="attachment.dataUrl"
         :class="{
           'max-w-48': isReel,
