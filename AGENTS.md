@@ -115,27 +115,18 @@ The rest of this section exists because that rule was broken once, and the damag
 
 ## Git Remotes & PRs
 
-This repo is a fork of `chatwoot/chatwoot`. Remotes and their roles:
+We work on `muriloventuroso/chatwoot`. It is a standalone repo on GitHub, not a fork, and it follows `fazer-ai/chatwoot` (which in turn tracks `chatwoot/chatwoot`). Remotes and their roles:
 
-- **origin** → `fazer-ai/chatwoot` (our CE fork). Feature/fix PRs from `main` target this repo.
-- **chatwoot-pro** → `fazer-ai/chatwoot-pro` (Pro fork). Its trunk is `main` there (`chatwoot-pro-main` is only the local branch name in the shared checkout), it receives CE work as a merge of CE's `main` and no PR of its own, and it carries the `vX.Y.Z-fazer-ai-pro.N` tags/releases. **Never open a PR on the Pro repo to port a change that is landing in CE** — see Pro repo gotchas.
-- **upstream** → `chatwoot/chatwoot` (Chatwoot OSS). Read-only / sync only (merge `develop` via the `sync-fork` skill). **Never open a PR against upstream.**
-
-⚠️ **`gh` fork gotcha:** because `origin` is a fork of `chatwoot/chatwoot`, `gh` resolves the PR base repo to the **parent (upstream)** when no default is set — so `gh pr create` silently opens the PR on `chatwoot/chatwoot`. Pin the base repo once per clone:
-
-```sh
-gh repo set-default fazer-ai/chatwoot   # writes remote.origin.gh-resolved=base
-```
-
-When unsure, be explicit: `gh pr create --repo fazer-ai/chatwoot` (for Pro PRs, `--repo fazer-ai/chatwoot-pro`).
+- **origin** → `muriloventuroso/chatwoot`. Every branch, commit, push and merge goes here.
+- **fazer-ai** → `fazer-ai/chatwoot`. **Read-only.** We only fetch its `main` and merge it into ours. Never push, open a PR, create a tag or cut a release there, and never touch `fazer-ai/chatwoot-pro` or `chatwoot/chatwoot`.
 
 ### Merge strategy
 
-- Default for every PR: `gh pr merge <n> --squash --admin`.
-- **Exception 1 — upstream sync PRs (`chore/merge-upstream-X.Y.Z`): merge with `--merge`, never `--squash`.** A squash drops the merge commit's second parent, so the upstream tag stops being an ancestor of `main`: GitHub reports `main` as permanently "N commits behind chatwoot:develop" (the count only grows), and the next sync bases on a stale tag and replays a whole version's diff as conflicts. After merging a sync PR, `git rev-list --count main..vX.Y.Z` must be 0 — when it isn't, see the `sync-fork` skill's **Repairing a squashed sync** recipe.
-- **Exception 2 — a PR whose branch Pro's trunk already contains: merge with `--merge`.** Same root cause pointing the other way. The squash lands a commit with no ancestry to the branch Pro already contains, so the next CE → Pro merge treats the whole delivery as new content and hands it back as conflicts. Measured on the i18n stack (#364/#365) on 2026-08-17: squash → 18 conflicting files in the CE → Pro sync, squash plus redoing the work on Pro → 8, merge commit → 0.
-- Before merging a delivery Pro already has, measure instead of guessing — in a throwaway worktree, run each candidate route as `git merge --no-commit --no-ff <ref>` and count `git diff --name-only --diff-filter=U`.
-- **Stacked PRs:** after the lower PR is squashed, the upper one needs `git rebase --onto origin/main <lower-branch> <upper-branch>` before it can merge. The squash leaves the upper PR's merge base at the original divergence point, so GitHub replays the lower PR's whole diff over the squash and conflicts even when the two trees are identical.
+- A finished branch reaches `main` by fast-forward: `git checkout main && git merge --ff-only <branch> && git push origin main`. If `main` has moved, rebase the branch onto it first.
+- To pull updates from fazer-ai: `git fetch fazer-ai main && git merge fazer-ai/main`, then `git push origin main`. Keep the merge commit and never squash or rebase it: the merge is what makes `fazer-ai/main` an ancestor of our `main`, and without it the next update replays the same changes as conflicts.
+- Run the specs for the areas the merge touched before pushing it.
+
+The sections **Release Notes**, **Cutting a release**, **Pro repo gotchas** and **CI: the CE spec workflow** describe how fazer-ai runs its own repos. They come in with fazer-ai's `main` and do not apply to work in this repo.
 
 ### Pro repo gotchas
 
