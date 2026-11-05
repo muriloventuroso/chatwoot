@@ -40,9 +40,11 @@ export const progressWidthClass = progress => {
   return PROGRESS_WIDTH_CLASS[bucket];
 };
 
-export const nextColumnPosition = (tasks, status, excludeId) => {
+export const nextColumnPosition = (tasks, columnId, excludeId) => {
   const positions = tasks
-    .filter(task => task.status === status && task.id !== excludeId)
+    .filter(
+      task => task.project_column_id === columnId && task.id !== excludeId
+    )
     .map(task => Number(task.position) || 0);
   return Math.max(0, ...positions) + 1;
 };

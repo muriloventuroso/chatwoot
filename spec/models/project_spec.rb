@@ -22,6 +22,20 @@ RSpec.describe Project do
     expect(project.update(name: 'Renamed')).to be(true)
   end
 
+  describe 'default columns' do
+    it 'creates a to do, an in progress and a done column in order' do
+      expect(project.columns.map { |column| [column.name, column.category] }).to eq(
+        [['To do', 'todo'], ['In progress', 'in_progress'], %w[Done done]]
+      )
+    end
+
+    it 'names them in the current locale' do
+      I18n.with_locale(:pt_BR) do
+        expect(create(:project).columns.map(&:name)).to eq(['A fazer', 'Em andamento', 'Concluído'])
+      end
+    end
+  end
+
   describe '#progress' do
     it 'returns 0 when there are no tasks' do
       expect(project.progress).to eq(0)

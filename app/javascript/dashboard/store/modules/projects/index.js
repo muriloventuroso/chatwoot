@@ -7,6 +7,7 @@ const state = {
   tasks: {},
   comments: {},
   members: {},
+  columns: {},
   uiFlags: {
     isFetching: false,
     isCreating: false,

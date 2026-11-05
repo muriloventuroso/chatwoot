@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.2].define(version: 2026_11_05_175649) do
+ActiveRecord::Schema[7.2].define(version: 2026_11_05_223826) do
   # These extensions should be enabled to support this database
   enable_extension "pg_stat_statements"
   enable_extension "pg_trgm"
@@ -1756,6 +1756,16 @@ ActiveRecord::Schema[7.2].define(version: 2026_11_05_175649) do
     t.index ["user_id"], name: "index_portals_members_on_user_id"
   end
 
+  create_table "project_columns", force: :cascade do |t|
+    t.bigint "project_id", null: false
+    t.string "name", null: false
+    t.integer "category", default: 0, null: false
+    t.float "position", default: 0.0, null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["project_id"], name: "index_project_columns_on_project_id"
+  end
+
   create_table "project_members", force: :cascade do |t|
     t.bigint "project_id", null: false
     t.bigint "user_id", null: false
@@ -1792,10 +1802,12 @@ ActiveRecord::Schema[7.2].define(version: 2026_11_05_175649) do
     t.integer "comments_count", default: 0, null: false
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.bigint "project_column_id"
     t.index ["account_id"], name: "index_project_tasks_on_account_id"
     t.index ["assignee_id"], name: "index_project_tasks_on_assignee_id"
     t.index ["creator_id"], name: "index_project_tasks_on_creator_id"
     t.index ["parent_task_id"], name: "index_project_tasks_on_parent_task_id"
+    t.index ["project_column_id"], name: "index_project_tasks_on_project_column_id"
     t.index ["project_id", "parent_task_id", "status", "position"], name: "index_project_tasks_on_project_parent_status_position"
     t.index ["project_id"], name: "index_project_tasks_on_project_id"
   end

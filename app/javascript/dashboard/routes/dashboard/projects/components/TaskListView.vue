@@ -5,10 +5,11 @@ import { useI18n } from 'vue-i18n';
 import Avatar from 'dashboard/components-next/avatar/Avatar.vue';
 import { provideDropdownTeleport } from 'dashboard/components-next/dropdown-menu/base/provider';
 import ProjectSelect from './ProjectSelect.vue';
-import { PRIORITY_CLASS, TASK_PRIORITIES, TASK_STATUSES } from '../constants';
+import { PRIORITY_CLASS, TASK_PRIORITIES } from '../constants';
 
 const props = defineProps({
   tasks: { type: Array, default: () => [] },
+  columns: { type: Array, default: () => [] },
   agents: { type: Array, default: () => [] },
 });
 
@@ -18,11 +19,8 @@ const { t } = useI18n();
 // The table clips its overflow, so the menus of the last rows open on top of the page instead.
 provideDropdownTeleport();
 
-const statusOptions = computed(() =>
-  TASK_STATUSES.map(status => ({
-    value: status,
-    label: t(`PROJECTS.TASK.STATUS.${status.toUpperCase()}`),
-  }))
+const columnOptions = computed(() =>
+  props.columns.map(column => ({ value: column.id, label: column.name }))
 );
 
 const priorityOptions = computed(() =>
@@ -88,10 +86,12 @@ const updateField = (task, field, value) => {
           </td>
           <td class="px-4 py-2">
             <ProjectSelect
-              :model-value="task.status"
-              :options="statusOptions"
+              :model-value="task.project_column_id"
+              :options="columnOptions"
               trigger-class="h-8 bg-n-solid-1 text-n-slate-12"
-              @update:model-value="updateField(task, 'status', $event)"
+              @update:model-value="
+                updateField(task, 'project_column_id', $event)
+              "
             />
           </td>
           <td class="px-4 py-2">

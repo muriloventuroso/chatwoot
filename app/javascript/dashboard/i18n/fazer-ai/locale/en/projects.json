@@ -127,6 +127,34 @@
         "MESSAGE": "Are you sure you want to delete \"{name}\"? Its subtasks, comments and attachments will be removed.",
         "CONFIRM": "Delete"
       }
+    },
+    "COLUMNS": {
+      "ADD": "Add column",
+      "MENU": "Column actions",
+      "EDIT": "Edit column",
+      "MOVE_LEFT": "Move left",
+      "MOVE_RIGHT": "Move right",
+      "DELETE": "Delete column",
+      "FORM": {
+        "CREATE_TITLE": "New column",
+        "EDIT_TITLE": "Edit column",
+        "NAME": "Name",
+        "NAME_PLACEHOLDER": "E.g. Review",
+        "CATEGORY": "Type",
+        "CATEGORY_HELP": "Tasks in a Done column count as completed in the project progress.",
+        "SAVE": "Save"
+      },
+      "DELETE_DIALOG": {
+        "TITLE": "Delete column?",
+        "MESSAGE": "The column \"{name}\" will be removed from this project.",
+        "CONFIRM": "Delete"
+      },
+      "MESSAGES": {
+        "SAVE_ERROR": "Could not save the column",
+        "DELETE_ERROR": "Could not delete the column",
+        "NOT_EMPTY": "Move the tasks out of this column before deleting it",
+        "LAST_COLUMN": "A project needs at least one column"
+      }
     }
   }
 }

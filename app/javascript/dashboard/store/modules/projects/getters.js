@@ -22,6 +22,10 @@ export const getters = {
     Object.values($state.members).filter(
       member => member.project_id === Number(projectId)
     ),
+  getColumnsByProject: $state => projectId =>
+    Object.values($state.columns)
+      .filter(column => column.project_id === Number(projectId))
+      .sort((a, b) => a.position - b.position || a.id - b.id),
   getUIFlags($state) {
     return $state.uiFlags;
   },

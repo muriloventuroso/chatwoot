@@ -11,6 +11,9 @@ import {
   ADD_TASK_COMMENT,
   DELETE_TASK_COMMENT,
   SET_PROJECT_MEMBERS,
+  SET_PROJECT_COLUMNS,
+  SET_PROJECT_COLUMN,
+  DELETE_PROJECT_COLUMN,
 } from './types';
 
 export const actions = {
@@ -94,10 +97,9 @@ export const actions = {
     commit(DELETE_PROJECT_TASK, id);
   },
 
-  moveTask: async ({ commit }, { id, status, position }) => {
-    const response = await projectTasksAPI.move(id, {
-      project_task: { status, position },
-    });
+  // Root tasks move by `project_column_id`; subtasks have no column and move by `status`.
+  moveTask: async ({ commit }, { id, ...data }) => {
+    const response = await projectTasksAPI.move(id, { project_task: data });
     commit(SET_PROJECT_TASK, response.data);
     return response.data;
   },
@@ -130,6 +132,29 @@ export const actions = {
     const response = await projectTasksAPI.show(taskId);
     commit(SET_PROJECT_TASK, response.data);
     return response.data;
+  },
+
+  fetchColumns: async ({ commit }, projectId) => {
+    const response = await projectsAPI.getColumns(projectId);
+    commit(SET_PROJECT_COLUMNS, { projectId, columns: response.data });
+    return response.data;
+  },
+
+  createColumn: async ({ commit }, { projectId, ...data }) => {
+    const response = await projectsAPI.createColumn(projectId, data);
+    commit(SET_PROJECT_COLUMN, response.data);
+    return response.data;
+  },
+
+  updateColumn: async ({ commit }, { projectId, id, ...data }) => {
+    const response = await projectsAPI.updateColumn(projectId, id, data);
+    commit(SET_PROJECT_COLUMN, response.data);
+    return response.data;
+  },
+
+  deleteColumn: async ({ commit }, { projectId, id }) => {
+    await projectsAPI.deleteColumn(projectId, id);
+    commit(DELETE_PROJECT_COLUMN, id);
   },
 
   fetchMembers: async ({ commit }, projectId) => {

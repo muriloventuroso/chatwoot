@@ -64,6 +64,21 @@ describe('#projects getters', () => {
     ).toEqual([1]);
   });
 
+  it('getColumnsByProject filters by project and orders by position', () => {
+    const columnsState = {
+      columns: {
+        1: { id: 1, project_id: 1, position: 2 },
+        2: { id: 2, project_id: 1, position: 0.5 },
+        3: { id: 3, project_id: 2, position: 1 },
+      },
+    };
+    expect(
+      getters
+        .getColumnsByProject(columnsState)(1)
+        .map(column => column.id)
+    ).toEqual([2, 1]);
+  });
+
   it('getUIFlags returns ui flags', () => {
     expect(getters.getUIFlags(state)).toEqual({ isFetching: true });
   });

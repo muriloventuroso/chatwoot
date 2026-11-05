@@ -16,11 +16,11 @@ import {
   nextColumnPosition,
   progressWidthClass,
   TASK_PRIORITIES,
-  TASK_STATUSES,
 } from '../constants';
 
 const props = defineProps({
   projectId: { type: [Number, String], required: true },
+  columns: { type: Array, default: () => [] },
   agents: { type: Array, default: () => [] },
 });
 
@@ -30,11 +30,8 @@ const store = useStore();
 const { isAdmin } = useAdmin();
 const currentUserId = useMapGetter('getCurrentUserID');
 
-const statusOptions = computed(() =>
-  TASK_STATUSES.map(status => ({
-    value: status,
-    label: t(`PROJECTS.TASK.STATUS.${status.toUpperCase()}`),
-  }))
+const columnOptions = computed(() =>
+  props.columns.map(column => ({ value: column.id, label: column.name }))
 );
 
 const priorityOptions = computed(() =>
@@ -56,7 +53,7 @@ const taskId = ref(null);
 const form = ref({
   title: '',
   description: '',
-  status: 'todo',
+  project_column_id: null,
   priority: 'medium',
   assignee_id: '',
   due_date: '',
@@ -91,7 +88,7 @@ const hydrateForm = record => {
   form.value = {
     title: record?.title || '',
     description: record?.description || '',
-    status: record?.status || 'todo',
+    project_column_id: record?.project_column_id ?? null,
     priority: record?.priority || 'medium',
     assignee_id: record?.assignee_id || '',
     due_date: record?.due_date || '',
@@ -105,9 +102,9 @@ const loadTask = id =>
     store.dispatch('projects/fetchComments', id),
   ]);
 
-const open = async ({ task: record, status } = {}) => {
+const open = async ({ task: record, columnId } = {}) => {
   taskId.value = record?.id || null;
-  hydrateForm(record || { status: status || 'todo' });
+  hydrateForm(record || { project_column_id: columnId });
   subtaskTitle.value = '';
   commentContent.value = '';
   dialogRef.value?.open();
@@ -122,22 +119,22 @@ const saveTask = async () => {
   const payload = {
     title: form.value.title.trim(),
     description: form.value.description.trim() || null,
-    status: form.value.status,
+    project_column_id: form.value.project_column_id,
     priority: form.value.priority,
     assignee_id: form.value.assignee_id || null,
     due_date: form.value.due_date || null,
   };
   try {
     if (taskId.value) {
-      const { status, ...rest } = payload;
-      if (status !== task.value.status) {
+      const { project_column_id: columnId, ...rest } = payload;
+      if (columnId !== task.value.project_column_id) {
         const siblings = store.getters['projects/getTasksByProject'](
           props.projectId
         );
         await store.dispatch('projects/moveTask', {
           id: taskId.value,
-          status,
-          position: nextColumnPosition(siblings, status, taskId.value),
+          project_column_id: columnId,
+          position: nextColumnPosition(siblings, columnId, taskId.value),
         });
       }
       await store.dispatch('projects/updateTask', {
@@ -202,7 +199,7 @@ const toggleSubtask = async subtask => {
     await store.dispatch('projects/moveTask', {
       id: subtask.id,
       status: subtask.status === 'done' ? 'todo' : 'done',
-      position: 1,
+      position: subtask.position,
     });
     await loadTask(taskId.value);
     emit('changed');
@@ -307,7 +304,10 @@ defineExpose({ open, close });
           auto-height
         />
         <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
-          <ProjectSelect v-model="form.status" :options="statusOptions" />
+          <ProjectSelect
+            v-model="form.project_column_id"
+            :options="columnOptions"
+          />
           <ProjectSelect v-model="form.priority" :options="priorityOptions" />
           <ProjectSelect
             v-model="form.assignee_id"

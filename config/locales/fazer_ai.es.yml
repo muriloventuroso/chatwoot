@@ -6,6 +6,11 @@
 #
 # Adding a language means adding fazer_ai.<locale>.yml. Nothing else changes.
 es:
+  projects:
+    default_columns:
+      todo: Por hacer
+      in_progress: En progreso
+      done: Hecho
   integrations:
     openai:
       summary_note_title: Resumen de la conversación generado por IA

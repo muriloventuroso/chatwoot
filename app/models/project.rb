@@ -28,11 +28,15 @@ class Project < ApplicationRecord
   has_many :tasks, class_name: 'ProjectTask', dependent: :destroy
   # Read-only subset of `tasks`, which already destroys them.
   has_many :root_tasks, -> { where(parent_task_id: nil) }, class_name: 'ProjectTask', inverse_of: :project, dependent: nil
+  # Declared after `tasks`, so the tasks are gone by the time a column checks it is empty.
+  has_many :columns, -> { ordered }, class_name: 'ProjectColumn', inverse_of: :project, dependent: :destroy
 
   enum :status, { active: 0, completed: 1, archived: 2 }, validate: true
 
   validates :name, presence: true, length: { maximum: 255 }
   validate :end_date_not_before_start_date
+
+  after_create :create_default_columns!
 
   scope :ordered, -> { order(created_at: :desc) }
 
@@ -49,6 +53,12 @@ class Project < ApplicationRecord
 
   def completed_tasks_count
     root_tasks.count(&:done?)
+  end
+
+  def create_default_columns!
+    ProjectColumn.categories.each_key do |category|
+      columns.create!(name: I18n.t("projects.default_columns.#{category}"), category: category)
+    end
   end
 
   private

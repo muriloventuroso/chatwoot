@@ -19,6 +19,26 @@ class ProjectsAPI extends ApiClient {
     return axios.post(`${this.url}/${projectId}/tasks`, data);
   }
 
+  getColumns(projectId) {
+    return axios.get(`${this.url}/${projectId}/columns`);
+  }
+
+  createColumn(projectId, data) {
+    return axios.post(`${this.url}/${projectId}/columns`, {
+      project_column: data,
+    });
+  }
+
+  updateColumn(projectId, id, data) {
+    return axios.patch(`${this.url}/${projectId}/columns/${id}`, {
+      project_column: data,
+    });
+  }
+
+  deleteColumn(projectId, id) {
+    return axios.delete(`${this.url}/${projectId}/columns/${id}`);
+  }
+
   getMembers(projectId) {
     return axios.get(`${this.url}/${projectId}/members`);
   }

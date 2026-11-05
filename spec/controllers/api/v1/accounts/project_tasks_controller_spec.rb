@@ -5,6 +5,7 @@ RSpec.describe 'Project Tasks API', type: :request do
   let(:agent) { create(:user, account: account, role: :agent) }
   let(:project) { create(:project, account: account) }
   let!(:task) { create(:project_task, project: project, title: 'First task') }
+  let(:done_column) { project.columns.find_by!(category: :done) }
 
   describe 'GET /api/v1/accounts/{account.id}/projects/{project_id}/tasks' do
     it 'returns root tasks of the project' do
@@ -38,14 +39,24 @@ RSpec.describe 'Project Tasks API', type: :request do
   end
 
   describe 'POST /api/v1/accounts/{account.id}/projects/{project_id}/tasks' do
-    it 'creates a task' do
+    it 'creates a task in the given column' do
       post "/api/v1/accounts/#{account.id}/projects/#{project.id}/tasks",
-           params: { project_task: { title: 'New task', priority: 'high' } },
+           params: { project_task: { title: 'New task', priority: 'high', project_column_id: done_column.id } },
            headers: agent.create_new_auth_token, as: :json
 
       expect(response).to have_http_status(:success)
       expect(response.parsed_body['title']).to eq('New task')
       expect(response.parsed_body['priority']).to eq('high')
+      expect(response.parsed_body['project_column_id']).to eq(done_column.id)
+      expect(response.parsed_body['status']).to eq('done')
+    end
+
+    it 'returns unprocessable entity for a root task without a column' do
+      post "/api/v1/accounts/#{account.id}/projects/#{project.id}/tasks",
+           params: { project_task: { title: 'New task' } },
+           headers: agent.create_new_auth_token, as: :json
+
+      expect(response).to have_http_status(:unprocessable_entity)
     end
 
     it 'creates a subtask' do
@@ -61,21 +72,46 @@ RSpec.describe 'Project Tasks API', type: :request do
   describe 'POST /api/v1/accounts/{account.id}/project_tasks/{id}/move' do
     it 'moves the task to another column' do
       post "/api/v1/accounts/#{account.id}/project_tasks/#{task.id}/move",
-           params: { project_task: { status: 'done', position: 1 } },
+           params: { project_task: { project_column_id: done_column.id, position: 1 } },
            headers: agent.create_new_auth_token, as: :json
 
       expect(response).to have_http_status(:success)
-      expect(task.reload.status).to eq('done')
+      expect(task.reload.column).to eq(done_column)
+      expect(task.status).to eq('done')
       expect(task.completed_at).to be_present
     end
 
-    it 'returns unprocessable entity for an unknown status' do
+    it 'returns unprocessable entity for a column of another project' do
+      other_column = create(:project, account: account).columns.first
+
       post "/api/v1/accounts/#{account.id}/project_tasks/#{task.id}/move",
-           params: { project_task: { status: 'blocked', position: 1 } },
+           params: { project_task: { project_column_id: other_column.id, position: 1 } },
            headers: agent.create_new_auth_token, as: :json
 
       expect(response).to have_http_status(:unprocessable_entity)
       expect(task.reload.status).to eq('todo')
+    end
+
+    it 'sets the status of a subtask' do
+      subtask = create(:project_task, project: project, parent_task: task)
+
+      post "/api/v1/accounts/#{account.id}/project_tasks/#{subtask.id}/move",
+           params: { project_task: { status: 'done', position: subtask.position } },
+           headers: agent.create_new_auth_token, as: :json
+
+      expect(response).to have_http_status(:success)
+      expect(subtask.reload.status).to eq('done')
+    end
+
+    it 'returns unprocessable entity for an unknown subtask status' do
+      subtask = create(:project_task, project: project, parent_task: task)
+
+      post "/api/v1/accounts/#{account.id}/project_tasks/#{subtask.id}/move",
+           params: { project_task: { status: 'blocked', position: 1 } },
+           headers: agent.create_new_auth_token, as: :json
+
+      expect(response).to have_http_status(:unprocessable_entity)
+      expect(subtask.reload.status).to eq('todo')
     end
   end
 

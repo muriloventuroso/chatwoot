@@ -127,6 +127,34 @@
         "MESSAGE": "¿Seguro que quieres eliminar \"{name}\"? Se eliminarán sus subtareas, comentarios y adjuntos.",
         "CONFIRM": "Eliminar"
       }
+    },
+    "COLUMNS": {
+      "ADD": "Añadir columna",
+      "MENU": "Acciones de la columna",
+      "EDIT": "Editar columna",
+      "MOVE_LEFT": "Mover a la izquierda",
+      "MOVE_RIGHT": "Mover a la derecha",
+      "DELETE": "Eliminar columna",
+      "FORM": {
+        "CREATE_TITLE": "Nueva columna",
+        "EDIT_TITLE": "Editar columna",
+        "NAME": "Nombre",
+        "NAME_PLACEHOLDER": "Ej.: Revisión",
+        "CATEGORY": "Tipo",
+        "CATEGORY_HELP": "Las tareas en una columna de tipo Hecho cuentan como completadas en el progreso del proyecto.",
+        "SAVE": "Guardar"
+      },
+      "DELETE_DIALOG": {
+        "TITLE": "¿Eliminar columna?",
+        "MESSAGE": "La columna \"{name}\" se eliminará de este proyecto.",
+        "CONFIRM": "Eliminar"
+      },
+      "MESSAGES": {
+        "SAVE_ERROR": "No se pudo guardar la columna",
+        "DELETE_ERROR": "No se pudo eliminar la columna",
+        "NOT_EMPTY": "Mueve las tareas de esta columna antes de eliminarla",
+        "LAST_COLUMN": "Un proyecto necesita al menos una columna"
+      }
     }
   }
 }

@@ -456,6 +456,7 @@ Rails.application.routes.draw do
 
           resources :projects, only: [:index, :show, :create, :update, :destroy] do
             resources :tasks, controller: 'project_tasks', only: [:index, :create]
+            resources :columns, controller: 'project_columns', only: [:index, :create, :update, :destroy]
             resources :members, controller: 'project_members', only: [:index, :create, :destroy]
           end
           resources :project_tasks, only: [:show, :update, :destroy] do

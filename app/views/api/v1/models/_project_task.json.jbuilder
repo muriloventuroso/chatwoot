@@ -2,6 +2,7 @@ json.id resource.id
 json.account_id resource.account_id
 json.project_id resource.project_id
 json.parent_task_id resource.parent_task_id
+json.project_column_id resource.project_column_id
 json.title resource.title
 json.description resource.description
 json.status resource.status

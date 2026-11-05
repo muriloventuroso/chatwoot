@@ -9,6 +9,9 @@ import {
   SET_TASK_COMMENTS,
   ADD_TASK_COMMENT,
   DELETE_TASK_COMMENT,
+  SET_PROJECT_COLUMNS,
+  SET_PROJECT_COLUMN,
+  DELETE_PROJECT_COLUMN,
 } from '../../projects/types';
 
 describe('#projects mutations', () => {
@@ -109,6 +112,33 @@ describe('#projects mutations', () => {
       });
       mutations[DELETE_TASK_COMMENT](state, 2);
       expect(state.comments).toEqual({});
+    });
+  });
+
+  describe('columns', () => {
+    it('replaces only the columns of the given project', () => {
+      const state = {
+        columns: {
+          1: { id: 1, project_id: 7, name: 'Old' },
+          2: { id: 2, project_id: 8, name: 'Other' },
+        },
+      };
+      mutations[SET_PROJECT_COLUMNS](state, {
+        projectId: 7,
+        columns: [{ id: 3, project_id: 7, name: 'New' }],
+      });
+      expect(state.columns).toEqual({
+        2: { id: 2, project_id: 8, name: 'Other' },
+        3: { id: 3, project_id: 7, name: 'New' },
+      });
+    });
+
+    it('upserts and deletes a column', () => {
+      const state = { columns: {} };
+      mutations[SET_PROJECT_COLUMN](state, { id: 3, project_id: 7 });
+      expect(state.columns[3]).toEqual({ id: 3, project_id: 7 });
+      mutations[DELETE_PROJECT_COLUMN](state, 3);
+      expect(state.columns).toEqual({});
     });
   });
 });

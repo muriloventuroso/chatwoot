@@ -32,7 +32,7 @@ class Api::V1::Accounts::ProjectTasksController < Api::V1::Accounts::BaseControl
   end
 
   def move
-    @project_task.move!(new_status: move_params[:status], new_position: move_params[:position].to_f)
+    @project_task.move!(move_params.merge(position: move_params[:position].to_f))
     render :show
   end
 
@@ -58,13 +58,14 @@ class Api::V1::Accounts::ProjectTasksController < Api::V1::Accounts::BaseControl
     params.require(:project_task).permit(:title, :description, :priority, :assignee_id, :due_date)
   end
 
-  # Status/position changes go through `move` so the column is reordered.
+  # Column/status/position changes go through `move` so the column is reordered.
   # A task only becomes a subtask at creation; re-parenting would allow cycles and nested subtasks.
+  # Root tasks take their status from the column; subtasks have no column and set the status directly.
   def create_task_params
-    task_params.merge(params.require(:project_task).permit(:parent_task_id, :status))
+    task_params.merge(params.require(:project_task).permit(:parent_task_id, :project_column_id, :status))
   end
 
   def move_params
-    params.require(:project_task).permit(:status, :position)
+    params.require(:project_task).permit(:project_column_id, :status, :position)
   end
 end

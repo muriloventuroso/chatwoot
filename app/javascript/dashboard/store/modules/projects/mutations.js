@@ -10,6 +10,9 @@ import {
   ADD_TASK_COMMENT,
   DELETE_TASK_COMMENT,
   SET_PROJECT_MEMBERS,
+  SET_PROJECT_COLUMNS,
+  SET_PROJECT_COLUMN,
+  DELETE_PROJECT_COLUMN,
 } from './types';
 
 const upsertMany = (records, items) => {
@@ -67,6 +70,21 @@ export const mutations = {
   [DELETE_TASK_COMMENT]($state, commentId) {
     const { [commentId]: _deleted, ...comments } = $state.comments;
     $state.comments = comments;
+  },
+  [SET_PROJECT_COLUMNS]($state, { projectId, columns }) {
+    const others = Object.fromEntries(
+      Object.entries($state.columns).filter(
+        ([, column]) => column.project_id !== Number(projectId)
+      )
+    );
+    $state.columns = upsertMany(others, columns);
+  },
+  [SET_PROJECT_COLUMN]($state, column) {
+    $state.columns = upsertMany($state.columns, [column]);
+  },
+  [DELETE_PROJECT_COLUMN]($state, columnId) {
+    const { [columnId]: _deleted, ...columns } = $state.columns;
+    $state.columns = columns;
   },
   [SET_PROJECT_MEMBERS]($state, { projectId, members }) {
     const others = Object.fromEntries(

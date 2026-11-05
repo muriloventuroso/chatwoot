@@ -8,6 +8,9 @@ import {
   SET_PROJECT_TASK,
   DELETE_PROJECT_TASK,
   SET_TASK_COMMENTS,
+  SET_PROJECT_COLUMNS,
+  SET_PROJECT_COLUMN,
+  DELETE_PROJECT_COLUMN,
 } from '../../projects/types';
 import { projectsAPI, projectTasksAPI } from '../../../../api/projects';
 
@@ -20,6 +23,10 @@ vi.mock('../../../../api/projects', () => ({
     delete: vi.fn(),
     getTasks: vi.fn(),
     createTask: vi.fn(),
+    getColumns: vi.fn(),
+    createColumn: vi.fn(),
+    updateColumn: vi.fn(),
+    deleteColumn: vi.fn(),
   },
   projectTasksAPI: {
     show: vi.fn(),
@@ -128,17 +135,74 @@ describe('#projects actions', () => {
   });
 
   describe('#moveTask', () => {
-    it('commits the moved task', async () => {
-      const data = { id: 9, status: 'done', position: 1 };
+    it('sends the column and position and commits the moved task', async () => {
+      const data = { id: 9, project_column_id: 4, position: 1 };
       projectTasksAPI.move.mockResolvedValue({ data });
 
       const result = await actions.moveTask(
         { commit },
-        { id: 9, status: 'done', position: 1 }
+        { id: 9, project_column_id: 4, position: 1 }
       );
 
+      expect(projectTasksAPI.move).toHaveBeenCalledWith(9, {
+        project_task: { project_column_id: 4, position: 1 },
+      });
       expect(result).toEqual(data);
       expect(commit).toHaveBeenCalledWith(SET_PROJECT_TASK, data);
+    });
+  });
+
+  describe('columns', () => {
+    it('fetches the columns of a project', async () => {
+      const data = [{ id: 4, project_id: 1, name: 'To do' }];
+      projectsAPI.getColumns.mockResolvedValue({ data });
+
+      await actions.fetchColumns({ commit }, 1);
+
+      expect(commit).toHaveBeenCalledWith(SET_PROJECT_COLUMNS, {
+        projectId: 1,
+        columns: data,
+      });
+    });
+
+    it('creates a column', async () => {
+      const data = { id: 5, project_id: 1, name: 'Review' };
+      projectsAPI.createColumn.mockResolvedValue({ data });
+
+      await actions.createColumn(
+        { commit },
+        { projectId: 1, name: 'Review', category: 'in_progress' }
+      );
+
+      expect(projectsAPI.createColumn).toHaveBeenCalledWith(1, {
+        name: 'Review',
+        category: 'in_progress',
+      });
+      expect(commit).toHaveBeenCalledWith(SET_PROJECT_COLUMN, data);
+    });
+
+    it('updates a column', async () => {
+      const data = { id: 5, project_id: 1, position: 0.5 };
+      projectsAPI.updateColumn.mockResolvedValue({ data });
+
+      await actions.updateColumn(
+        { commit },
+        { projectId: 1, id: 5, position: 0.5 }
+      );
+
+      expect(projectsAPI.updateColumn).toHaveBeenCalledWith(1, 5, {
+        position: 0.5,
+      });
+      expect(commit).toHaveBeenCalledWith(SET_PROJECT_COLUMN, data);
+    });
+
+    it('deletes a column', async () => {
+      projectsAPI.deleteColumn.mockResolvedValue({});
+
+      await actions.deleteColumn({ commit }, { projectId: 1, id: 5 });
+
+      expect(projectsAPI.deleteColumn).toHaveBeenCalledWith(1, 5);
+      expect(commit).toHaveBeenCalledWith(DELETE_PROJECT_COLUMN, 5);
     });
   });
 

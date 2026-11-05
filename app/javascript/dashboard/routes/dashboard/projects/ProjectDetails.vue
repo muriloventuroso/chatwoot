@@ -8,10 +8,12 @@ import { useMapGetter, useStore } from 'dashboard/composables/store';
 
 import Avatar from 'dashboard/components-next/avatar/Avatar.vue';
 import Button from 'dashboard/components-next/button/Button.vue';
+import Dialog from 'dashboard/components-next/dialog/Dialog.vue';
 import Icon from 'dashboard/components-next/icon/Icon.vue';
 import Input from 'dashboard/components-next/input/Input.vue';
 import Spinner from 'dashboard/components-next/spinner/Spinner.vue';
 import { SET_PROJECT_TASK } from 'dashboard/store/modules/projects/types';
+import ColumnFormModal from './components/ColumnFormModal.vue';
 import ProjectBoard from './components/ProjectBoard.vue';
 import ProjectFormModal from './components/ProjectFormModal.vue';
 import ProjectSelect from './components/ProjectSelect.vue';
@@ -37,6 +39,10 @@ const priorityFilter = ref('');
 const onlyMine = ref(false);
 const formModalRef = ref(null);
 const taskModalRef = ref(null);
+const columnModalRef = ref(null);
+const deleteColumnDialogRef = ref(null);
+const columnToDelete = ref(null);
+const isSavingColumn = ref(false);
 const isLoading = ref(false);
 const loadError = ref(false);
 
@@ -46,6 +52,9 @@ const project = computed(() =>
 );
 const tasks = computed(() =>
   store.getters['projects/getTasksByProject'](projectId.value)
+);
+const columns = computed(() =>
+  store.getters['projects/getColumnsByProject'](projectId.value)
 );
 const members = computed(() =>
   store.getters['projects/getMembersByProject'](projectId.value)
@@ -102,6 +111,7 @@ const loadProject = async () => {
     await Promise.all([
       store.dispatch('projects/fetchProject', projectId.value),
       store.dispatch('projects/fetchTasks', { projectId: projectId.value }),
+      store.dispatch('projects/fetchColumns', projectId.value),
       store.dispatch('projects/fetchMembers', projectId.value),
       store.dispatch('agents/get'),
     ]);
@@ -140,17 +150,17 @@ const saveProject = async payload => {
   }
 };
 
-const handleMove = async ({ task, status, position }) => {
+const handleMove = async ({ task, columnId, position }) => {
   const previous = { ...task };
   store.commit(`projects/${SET_PROJECT_TASK}`, {
     ...task,
-    status,
+    project_column_id: columnId,
     position,
   });
   try {
     await store.dispatch('projects/moveTask', {
       id: task.id,
-      status,
+      project_column_id: columnId,
       position,
     });
   } catch (error) {
@@ -161,12 +171,12 @@ const handleMove = async ({ task, status, position }) => {
   await refreshBoard();
 };
 
-const handleCreateTask = async ({ status, title }) => {
+const handleCreateTask = async ({ columnId, title }) => {
   try {
     await store.dispatch('projects/createTask', {
       projectId: projectId.value,
       title,
-      status,
+      project_column_id: columnId,
     });
     await refreshProject();
   } catch (error) {
@@ -176,12 +186,12 @@ const handleCreateTask = async ({ status, title }) => {
 
 const handleUpdateTask = async ({ task, changes }) => {
   try {
-    if (changes.status) {
-      const { status, ...rest } = changes;
+    if (changes.project_column_id) {
+      const { project_column_id: columnId, ...rest } = changes;
       await store.dispatch('projects/moveTask', {
         id: task.id,
-        status,
-        position: nextColumnPosition(tasks.value, status, task.id),
+        project_column_id: columnId,
+        position: nextColumnPosition(tasks.value, columnId, task.id),
       });
       if (Object.keys(rest).length) {
         await store.dispatch('projects/updateTask', { id: task.id, ...rest });
@@ -196,7 +206,80 @@ const handleUpdateTask = async ({ task, changes }) => {
 };
 
 const openTask = task => taskModalRef.value?.open({ task });
-const openNewTask = () => taskModalRef.value?.open({ status: 'todo' });
+const openNewTask = () =>
+  taskModalRef.value?.open({ columnId: columns.value[0]?.id });
+
+const saveColumn = async ({ id, ...data }) => {
+  if (isSavingColumn.value) return;
+  isSavingColumn.value = true;
+  try {
+    if (id) {
+      await store.dispatch('projects/updateColumn', {
+        projectId: projectId.value,
+        id,
+        ...data,
+      });
+      // A new type changes the status of the column's tasks, and so the progress.
+      await refreshBoard();
+    } else {
+      await store.dispatch('projects/createColumn', {
+        projectId: projectId.value,
+        ...data,
+      });
+    }
+    columnModalRef.value?.close();
+  } catch (error) {
+    useAlert(t('PROJECTS.COLUMNS.MESSAGES.SAVE_ERROR'));
+  } finally {
+    isSavingColumn.value = false;
+  }
+};
+
+// Lands between the neighbour it passes and the one after that.
+const moveColumn = async ({ column, direction }) => {
+  const list = columns.value;
+  const target = list.findIndex(item => item.id === column.id) + direction;
+  const neighbour = list[target];
+  if (!neighbour) return;
+  const beyond = list[target + direction];
+  const position = beyond
+    ? (neighbour.position + beyond.position) / 2
+    : neighbour.position + direction;
+  try {
+    await store.dispatch('projects/updateColumn', {
+      projectId: projectId.value,
+      id: column.id,
+      position,
+    });
+  } catch (error) {
+    useAlert(t('PROJECTS.COLUMNS.MESSAGES.SAVE_ERROR'));
+  }
+};
+
+const confirmDeleteColumn = column => {
+  if (columns.value.length === 1) {
+    useAlert(t('PROJECTS.COLUMNS.MESSAGES.LAST_COLUMN'));
+    return;
+  }
+  if (tasks.value.some(task => task.project_column_id === column.id)) {
+    useAlert(t('PROJECTS.COLUMNS.MESSAGES.NOT_EMPTY'));
+    return;
+  }
+  columnToDelete.value = column;
+  deleteColumnDialogRef.value?.open();
+};
+
+const deleteColumn = async () => {
+  try {
+    await store.dispatch('projects/deleteColumn', {
+      projectId: projectId.value,
+      id: columnToDelete.value.id,
+    });
+    deleteColumnDialogRef.value?.close();
+  } catch (error) {
+    useAlert(t('PROJECTS.COLUMNS.MESSAGES.DELETE_ERROR'));
+  }
+};
 
 const addMember = async userId => {
   try {
@@ -380,14 +463,20 @@ const projectDates = computed(() => {
       <div class="flex-1 p-6 overflow-auto">
         <ProjectBoard
           v-if="view === 'board'"
+          :columns="columns"
           :tasks="filteredTasks"
           @move="handleMove"
           @open-task="openTask"
           @create-task="handleCreateTask"
+          @add-column="columnModalRef?.open()"
+          @edit-column="columnModalRef?.open($event)"
+          @move-column="moveColumn"
+          @delete-column="confirmDeleteColumn"
         />
         <TaskListView
           v-else
           :tasks="filteredTasks"
+          :columns="columns"
           :agents="agents"
           @open-task="openTask"
           @update-task="handleUpdateTask"
@@ -399,9 +488,27 @@ const projectDates = computed(() => {
     <TaskDetailModal
       ref="taskModalRef"
       :project-id="projectId"
+      :columns="columns"
       :agents="agents"
       @close="refreshProject"
       @changed="refreshProject"
+    />
+    <ColumnFormModal
+      ref="columnModalRef"
+      :is-saving="isSavingColumn"
+      @save="saveColumn"
+    />
+    <Dialog
+      ref="deleteColumnDialogRef"
+      type="alert"
+      :title="t('PROJECTS.COLUMNS.DELETE_DIALOG.TITLE')"
+      :description="
+        t('PROJECTS.COLUMNS.DELETE_DIALOG.MESSAGE', {
+          name: columnToDelete?.name,
+        })
+      "
+      :confirm-button-label="t('PROJECTS.COLUMNS.DELETE_DIALOG.CONFIRM')"
+      @confirm="deleteColumn"
     />
   </section>
 </template>

@@ -127,6 +127,34 @@
         "MESSAGE": "Tem certeza de que deseja excluir \"{name}\"? As subtarefas, comentários e anexos dela serão removidos.",
         "CONFIRM": "Excluir"
       }
+    },
+    "COLUMNS": {
+      "ADD": "Adicionar coluna",
+      "MENU": "Ações da coluna",
+      "EDIT": "Editar coluna",
+      "MOVE_LEFT": "Mover para a esquerda",
+      "MOVE_RIGHT": "Mover para a direita",
+      "DELETE": "Excluir coluna",
+      "FORM": {
+        "CREATE_TITLE": "Nova coluna",
+        "EDIT_TITLE": "Editar coluna",
+        "NAME": "Nome",
+        "NAME_PLACEHOLDER": "Ex.: Revisão",
+        "CATEGORY": "Tipo",
+        "CATEGORY_HELP": "Tarefas em uma coluna do tipo Concluído contam como concluídas no progresso do projeto.",
+        "SAVE": "Salvar"
+      },
+      "DELETE_DIALOG": {
+        "TITLE": "Excluir coluna?",
+        "MESSAGE": "A coluna \"{name}\" será removida deste projeto.",
+        "CONFIRM": "Excluir"
+      },
+      "MESSAGES": {
+        "SAVE_ERROR": "Não foi possível salvar a coluna",
+        "DELETE_ERROR": "Não foi possível excluir a coluna",
+        "NOT_EMPTY": "Mova as tarefas desta coluna antes de excluí-la",
+        "LAST_COLUMN": "Um projeto precisa de pelo menos uma coluna"
+      }
     }
   }
 }
