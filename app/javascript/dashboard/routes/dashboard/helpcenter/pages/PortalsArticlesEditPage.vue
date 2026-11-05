@@ -1,5 +1,5 @@
 <script setup>
-import { ref, computed, onMounted } from 'vue';
+import { ref, computed, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { useI18n } from 'vue-i18n';
 import { useAlert, useTrack } from 'dashboard/composables';
@@ -20,15 +20,16 @@ const router = useRouter();
 const store = useStore();
 const { t } = useI18n();
 
-const { articleSlug, portalSlug } = route.params;
+const articleSlug = computed(() => route.params.articleSlug);
+const portalSlug = computed(() => route.params.portalSlug);
 
 const articleById = useMapGetter('articles/articleById');
 
-const article = computed(() => articleById.value(articleSlug));
+const article = computed(() => articleById.value(articleSlug.value));
 
 const portalBySlug = useMapGetter('portals/portalBySlug');
 
-const portal = computed(() => portalBySlug.value(portalSlug));
+const portal = computed(() => portalBySlug.value(portalSlug.value));
 
 const allowedLocales = computed(() =>
   (portal.value?.config.allowed_locales ?? []).map(({ code }) => ({
@@ -45,7 +46,7 @@ const articleLink = computed(() => {
   const { slug: articleSlugValue } = article.value;
   const portalCustomDomain = portal.value?.custom_domain;
   return buildPortalArticleURL(
-    portalSlug,
+    portalSlug.value,
     categorySlug,
     categoryLocale,
     articleSlugValue,
@@ -104,8 +105,8 @@ const saveArticle = async ({ ...values }) => {
   isUpdating.value = true;
   try {
     await store.dispatch('articles/update', {
-      portalSlug,
-      articleId: articleSlug,
+      portalSlug: portalSlug.value,
+      articleId: articleSlug.value,
       ...stageDraftFields(values),
     });
     isSaved.value = true;
@@ -148,8 +149,8 @@ const goBackToArticles = () => {
 // translation was created from), and picking one would move this article there.
 const fetchArticleDetails = () => {
   store.dispatch('articles/show', {
-    id: articleSlug,
-    portalSlug,
+    id: articleSlug.value,
+    portalSlug: portalSlug.value,
   });
   store.dispatch('categories/index', {
     portalSlug,
@@ -195,7 +196,7 @@ const switchTranslation = ({ id, locale }) => {
   });
 };
 
-onMounted(fetchArticleDetails);
+watch(articleSlug, fetchArticleDetails, { immediate: true });
 </script>
 
 <template>
