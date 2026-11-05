@@ -190,6 +190,8 @@ export default {
   },
   data() {
     return {
+      // Focusing on open pops the virtual keyboard over half the screen on touch devices.
+      focusEditorOnOpen: !window.matchMedia('(pointer: coarse)').matches,
       message: '',
       inReplyTo: {},
       isFocused: false,
@@ -1774,6 +1776,7 @@ export default {
           :placeholder="messagePlaceHolder"
           :update-selection-with="updateEditorSelectionWith"
           :min-height="4"
+          :focus-on-mount="focusEditorOnOpen"
           :disabled="isEditorDisabled"
           enable-insert-events
           :enable-macros="isMacrosEnabled"

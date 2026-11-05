@@ -159,3 +159,22 @@ describe('ResizableEditorWrapper', () => {
     });
   });
 });
+
+describe('ResizableEditorWrapper on a phone', () => {
+  const desktopWidth = window.innerWidth;
+
+  afterEach(() => {
+    window.innerWidth = desktopWidth;
+    window.localStorage.clear();
+  });
+
+  // A tall box and the keyboard together leave almost no room for the messages.
+  it('opens at the smallest height, ignoring the one dragged before', () => {
+    window.innerWidth = 375;
+    window.localStorage.setItem('replyEditorHeight', '300');
+    const wrapper = mountWrapper();
+
+    expect(editorHeight(wrapper)).toBe(48);
+    wrapper.unmount();
+  });
+});

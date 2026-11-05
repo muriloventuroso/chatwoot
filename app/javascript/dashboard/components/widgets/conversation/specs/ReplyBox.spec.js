@@ -107,6 +107,15 @@ afterEach(() => {
   while (mounted.length) mounted.pop().unmount();
 });
 
+// jsdom has no matchMedia; the composer asks it whether the pointer is a finger.
+let isTouchScreen = false;
+beforeEach(() => {
+  isTouchScreen = false;
+  window.matchMedia = query => ({
+    matches: query === '(pointer: coarse)' && isTouchScreen,
+  });
+});
+
 const mountWith = ({
   inbox,
   chat,
@@ -140,7 +149,13 @@ const mountWith = ({
         // editor ref after a reply-to reset.
         WootMessageEditor: {
           name: 'WootMessageEditor',
-          props: ['editorId', 'modelValue', 'isPrivate', 'placeholder'],
+          props: [
+            'editorId',
+            'modelValue',
+            'isPrivate',
+            'placeholder',
+            'focusOnMount',
+          ],
           template: '<div />',
           methods: { focusEditorInputField: () => {} },
         },
@@ -159,6 +174,24 @@ const editor = wrapper =>
   wrapper.findComponent({ name: 'WootMessageEditor' }).props();
 
 describe('ReplyBox', () => {
+  describe('focus when the conversation opens', () => {
+    const inbox = { channel_type: 'Channel::WebWidget' };
+
+    // The virtual keyboard would cover half the conversation before the agent asked for it.
+    it('leaves the editor unfocused on a touch screen', () => {
+      isTouchScreen = true;
+      const { wrapper } = mountWith({ inbox });
+
+      expect(editor(wrapper).focusOnMount).toBe(false);
+    });
+
+    it('focuses the editor with a mouse', () => {
+      const { wrapper } = mountWith({ inbox });
+
+      expect(editor(wrapper).focusOnMount).toBe(true);
+    });
+  });
+
   describe('replying without the assignment', () => {
     const typeAsAgent = async chat => {
       const { wrapper } = mountWith({

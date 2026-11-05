@@ -11,6 +11,7 @@ import { useEventListener } from '@vueuse/core';
 import { emitter } from 'shared/helpers/mitt';
 import { BUS_EVENTS } from 'shared/constants/busEvents';
 import { LocalStorage } from 'shared/helpers/localStorage';
+import wootConstants from 'dashboard/constants/globals';
 
 const props = defineProps({
   containerHeight: { type: Number, default: 0 },
@@ -18,8 +19,11 @@ const props = defineProps({
 
 const emit = defineEmits(['collapse']);
 
-const DEFAULT_HEIGHT = 120;
-const MIN_HEIGHT = 80;
+// A phone screen is short, so there the box opens at the editor's own floor (one line) and
+// ignores the height dragged before; it can still be dragged taller.
+const isSmallScreen = window.innerWidth < wootConstants.SMALL_SCREEN_BREAKPOINT;
+const MIN_HEIGHT = isSmallScreen ? 48 : 80;
+const DEFAULT_HEIGHT = isSmallScreen ? MIN_HEIGHT : 120;
 const MIN_MESSAGES_HEIGHT = 200;
 const EXPAND_RATIO = 0.5;
 const RESET_DELAY_MS = 120;
@@ -30,7 +34,8 @@ const PREFERRED_HEIGHT_KEY = 'replyEditorHeight';
 const wrapperRef = useTemplateRef('wrapperRef');
 const surroundingHeight = ref(0);
 const preferredHeight = ref(
-  Number(LocalStorage.get(PREFERRED_HEIGHT_KEY)) || DEFAULT_HEIGHT
+  (!isSmallScreen && Number(LocalStorage.get(PREFERRED_HEIGHT_KEY))) ||
+    DEFAULT_HEIGHT
 );
 const editorHeight = ref(preferredHeight.value);
 const isResizing = ref(false);
