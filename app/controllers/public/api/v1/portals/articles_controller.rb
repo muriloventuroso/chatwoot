@@ -76,11 +76,11 @@ class Public::Api::V1::Portals::ArticlesController < Public::Api::V1::Portals::B
 
   def set_article
     slug = permitted_params[:article_slug]
-    @article = @portal.articles.find_by(slug: slug)
+    @article = @portal.articles.not_archived.find_by(slug: slug)
     return if @article
 
     redirected = article_from_slug_redirect(slug)
-    raise ActiveRecord::RecordNotFound if redirected.blank?
+    raise ActiveRecord::RecordNotFound if redirected.blank? || redirected.archived?
 
     redirect_to helpers.generate_article_link(
       @portal.slug,
