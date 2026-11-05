@@ -232,14 +232,16 @@ emitter.on(CMD_MUTE_CONVERSATION, mute);
 emitter.on(CMD_UNMUTE_CONVERSATION, unmute);
 emitter.on(CMD_PIN_CONVERSATION, pin);
 emitter.on(CMD_UNPIN_CONVERSATION, unpin);
-emitter.on(CMD_SEND_TRANSCRIPT, toggleEmailModal);
+
+const openEmailModal = () => toggleEmailModal(true);
+emitter.on(CMD_SEND_TRANSCRIPT, openEmailModal);
 
 onUnmounted(() => {
   emitter.off(CMD_MUTE_CONVERSATION, mute);
   emitter.off(CMD_UNMUTE_CONVERSATION, unmute);
   emitter.off(CMD_PIN_CONVERSATION, pin);
   emitter.off(CMD_UNPIN_CONVERSATION, unpin);
-  emitter.off(CMD_SEND_TRANSCRIPT, toggleEmailModal);
+  emitter.off(CMD_SEND_TRANSCRIPT, openEmailModal);
 });
 </script>
 
