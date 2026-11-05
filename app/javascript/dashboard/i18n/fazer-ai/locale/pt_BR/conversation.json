@@ -48,6 +48,7 @@
         "EMPTY_CONTENT": "O conteúdo da mensagem não pode estar vazio"
       }
     },
+    "MESSAGE_ACTIONS": "Opções da mensagem",
     "REACTIONS": {
       "ADD_REACTION": "Adicionar reação",
       "MORE_EMOJIS": "Mais emojis",

@@ -29,6 +29,7 @@ import {
 } from './constants';
 
 import Avatar from 'next/avatar/Avatar.vue';
+import Icon from 'next/icon/Icon.vue';
 
 import TextBubble from './bubbles/Text/Index.vue';
 import ActivityBubble from './bubbles/Activity.vue';
@@ -549,6 +550,14 @@ const canShowReactionToolbar = computed(() => {
   return true;
 });
 
+// Touch screens have no right click and no hover, so the context menu (translate,
+// transcribe, copy, edit...) is reachable there only through an explicit button.
+const canShowMessageActions = computed(
+  () =>
+    canShowReactionToolbar.value ||
+    (isBubble.value && shouldShowContextMenu.value)
+);
+
 // Short cooldown after a click so a quick double-tap (or open-pick-reopen-pick
 // on the picker) doesn't fire two POSTs against the same emoji. Watching
 // reactions is not enough — the optimistic add mutates them synchronously, so
@@ -876,9 +885,12 @@ provideMessageContext({
           <div class="relative">
             <Component :is="componentToRender" />
             <div
-              v-if="canShowReactionToolbar"
-              class="absolute top-1/2 -translate-y-1/2 z-10 flex items-center gap-0.5 rounded-full border border-n-slate-6 bg-n-solid-2 shadow-sm p-0.5 transition-opacity [@media(hover:none)]:opacity-100"
+              v-if="canShowMessageActions"
+              class="absolute top-1/2 -translate-y-1/2 z-10 items-center gap-0.5 rounded-full border border-n-slate-6 bg-n-solid-2 shadow-sm p-0.5 transition-opacity [@media(hover:none)]:opacity-100"
               :class="[
+                canShowReactionToolbar
+                  ? 'flex'
+                  : 'hidden [@media(hover:none)]:flex',
                 reactionPickerOpen
                   ? 'opacity-100'
                   : 'opacity-0 group-hover:opacity-100 group-focus-within:opacity-100',
@@ -888,6 +900,7 @@ provideMessageContext({
               ]"
             >
               <EmojiReactionPicker
+                v-if="canShowReactionToolbar"
                 :alignment="
                   orientation === ORIENTATION.RIGHT ? 'right' : 'left'
                 "
@@ -895,6 +908,16 @@ provideMessageContext({
                 @select="handleToggleReaction"
                 @update:open="value => (reactionPickerOpen = value)"
               />
+              <button
+                v-if="isBubble && shouldShowContextMenu"
+                type="button"
+                class="hidden [@media(hover:none)]:flex items-center justify-center rounded-full p-1 text-n-slate-11 hover:bg-n-alpha-2 hover:text-n-slate-12"
+                :title="t('CONVERSATION.MESSAGE_ACTIONS')"
+                :aria-label="t('CONVERSATION.MESSAGE_ACTIONS')"
+                @click="openContextMenu"
+              >
+                <Icon icon="i-lucide-ellipsis-vertical" class="size-4" />
+              </button>
             </div>
           </div>
         </div>
