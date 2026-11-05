@@ -77,6 +77,18 @@ RSpec.describe 'Public Articles API', type: :request do
       expect(response_data.pluck(:title)).to eq(['English locale result'])
     end
 
+    it 'orders search results by relevance instead of position' do
+      create(:article, account_id: account.id, portal: portal, category: category, author_id: agent.id, position: 1,
+                       title: 'Shipping', content: 'mentions refund once')
+      create(:article, account_id: account.id, portal: portal, category: category, author_id: agent.id, position: 99,
+                       title: 'Refund policy', content: 'how a refund works')
+
+      get "/hc/#{portal.slug}/#{category.locale}/articles.json", params: { query: 'refund' }
+
+      response_data = JSON.parse(response.body, symbolize_names: true)[:payload]
+      expect(response_data.pluck(:title)).to eq(['Refund policy', 'Shipping'])
+    end
+
     it 'treats whitespace-only queries as empty searches' do
       get "/hc/#{portal.slug}/#{category.locale}/articles.json", params: { query: '   ' }
 

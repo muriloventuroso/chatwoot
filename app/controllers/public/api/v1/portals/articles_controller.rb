@@ -63,6 +63,9 @@ class Public::Api::V1::Portals::ArticlesController < Public::Api::V1::Portals::B
   end
 
   def order_by_sort_param
+    # Search results are already ordered by relevance, so only an explicit sort may override them.
+    return if list_params[:query].present? && list_params[:sort].blank?
+
     @articles = if list_params[:sort].present? && list_params[:sort] == 'views'
                   @articles.order_by_views
                 else
