@@ -43,9 +43,14 @@ export const actions = {
   },
 
   updateProject: async ({ commit }, { id, ...data }) => {
-    const response = await projectsAPI.update(id, { project: data });
-    commit(SET_PROJECT, response.data);
-    return response.data;
+    commit(SET_PROJECT_UI_FLAG, { isUpdating: true });
+    try {
+      const response = await projectsAPI.update(id, { project: data });
+      commit(SET_PROJECT, response.data);
+      return response.data;
+    } finally {
+      commit(SET_PROJECT_UI_FLAG, { isUpdating: false });
+    }
   },
 
   deleteProject: async ({ commit }, id) => {

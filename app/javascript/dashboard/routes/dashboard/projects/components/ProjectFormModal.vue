@@ -1,6 +1,7 @@
 <script setup>
 import { computed, reactive, ref } from 'vue';
 import { useI18n } from 'vue-i18n';
+import { useMapGetter } from 'dashboard/composables/store';
 
 import Button from 'dashboard/components-next/button/Button.vue';
 import Dialog from 'dashboard/components-next/dialog/Dialog.vue';
@@ -14,6 +15,7 @@ import {
 
 const emit = defineEmits(['save']);
 const { t } = useI18n();
+const uiFlags = useMapGetter('projects/getUIFlags');
 
 const dialogRef = ref(null);
 const editingId = ref(null);
@@ -28,6 +30,10 @@ const form = reactive({
 
 const isEditing = computed(() => editingId.value !== null);
 const isFormInvalid = computed(() => !form.name.trim());
+// Blocks a second click from sending a duplicate create while the first is in flight.
+const isSaving = computed(
+  () => uiFlags.value.isCreating || uiFlags.value.isUpdating
+);
 
 const open = (project = null) => {
   editingId.value = project?.id ?? null;
@@ -43,7 +49,7 @@ const open = (project = null) => {
 const close = () => dialogRef.value?.close();
 
 const handleConfirm = () => {
-  if (isFormInvalid.value) return;
+  if (isFormInvalid.value || isSaving.value) return;
   emit('save', {
     id: editingId.value,
     name: form.name.trim(),
@@ -153,7 +159,8 @@ defineExpose({ open, close });
         <Button
           :label="t('PROJECTS.FORM.SAVE')"
           color="blue"
-          :disabled="isFormInvalid"
+          :is-loading="isSaving"
+          :disabled="isFormInvalid || isSaving"
           @click="handleConfirm"
         />
       </div>

@@ -10,6 +10,7 @@ const state = {
   uiFlags: {
     isFetching: false,
     isCreating: false,
+    isUpdating: false,
     isFetchingTasks: false,
   },
 };

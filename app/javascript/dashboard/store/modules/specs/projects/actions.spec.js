@@ -69,7 +69,39 @@ describe('#projects actions', () => {
       const result = await actions.createProject({ commit }, { name: 'Beta' });
 
       expect(result).toEqual(data);
-      expect(commit).toHaveBeenCalledWith(SET_PROJECT, data);
+      expect(commit.mock.calls).toEqual([
+        [SET_PROJECT_UI_FLAG, { isCreating: true }],
+        [SET_PROJECT, data],
+        [SET_PROJECT_UI_FLAG, { isCreating: false }],
+      ]);
+    });
+  });
+
+  describe('#updateProject', () => {
+    it('flags the update while the request runs', async () => {
+      const data = { id: 2, name: 'Gamma' };
+      projectsAPI.update.mockResolvedValue({ data });
+
+      await actions.updateProject({ commit }, { id: 2, name: 'Gamma' });
+
+      expect(projectsAPI.update).toHaveBeenCalledWith(2, {
+        project: { name: 'Gamma' },
+      });
+      expect(commit.mock.calls).toEqual([
+        [SET_PROJECT_UI_FLAG, { isUpdating: true }],
+        [SET_PROJECT, data],
+        [SET_PROJECT_UI_FLAG, { isUpdating: false }],
+      ]);
+    });
+
+    it('clears the updating flag on error', async () => {
+      projectsAPI.update.mockRejectedValue(new Error('failed'));
+      await expect(
+        actions.updateProject({ commit }, { id: 2 })
+      ).rejects.toThrow('failed');
+      expect(commit).toHaveBeenLastCalledWith(SET_PROJECT_UI_FLAG, {
+        isUpdating: false,
+      });
     });
   });
 
