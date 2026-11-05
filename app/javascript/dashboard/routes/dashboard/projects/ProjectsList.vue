@@ -9,11 +9,13 @@ import { useMapGetter, useStore } from 'dashboard/composables/store';
 
 import Avatar from 'dashboard/components-next/avatar/Avatar.vue';
 import Button from 'dashboard/components-next/button/Button.vue';
+import CompanySearchInput from 'dashboard/components-next/Companies/CompanySearchInput.vue';
 import Dialog from 'dashboard/components-next/dialog/Dialog.vue';
-import Input from 'dashboard/components-next/input/Input.vue';
+import DropdownMenu from 'dashboard/components-next/dropdown-menu/DropdownMenu.vue';
+import FilterSelect from 'dashboard/components-next/filter/inputs/FilterSelect.vue';
+import Icon from 'dashboard/components-next/icon/Icon.vue';
 import Spinner from 'dashboard/components-next/spinner/Spinner.vue';
 import ProjectFormModal from './components/ProjectFormModal.vue';
-import ProjectSelect from './components/ProjectSelect.vue';
 import {
   PROJECT_COLOR_CLASS,
   PROJECT_STATUSES,
@@ -31,6 +33,16 @@ const onlyMine = ref(false);
 const formModalRef = ref(null);
 const deleteDialogRef = ref(null);
 const projectToDelete = ref(null);
+const showActionsMenu = ref(false);
+
+const actionsMenuItems = computed(() => [
+  {
+    label: t('PROJECTS.NEW_PROJECT'),
+    action: 'create',
+    value: 'create',
+    icon: 'i-lucide-plus',
+  },
+]);
 
 const projects = useMapGetter('projects/getProjects');
 const uiFlags = useMapGetter('projects/getUIFlags');
@@ -62,7 +74,15 @@ const filteredProjects = computed(() => {
   return picoSearch(projects.value, query, ['name', 'description']);
 });
 
-const openCreate = () => formModalRef.value?.open();
+const openCreate = () => {
+  showActionsMenu.value = false;
+  formModalRef.value?.open();
+};
+
+const toggleOnlyMine = () => {
+  onlyMine.value = !onlyMine.value;
+  fetchProjects();
+};
 const openEdit = project => formModalRef.value?.open(project);
 
 const openProject = project => {
@@ -128,142 +148,187 @@ const colorClass = project =>
 </script>
 
 <template>
-  <section class="flex flex-col w-full h-full overflow-hidden bg-n-surface-1">
-    <header
-      class="flex flex-col gap-4 px-6 py-5 border-b border-n-weak shrink-0"
-    >
-      <div class="flex items-center justify-between gap-3">
-        <h1 class="text-xl font-medium text-n-slate-12">
-          {{ t('PROJECTS.TITLE') }}
-        </h1>
-        <Button
-          color="blue"
-          icon="i-lucide-plus"
-          :label="t('PROJECTS.NEW_PROJECT')"
-          @click="openCreate"
-        />
-      </div>
-      <div class="flex flex-col gap-3 md:flex-row md:items-center">
-        <Input
-          v-model="searchQuery"
-          class="md:max-w-sm"
-          :placeholder="t('PROJECTS.SEARCH_PLACEHOLDER')"
-        />
-        <ProjectSelect
-          v-model="statusFilter"
-          :options="statusOptions"
-          @update:model-value="fetchProjects"
-        />
-        <label class="flex items-center gap-2 text-sm text-n-slate-12">
-          <input v-model="onlyMine" type="checkbox" @change="fetchProjects" />
-          {{ t('PROJECTS.FILTERS.MINE') }}
-        </label>
-      </div>
-    </header>
-
-    <div class="flex-1 p-6 overflow-y-auto">
-      <div v-if="uiFlags.isFetching" class="flex justify-center py-16">
-        <Spinner />
-      </div>
-      <div
-        v-else-if="!filteredProjects.length"
-        class="flex items-center justify-center py-16 text-sm text-n-slate-11"
-      >
-        {{ searchQuery ? t('PROJECTS.NO_RESULTS') : t('PROJECTS.EMPTY') }}
-      </div>
-      <div v-else class="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
-        <article
-          v-for="project in filteredProjects"
-          :key="project.id"
-          class="flex flex-col overflow-hidden border cursor-pointer rounded-xl bg-n-solid-1 border-n-weak hover:border-n-strong"
-          @click="openProject(project)"
+  <section class="flex w-full h-full overflow-hidden bg-n-surface-1">
+    <div class="flex flex-col w-full h-full">
+      <header class="sticky top-0 z-10 px-6">
+        <div
+          class="flex flex-col justify-between w-full gap-4 py-6 mx-auto sm:flex-row sm:items-center max-w-5xl"
         >
-          <div class="h-1.5" :class="colorClass(project)" />
-          <div class="flex flex-col gap-3 p-4">
-            <div class="flex items-start justify-between gap-3">
-              <div class="min-w-0">
-                <h2 class="text-base font-medium truncate text-n-slate-12">
-                  {{ project.name }}
-                </h2>
-                <p
-                  v-if="project.description"
-                  class="mt-1 text-sm text-n-slate-11 line-clamp-2"
-                >
-                  {{ project.description }}
-                </p>
-              </div>
-              <span
-                class="px-2 py-0.5 text-xs rounded-md bg-n-slate-3 text-n-slate-11 shrink-0"
+          <h1 class="mb-0 text-xl font-medium shrink-0 text-n-slate-12">
+            {{ t('PROJECTS.TITLE') }}
+          </h1>
+          <div class="flex flex-wrap items-center min-w-0 gap-2 sm:gap-4">
+            <CompanySearchInput
+              v-model="searchQuery"
+              :placeholder="t('PROJECTS.SEARCH_PLACEHOLDER')"
+              class="flex-1 min-w-0"
+            />
+            <div class="flex items-center flex-shrink-0 gap-2">
+              <FilterSelect
+                v-model="statusFilter"
+                variant="ghost"
+                :options="statusOptions"
+                @update:model-value="fetchProjects"
+              />
+              <Button
+                icon="i-lucide-user-round"
+                size="sm"
+                :variant="onlyMine ? 'faded' : 'ghost'"
+                :color="onlyMine ? 'blue' : 'slate'"
+                :label="t('PROJECTS.FILTERS.MINE')"
+                :aria-pressed="onlyMine"
+                @click="toggleOnlyMine"
+              />
+              <div
+                v-on-clickaway="() => (showActionsMenu = false)"
+                class="relative"
               >
-                {{ t(`PROJECTS.STATUS.${project.status.toUpperCase()}`) }}
-              </span>
-            </div>
-            <div class="flex flex-col gap-1">
-              <div class="h-1.5 overflow-hidden rounded-full bg-n-slate-4">
-                <div
-                  class="h-full bg-n-brand"
-                  :class="progressWidthClass(project.progress)"
-                />
-              </div>
-              <span class="text-xs text-n-slate-10">
-                {{ project.progress }}% ·
-                {{ tasksCountLabel(project.tasks_count) }}
-              </span>
-            </div>
-            <div class="flex items-center justify-between gap-2">
-              <div class="flex -space-x-2">
-                <Avatar
-                  v-for="member in (project.members || []).slice(0, 4)"
-                  :key="member.id"
-                  :name="member.name"
-                  :src="member.thumbnail"
-                  :size="24"
-                />
-              </div>
-              <div class="flex gap-1" @click.stop>
                 <Button
-                  v-if="project.status === 'active'"
-                  variant="ghost"
+                  icon="i-lucide-ellipsis-vertical"
                   color="slate"
-                  size="xs"
-                  icon="i-lucide-check"
-                  :aria-label="t('PROJECTS.ACTIONS.COMPLETE')"
-                  :title="t('PROJECTS.ACTIONS.COMPLETE')"
-                  @click="updateProjectStatus(project, 'completed')"
+                  variant="ghost"
+                  size="sm"
+                  :class="showActionsMenu ? 'bg-n-alpha-2' : ''"
+                  @click="showActionsMenu = !showActionsMenu"
                 />
-                <Button
-                  v-if="project.status !== 'archived'"
-                  variant="ghost"
-                  color="slate"
-                  size="xs"
-                  icon="i-lucide-archive"
-                  :aria-label="t('PROJECTS.ACTIONS.ARCHIVE')"
-                  :title="t('PROJECTS.ACTIONS.ARCHIVE')"
-                  @click="updateProjectStatus(project, 'archived')"
-                />
-                <Button
-                  variant="ghost"
-                  color="slate"
-                  size="xs"
-                  icon="i-lucide-pencil"
-                  :aria-label="t('PROJECTS.ACTIONS.EDIT')"
-                  :title="t('PROJECTS.ACTIONS.EDIT')"
-                  @click="openEdit(project)"
-                />
-                <Button
-                  variant="ghost"
-                  color="slate"
-                  size="xs"
-                  icon="i-lucide-trash"
-                  :aria-label="t('PROJECTS.ACTIONS.DELETE')"
-                  :title="t('PROJECTS.ACTIONS.DELETE')"
-                  @click="confirmDelete(project)"
+                <DropdownMenu
+                  v-if="showActionsMenu"
+                  :menu-items="actionsMenuItems"
+                  class="end-0 mt-1 w-52 top-full"
+                  @action="openCreate"
                 />
               </div>
             </div>
           </div>
-        </article>
-      </div>
+        </div>
+      </header>
+
+      <main class="flex-1 px-6 overflow-y-auto">
+        <div class="w-full py-4 mx-auto max-w-5xl">
+          <div v-if="uiFlags.isFetching" class="flex justify-center p-8">
+            <Spinner />
+          </div>
+          <div
+            v-else-if="!filteredProjects.length"
+            class="flex items-center justify-center p-8 text-base text-n-slate-11"
+          >
+            {{ searchQuery ? t('PROJECTS.NO_RESULTS') : t('PROJECTS.EMPTY') }}
+          </div>
+          <div v-else class="divide-y divide-n-weak">
+            <div
+              v-for="project in filteredProjects"
+              :key="project.id"
+              class="flex items-start justify-between gap-4 py-4 cursor-pointer group max-sm:flex-col"
+              @click="openProject(project)"
+            >
+              <div class="flex items-start flex-1 min-w-0 gap-3">
+                <span
+                  class="flex items-center justify-center text-white rounded-lg size-9 shrink-0"
+                  :class="colorClass(project)"
+                >
+                  <Icon icon="i-lucide-folder-kanban" class="size-4" />
+                </span>
+                <div class="flex flex-col flex-1 min-w-0 gap-1">
+                  <span
+                    class="block truncate text-heading-3 text-n-slate-12 group-hover:text-n-blue-11"
+                  >
+                    {{ project.name }}
+                  </span>
+                  <p
+                    v-if="project.description"
+                    class="mb-0 text-n-slate-11 text-body-main line-clamp-2 sm:line-clamp-1"
+                  >
+                    {{ project.description }}
+                  </p>
+                  <div class="overflow-hidden">
+                    <div
+                      class="flex flex-wrap items-center gap-y-1 -ms-[calc(0.75rem+1px)] text-body-main text-n-slate-11 [&>span]:inline-flex [&>span]:items-center [&>span]:gap-1.5 [&>span]:me-3 [&>span]:before:content-[''] [&>span]:before:w-px [&>span]:before:h-3 [&>span]:before:shrink-0 [&>span]:before:bg-n-slate-6 [&>span]:before:me-1.5"
+                    >
+                      <span>
+                        {{
+                          t(`PROJECTS.STATUS.${project.status.toUpperCase()}`)
+                        }}
+                      </span>
+                      <span>
+                        <Icon
+                          icon="i-lucide-list-checks"
+                          class="size-3.5 shrink-0 text-n-slate-10"
+                        />
+                        {{ tasksCountLabel(project.tasks_count) }}
+                      </span>
+                      <span>
+                        <span
+                          class="w-16 h-1.5 overflow-hidden rounded-full bg-n-slate-4"
+                        >
+                          <span
+                            class="block h-full bg-n-brand"
+                            :class="progressWidthClass(project.progress)"
+                          />
+                        </span>
+                        {{ `${project.progress}%` }}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div
+                class="flex items-center gap-3 shrink-0 max-sm:ps-12"
+                @click.stop
+              >
+                <div v-if="project.members?.length" class="flex -space-x-2">
+                  <Avatar
+                    v-for="member in project.members.slice(0, 4)"
+                    :key="member.id"
+                    :name="member.name"
+                    :src="member.thumbnail"
+                    :size="24"
+                  />
+                </div>
+                <div class="flex gap-1">
+                  <Button
+                    v-if="project.status === 'active'"
+                    variant="ghost"
+                    color="slate"
+                    size="xs"
+                    icon="i-lucide-check"
+                    :aria-label="t('PROJECTS.ACTIONS.COMPLETE')"
+                    :title="t('PROJECTS.ACTIONS.COMPLETE')"
+                    @click="updateProjectStatus(project, 'completed')"
+                  />
+                  <Button
+                    v-if="project.status !== 'archived'"
+                    variant="ghost"
+                    color="slate"
+                    size="xs"
+                    icon="i-lucide-archive"
+                    :aria-label="t('PROJECTS.ACTIONS.ARCHIVE')"
+                    :title="t('PROJECTS.ACTIONS.ARCHIVE')"
+                    @click="updateProjectStatus(project, 'archived')"
+                  />
+                  <Button
+                    variant="ghost"
+                    color="slate"
+                    size="xs"
+                    icon="i-lucide-pencil"
+                    :aria-label="t('PROJECTS.ACTIONS.EDIT')"
+                    :title="t('PROJECTS.ACTIONS.EDIT')"
+                    @click="openEdit(project)"
+                  />
+                  <Button
+                    variant="ghost"
+                    color="slate"
+                    size="xs"
+                    icon="i-lucide-trash"
+                    :aria-label="t('PROJECTS.ACTIONS.DELETE')"
+                    :title="t('PROJECTS.ACTIONS.DELETE')"
+                    @click="confirmDelete(project)"
+                  />
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </main>
     </div>
 
     <ProjectFormModal ref="formModalRef" @save="saveProject" />
