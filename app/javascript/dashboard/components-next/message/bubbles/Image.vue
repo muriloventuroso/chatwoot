@@ -64,7 +64,7 @@ const handleImageError = () => {
     </div>
     <div v-else-if="isLoaded" class="relative group rounded-lg overflow-hidden">
       <img
-        class="skip-context-menu"
+        class="block w-auto h-auto max-w-full max-h-80 skip-context-menu"
         :src="attachment.dataUrl"
         :width="attachment.width"
         :height="attachment.height"
