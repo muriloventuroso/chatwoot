@@ -426,7 +426,7 @@ const projectDates = computed(() => {
           </div>
         </div>
         <div class="flex flex-col gap-3 lg:flex-row lg:items-center">
-          <div class="flex gap-2">
+          <div class="flex gap-2 shrink-0">
             <Button
               :variant="view === 'board' ? 'solid' : 'ghost'"
               :color="view === 'board' ? 'blue' : 'slate'"
@@ -442,18 +442,29 @@ const projectDates = computed(() => {
           </div>
           <Input
             v-model="searchQuery"
-            class="lg:max-w-xs"
+            class="lg:flex-1 lg:min-w-48"
             :placeholder="t('PROJECTS.DETAILS.SEARCH_TASKS')"
           />
-          <ProjectSelect v-model="assigneeFilter" :options="assigneeOptions" />
-          <ProjectSelect v-model="priorityFilter" :options="priorityOptions" />
-          <label class="flex items-center gap-2 text-sm text-n-slate-12">
+          <ProjectSelect
+            v-model="assigneeFilter"
+            :options="assigneeOptions"
+            class="lg:w-44 lg:shrink-0"
+          />
+          <ProjectSelect
+            v-model="priorityFilter"
+            :options="priorityOptions"
+            class="lg:w-44 lg:shrink-0"
+          />
+          <label
+            class="flex items-center gap-2 text-sm whitespace-nowrap shrink-0 text-n-slate-12"
+          >
             <input v-model="onlyMine" type="checkbox" />
             {{ t('PROJECTS.DETAILS.ONLY_MINE') }}
           </label>
           <Button
             color="blue"
             icon="i-lucide-plus"
+            class="shrink-0"
             :label="t('PROJECTS.DETAILS.ADD_TASK')"
             @click="openNewTask"
           />
