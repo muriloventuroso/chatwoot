@@ -60,3 +60,26 @@ export const PRIORITY_CLASS = {
   medium: 'bg-n-amber-3 text-n-amber-11',
   high: 'bg-n-ruby-3 text-n-ruby-11',
 };
+
+export const PRIORITY_BORDER_CLASS = {
+  low: 'border-s-n-slate-8',
+  medium: 'border-s-n-amber-9',
+  high: 'border-s-n-ruby-9',
+};
+
+// Whole days from today to the due date; negative when it has passed.
+// Parsed as local midnight: a bare `YYYY-MM-DD` is read as UTC and would be a
+// day off in timezones west of UTC.
+export const daysUntilDue = dueDate =>
+  Math.round(
+    (new Date(`${dueDate}T00:00:00`) - new Date(new Date().toDateString())) /
+      86400000
+  );
+
+export const taskProgress = task => {
+  if (task.status === 'done') return 100;
+  if (!task.subtasks_count) return 0;
+  return Math.round(
+    (task.completed_subtasks_count / task.subtasks_count) * 100
+  );
+};

@@ -155,6 +155,12 @@
         "NOT_EMPTY": "Mova as tarefas desta coluna antes de excluí-la",
         "LAST_COLUMN": "Um projeto precisa de pelo menos uma coluna"
       }
+    },
+    "LIST": {
+      "PROGRESS": "Progresso",
+      "DUE_TODAY": "Vence hoje",
+      "DAYS_LATE": "{count} dia de atraso | {count} dias de atraso",
+      "DAYS_LEFT": "Falta {count} dia | Faltam {count} dias"
     }
   }
 }

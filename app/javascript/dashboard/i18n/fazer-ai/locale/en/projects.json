@@ -155,6 +155,12 @@
         "NOT_EMPTY": "Move the tasks out of this column before deleting it",
         "LAST_COLUMN": "A project needs at least one column"
       }
+    },
+    "LIST": {
+      "PROGRESS": "Progress",
+      "DUE_TODAY": "Due today",
+      "DAYS_LATE": "{count} day late | {count} days late",
+      "DAYS_LEFT": "{count} day left | {count} days left"
     }
   }
 }

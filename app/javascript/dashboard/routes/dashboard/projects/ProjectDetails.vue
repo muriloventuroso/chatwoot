@@ -495,6 +495,7 @@ const projectDates = computed(() => {
           :agents="memberUsers"
           @open-task="openTask"
           @update-task="handleUpdateTask"
+          @create-task="handleCreateTask"
         />
       </div>
     </template>
