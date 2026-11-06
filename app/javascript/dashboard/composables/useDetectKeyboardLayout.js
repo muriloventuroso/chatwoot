@@ -12,8 +12,8 @@ async function detectLegacy() {
   const input = document.createElement('input');
   input.style.position = 'fixed';
   input.style.top = '-100px';
+  // No focus(): dispatchEvent doesn't need it, and it would steal focus from the field the user is typing in.
   document.body.appendChild(input);
-  input.focus();
 
   return new Promise(resolve => {
     const keyboardEvent = new KeyboardEvent('keypress', {

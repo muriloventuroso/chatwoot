@@ -77,6 +77,18 @@ describe('useDetectKeyboardLayout', () => {
     expect([LAYOUT_QWERTY, LAYOUT_QWERTZ, LAYOUT_AZERTY]).toContain(layout);
   });
 
+  it('keeps focus on the active input when using the legacy method', async () => {
+    navigator.keyboard = undefined;
+    const input = document.createElement('input');
+    document.body.appendChild(input);
+    input.focus();
+
+    await useDetectKeyboardLayout();
+
+    expect(document.activeElement).toBe(input);
+    input.remove();
+  });
+
   it('should cache the detected layout', async () => {
     navigator.keyboard = {
       getLayoutMap: vi.fn().mockResolvedValue(
