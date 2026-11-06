@@ -201,6 +201,17 @@ RSpec.describe Public::Api::V1::PortalsController, type: :request do
       expect(response.body).to include('Recommended articles')
       expect(response.body).to include('Alpha Guide', 'Beta Guide')
     end
+
+    it 'hides category contributors in the documentation layout when show_author is off' do
+      create(:article, account: account, author: agent, portal: portal, locale: 'en', status: :published, category: category_a)
+      portal.update!(config: { allowed_locales: %w[en], default_locale: 'en', layout: 'documentation', show_author: false })
+
+      get "/hc/#{portal.slug}/en"
+
+      expect(response).to have_http_status(:success)
+      expect(response.body).to include('Getting Started')
+      expect(response.body).not_to include(%(title="#{agent.available_name}"))
+    end
   end
 
   describe 'GET /public/api/v1/portals/{portal_slug}/sitemap' do

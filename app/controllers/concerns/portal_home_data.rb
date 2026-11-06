@@ -53,7 +53,7 @@ module PortalHomeData
 
   def build_category_contributors(categories)
     category_ids = categories.map(&:id)
-    return {} if category_ids.empty?
+    return {} if category_ids.empty? || !@portal.show_author?
 
     @portal.articles
            .published
