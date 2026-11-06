@@ -76,5 +76,14 @@
     "ACTIONS": {
       "REMOVE_ASSIGNED_AGENT": "Remover agente atribuído"
     }
+  },
+  "HELP_CENTER": {
+    "ARTICLES_PAGE": {
+      "ARTICLE_CARD": {
+        "CARD": {
+          "VIEWS": "{count} visualização | {count} visualizações"
+        }
+      }
+    }
   }
 }

@@ -47,5 +47,14 @@
     "EVENTS": {
       "MONITOR_MATCHED": "Coincidencia del monitor"
     }
+  },
+  "HELP_CENTER": {
+    "ARTICLES_PAGE": {
+      "ARTICLE_CARD": {
+        "CARD": {
+          "VIEWS": "{count} visita | {count} visitas"
+        }
+      }
+    }
   }
 }
