@@ -70,23 +70,11 @@ describe('useDetectKeyboardLayout', () => {
     expect(layout).toBe(LAYOUT_AZERTY);
   });
 
-  it('should use legacy method if navigator.keyboard is not available', async () => {
+  it('falls back to QWERTY when navigator.keyboard is not available', async () => {
     navigator.keyboard = undefined;
 
     const layout = await useDetectKeyboardLayout();
-    expect([LAYOUT_QWERTY, LAYOUT_QWERTZ, LAYOUT_AZERTY]).toContain(layout);
-  });
-
-  it('keeps focus on the active input when using the legacy method', async () => {
-    navigator.keyboard = undefined;
-    const input = document.createElement('input');
-    document.body.appendChild(input);
-    input.focus();
-
-    await useDetectKeyboardLayout();
-
-    expect(document.activeElement).toBe(input);
-    input.remove();
+    expect(layout).toBe(LAYOUT_QWERTY);
   });
 
   it('should cache the detected layout', async () => {
