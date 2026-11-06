@@ -71,6 +71,7 @@ class Account < ApplicationRecord # rubocop:disable Metrics/ClassLength
   store_accessor :settings, :keep_pending_on_bot_failure
   store_accessor :settings, :captain_auto_resolve_mode, :captain_false_promise_harness_enabled
   store_accessor :settings, :enforce_mfa
+  store_accessor :settings, :disable_company_auto_creation
   # Email only. The dashboard, favicon and PWA stay on the installation's brand; see Brand.
   store_accessor :settings, :brand_name, :brand_url, :brand_color
   include AccountAgentRestrictions
@@ -197,6 +198,11 @@ class Account < ApplicationRecord # rubocop:disable Metrics/ClassLength
 
   def enforce_mfa?
     Chatwoot.mfa_enabled? && enforce_mfa == true
+  end
+
+  # The superadmin form posts "1"/"0" and the settings JSON schema only accepts booleans.
+  def disable_company_auto_creation=(value)
+    super(ActiveModel::Type::Boolean.new.cast(value))
   end
 
   def locale_english_name

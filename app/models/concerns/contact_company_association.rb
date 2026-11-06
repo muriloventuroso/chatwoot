@@ -27,7 +27,8 @@ module ContactCompanyAssociation
       company_id.nil? &&
       saved_change_to_email? &&
       saved_change_to_email.first.nil? &&
-      account.feature_enabled?('companies')
+      account.feature_enabled?('companies') &&
+      !account.disable_company_auto_creation
   end
 
   def associate_company_from_email

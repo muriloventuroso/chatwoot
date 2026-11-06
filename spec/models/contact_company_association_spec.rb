@@ -24,6 +24,16 @@ RSpec.describe Contact, type: :model do
       end
     end
 
+    context 'when the account disables company auto-creation' do
+      before { account.update!(disable_company_auto_creation: '1') }
+
+      it 'does not create or associate a company' do
+        expect do
+          create(:contact, email: 'john@acme.com', account: account)
+        end.not_to change(Company, :count)
+      end
+    end
+
     context 'when creating a new contact with business email' do
       it 'automatically creates and associates a company' do
         expect do
