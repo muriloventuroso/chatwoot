@@ -74,9 +74,6 @@ const createState = (
   });
 };
 
-let editorView = null;
-let state;
-
 export default {
   components: { SlashCommandMenu, VideoEmbedInput },
   props: {
@@ -149,7 +146,7 @@ export default {
       remove: this.$t('HELP_CENTER.ARTICLE_EDITOR.IMAGE_UPLOAD.REMOVE'),
       cancel: this.$t('HELP_CENTER.ARTICLE_EDITOR.IMAGE_UPLOAD.CANCEL'),
     });
-    state = createState(
+    this.state = createState(
       this.modelValue || '',
       this.placeholder,
       this.plugins,
@@ -163,16 +160,16 @@ export default {
   mounted() {
     this.createEditorView();
 
-    editorView.updateState(state);
+    this.editorView.updateState(this.state);
     if (this.autofocus) {
       this.focusEditorInputField();
     }
   },
   beforeUnmount() {
     clearTimeout(this.pendingSync);
-    if (editorView) {
-      editorView.destroy();
-      editorView = null;
+    if (this.editorView) {
+      this.editorView.destroy();
+      this.editorView = null;
     }
   },
   methods: {
@@ -204,8 +201,8 @@ export default {
       });
     },
     isSelectionInsideTable() {
-      const { $from } = editorView.state.selection;
-      const { table } = editorView.state.schema.nodes;
+      const { $from } = this.editorView.state.selection;
+      const { table } = this.editorView.state.schema.nodes;
       for (let depth = $from.depth; depth > 0; depth -= 1) {
         if ($from.node(depth).type === table) return true;
       }
@@ -213,7 +210,7 @@ export default {
     },
     // Where a popover anchored under the caret at `pos` goes, relative to the editor.
     popoverPositionAt(pos) {
-      const coords = editorView.coordsAtPos(pos);
+      const coords = this.editorView.coordsAtPos(pos);
       const editorRect = this.$refs.editor.getBoundingClientRect();
       const isRtl = getComputedStyle(this.$refs.editor).direction === 'rtl';
       return {
@@ -224,17 +221,17 @@ export default {
       };
     },
     updateSlashMenuPosition(pos) {
-      if (!editorView) return;
+      if (!this.editorView) return;
       this.slashMenuPosition = this.popoverPositionAt(pos);
     },
     removeSlashTriggerText() {
-      if (!editorView || !this.slashRange) return;
+      if (!this.editorView || !this.slashRange) return;
       const { from, to } = this.slashRange;
-      editorView.dispatch(editorView.state.tr.delete(from, to));
-      state = editorView.state;
+      this.editorView.dispatch(this.editorView.state.tr.delete(from, to));
+      this.state = this.editorView.state;
     },
     executeSlashCommand(actionKey) {
-      if (!editorView) return;
+      if (!this.editorView) return;
 
       if (actionKey === 'video') {
         this.openVideoInput();
@@ -243,66 +240,75 @@ export default {
 
       this.removeSlashTriggerText();
 
-      const { schema } = editorView.state;
+      const { schema } = this.editorView.state;
       const insertCallout = emoji => {
-        const { $from } = editorView.state.selection;
-        editorView.dispatch(
-          editorView.state.tr.insertText(`${emoji} `, $from.start())
+        const { $from } = this.editorView.state.selection;
+        this.editorView.dispatch(
+          this.editorView.state.tr.insertText(`${emoji} `, $from.start())
         );
-        wrapIn(schema.nodes.blockquote)(editorView.state, editorView.dispatch);
+        wrapIn(schema.nodes.blockquote)(
+          this.editorView.state,
+          this.editorView.dispatch
+        );
       };
       const commandMap = {
         blockquote: () =>
           wrapIn(schema.nodes.blockquote)(
-            editorView.state,
-            editorView.dispatch
+            this.editorView.state,
+            this.editorView.dispatch
           ),
         codeBlock: () =>
           toggleBlockType(schema.nodes.code_block, {})(
-            editorView.state,
-            editorView.dispatch
+            this.editorView.state,
+            this.editorView.dispatch
           ),
         calloutNote: () => insertCallout(ARTICLE_CALLOUTS.calloutNote),
         calloutWarning: () => insertCallout(ARTICLE_CALLOUTS.calloutWarning),
         calloutTip: () => insertCallout(ARTICLE_CALLOUTS.calloutTip),
         strong: () =>
           toggleMark(schema.marks.strong)(
-            editorView.state,
-            editorView.dispatch
+            this.editorView.state,
+            this.editorView.dispatch
           ),
         em: () =>
-          toggleMark(schema.marks.em)(editorView.state, editorView.dispatch),
+          toggleMark(schema.marks.em)(
+            this.editorView.state,
+            this.editorView.dispatch
+          ),
         strike: () =>
           toggleMark(schema.marks.strike)(
-            editorView.state,
-            editorView.dispatch
+            this.editorView.state,
+            this.editorView.dispatch
           ),
         code: () =>
-          toggleMark(schema.marks.code)(editorView.state, editorView.dispatch),
+          toggleMark(schema.marks.code)(
+            this.editorView.state,
+            this.editorView.dispatch
+          ),
         h1: () =>
           toggleBlockType(schema.nodes.heading, { level: 1 })(
-            editorView.state,
-            editorView.dispatch
+            this.editorView.state,
+            this.editorView.dispatch
           ),
         h2: () =>
           toggleBlockType(schema.nodes.heading, { level: 2 })(
-            editorView.state,
-            editorView.dispatch
+            this.editorView.state,
+            this.editorView.dispatch
           ),
         h3: () =>
           toggleBlockType(schema.nodes.heading, { level: 3 })(
-            editorView.state,
-            editorView.dispatch
+            this.editorView.state,
+            this.editorView.dispatch
           ),
         bulletList: () =>
           wrapInList(schema.nodes.bullet_list)(
-            editorView.state,
-            editorView.dispatch
+            this.editorView.state,
+            this.editorView.dispatch
           ),
         orderedList: () =>
           wrapInList(schema.nodes.ordered_list)(
-            editorView.state,
-            editorView.dispatch
+            this.editorView.state,
+            this.editorView.dispatch
           ),
         insertTable: () => {
           const { table, table_row, table_header, table_cell, paragraph } =
@@ -316,17 +322,17 @@ export default {
           const headerRow = table_row.create(null, headerCells);
           const dataRow = table_row.create(null, dataCells);
           const tableNode = table.create(null, [headerRow, dataRow]);
-          const tr = editorView.state.tr.replaceSelectionWith(tableNode);
-          editorView.dispatch(tr.scrollIntoView());
+          const tr = this.editorView.state.tr.replaceSelectionWith(tableNode);
+          this.editorView.dispatch(tr.scrollIntoView());
         },
         horizontalRule: () => {
-          editorView.dispatch(
-            editorView.state.tr
+          this.editorView.dispatch(
+            this.editorView.state.tr
               .replaceSelectionWith(schema.nodes.horizontal_rule.create())
               .scrollIntoView()
           );
-          const { doc, selection, tr } = editorView.state;
-          editorView.dispatch(
+          const { doc, selection, tr } = this.editorView.state;
+          this.editorView.dispatch(
             tr.setSelection(Selection.near(doc.resolve(selection.to), 1))
           );
         },
@@ -336,9 +342,9 @@ export default {
       const command = commandMap[actionKey];
       if (command) {
         command();
-        state = editorView.state;
+        this.state = this.editorView.state;
         this.emitOnChange();
-        editorView.focus();
+        this.editorView.focus();
       }
     },
     openVideoInput() {
@@ -349,7 +355,7 @@ export default {
     },
     openVideoInputAtCaret() {
       this.videoInputPosition = this.popoverPositionAt(
-        editorView.state.selection.from
+        this.editorView.state.selection.from
       );
       this.showVideoInput = true;
     },
@@ -359,31 +365,31 @@ export default {
     },
     insertVideoEmbed(url) {
       this.closeVideoInput();
-      if (!editorView) return;
+      if (!this.editorView) return;
 
-      const { schema } = editorView.state;
+      const { schema } = this.editorView.state;
       const linkMark = schema.marks.link.create({ href: url });
       const paragraph = schema.nodes.paragraph.create(
         null,
         schema.text(url, [linkMark])
       );
-      const tr = editorView.state.tr.replaceSelectionWith(paragraph);
-      editorView.dispatch(tr.scrollIntoView());
-      state = editorView.state;
+      const tr = this.editorView.state.tr.replaceSelectionWith(paragraph);
+      this.editorView.dispatch(tr.scrollIntoView());
+      this.state = this.editorView.state;
       this.emitOnChange();
-      editorView.focus();
+      this.editorView.focus();
     },
     cancelVideoInput() {
       this.closeVideoInput();
-      editorView?.focus();
+      this.editorView?.focus();
     },
     insertVideoFile(file) {
       this.closeVideoInput();
       this.handleFiles([file]);
     },
     contentFromEditor() {
-      if (editorView) {
-        return ArticleMarkdownSerializer.serialize(editorView.state.doc);
+      if (this.editorView) {
+        return ArticleMarkdownSerializer.serialize(this.editorView.state.doc);
       }
       return '';
     },
@@ -430,7 +436,7 @@ export default {
       return null;
     },
     handleFiles(files) {
-      if (!editorView || !files.length) return;
+      if (!this.editorView || !files.length) return;
       if (this.uploadsBlockedMessage) {
         useAlert(this.uploadsBlockedMessage);
         return;
@@ -442,17 +448,17 @@ export default {
       });
       const upload = this.uploadFileToStorage;
       const { images, videos } = buckets;
-      if (images.length) insertImageFiles(editorView, images, { upload });
-      if (videos.length) insertFileUploads(editorView, videos, { upload });
-      if (images.length || videos.length) editorView.focus();
+      if (images.length) insertImageFiles(this.editorView, images, { upload });
+      if (videos.length) insertFileUploads(this.editorView, videos, { upload });
+      if (images.length || videos.length) this.editorView.focus();
     },
     // In-flight uploads and failed cards: resolving a draft or navigating
     // away would drop them.
     hasPendingUploads() {
-      if (!editorView) return false;
+      if (!this.editorView) return false;
       return (
-        hasActiveUploads(editorView) ||
-        !!editorView.dom.querySelector(
+        hasActiveUploads(this.editorView) ||
+        !!this.editorView.dom.querySelector(
           '.pm-upload-card[data-state="error"], .pm-upload-overlay[data-state="error"]'
         )
       );
@@ -470,7 +476,7 @@ export default {
       this.pendingSync = null;
       // Old emissions are history of a superseded document.
       this.emittedValues = [];
-      state = createState(
+      this.state = createState(
         this.modelValue || '',
         this.placeholder,
         this.plugins,
@@ -480,12 +486,12 @@ export default {
         },
         this.enabledMenuOptions
       );
-      editorView.updateState(state);
+      this.editorView.updateState(this.state);
       this.focusEditorInputField();
     },
     createEditorView() {
-      editorView = new EditorView(this.$refs.editor, {
-        state: state,
+      this.editorView = new EditorView(this.$refs.editor, {
+        state: this.state,
         nodeViews: {
           image: articleImageView({
             left: this.$t('HELP_CENTER.ARTICLE_EDITOR.IMAGE_ALIGN.LEFT'),
@@ -494,8 +500,8 @@ export default {
           }),
         },
         dispatchTransaction: tx => {
-          state = state.apply(tx);
-          editorView.updateState(state);
+          this.state = this.state.apply(tx);
+          this.editorView.updateState(this.state);
           if (tx.docChanged) {
             this.emitOnChange();
           }
@@ -535,11 +541,11 @@ export default {
       });
     },
     focusEditorInputField() {
-      const { tr } = editorView.state;
+      const { tr } = this.editorView.state;
       const selection = Selection.atEnd(tr.doc);
 
-      editorView.dispatch(tr.setSelection(selection));
-      editorView.focus();
+      this.editorView.dispatch(tr.setSelection(selection));
+      this.editorView.focus();
     },
     // A recent emission is our own autosave echo — re-check it once the
     // window passes. Anything else is a definitive reset: apply it now.
@@ -583,7 +589,7 @@ export default {
           this.slashMenuPosition = null;
           return true;
         }
-        collapseSelection(editorView);
+        collapseSelection(this.editorView);
         return true;
       }
       return false;

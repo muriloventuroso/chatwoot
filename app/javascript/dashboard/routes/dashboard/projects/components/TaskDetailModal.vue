@@ -10,8 +10,9 @@ import Button from 'dashboard/components-next/button/Button.vue';
 import Dialog from 'dashboard/components-next/dialog/Dialog.vue';
 import Icon from 'dashboard/components-next/icon/Icon.vue';
 import Input from 'dashboard/components-next/input/Input.vue';
-import TextArea from 'dashboard/components-next/textarea/TextArea.vue';
+import MessageFormatter from 'shared/helpers/MessageFormatter';
 import ProjectSelect from './ProjectSelect.vue';
+import TaskMarkdownEditor from './TaskMarkdownEditor.vue';
 import { provideDropdownTeleport } from 'dashboard/components-next/dropdown-menu/base/provider';
 import {
   nextColumnPosition,
@@ -65,6 +66,8 @@ const form = ref({
 const subtaskTitle = ref('');
 const commentContent = ref('');
 const isSaving = ref(false);
+// Remounts the editors on each open so they load the task without stealing focus.
+const editorKey = ref(0);
 
 const task = computed(
   () => store.getters['projects/getTaskById'](taskId.value) || {}
@@ -111,6 +114,7 @@ const open = async ({ task: record, columnId } = {}) => {
   hydrateForm(record || { project_column_id: columnId });
   subtaskTitle.value = '';
   commentContent.value = '';
+  editorKey.value += 1;
   dialogRef.value?.open();
   if (record?.id) await loadTask(record.id);
 };
@@ -277,6 +281,9 @@ const removeAttachment = async attachment => {
   }
 };
 
+const formatMarkdown = content =>
+  new MessageFormatter(content).formattedMessage;
+
 const formattedTime = timestamp => {
   if (!timestamp) return '';
   return new Date(timestamp * 1000).toLocaleString();
@@ -301,11 +308,10 @@ defineExpose({ open, close });
           v-model="form.title"
           :placeholder="t('PROJECTS.TASK.FORM.TITLE_PLACEHOLDER')"
         />
-        <TextArea
+        <TaskMarkdownEditor
+          :key="`description-${editorKey}`"
           v-model="form.description"
           :placeholder="t('PROJECTS.TASK.FORM.DESCRIPTION_PLACEHOLDER')"
-          :max-length="5000"
-          auto-height
         />
         <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
           <ProjectSelect
@@ -478,7 +484,10 @@ defineExpose({ open, close });
                     {{ formattedTime(comment.created_at) }}
                   </span>
                 </div>
-                <p class="text-sm text-n-slate-11">{{ comment.content }}</p>
+                <div
+                  v-dompurify-html="formatMarkdown(comment.content)"
+                  class="text-sm break-words prose-sm prose dark:prose-invert max-w-none text-n-slate-11 [&>:first-child]:mt-0 [&>:last-child]:mb-0"
+                />
                 <button
                   v-if="canDeleteComment(comment)"
                   type="button"
@@ -493,11 +502,10 @@ defineExpose({ open, close });
           <p v-if="!comments.length" class="text-sm text-n-slate-10">
             {{ t('PROJECTS.TASK.COMMENTS.EMPTY') }}
           </p>
-          <TextArea
+          <TaskMarkdownEditor
+            :key="`comment-${editorKey}`"
             v-model="commentContent"
             :placeholder="t('PROJECTS.TASK.COMMENTS.ADD_PLACEHOLDER')"
-            :max-length="5000"
-            auto-height
           />
           <Button
             color="blue"

@@ -225,6 +225,19 @@ describe('FullEditor', () => {
       expect(wrapper.emitted('input').at(-1)).toEqual(['Hello world']);
     });
 
+    it('keeps each editor on the page independent', async () => {
+      const first = mountEditor({ modelValue: 'First' });
+      const firstView = view;
+      const second = mountEditor({ modelValue: 'Second' });
+      firstView.dispatch(firstView.state.tr.insertText('!'));
+      await first.vm.$nextTick();
+
+      expect(first.emitted('update:modelValue').at(-1)).toEqual(['First!']);
+      expect(second.emitted('update:modelValue')).toBeUndefined();
+      expect(view.state.doc.textContent).toBe('Second');
+      first.unmount();
+    });
+
     it('reloads when the model value changes outside the editor', async () => {
       mountEditor({ modelValue: 'Hello' });
       await wrapper.setProps({ modelValue: 'Replaced' });
