@@ -39,7 +39,7 @@ const formattedDueDate = computed(() => {
 <template>
   <button
     type="button"
-    class="flex flex-col w-full gap-2 p-3 text-start border border-s-4 rounded-xl bg-n-solid-1 border-n-weak hover:border-y-n-strong hover:border-e-n-strong"
+    class="flex flex-col w-full gap-2 p-3 text-start border border-s-4 rounded-xl bg-n-solid-1 border-n-strong shadow-sm cursor-grab active:cursor-grabbing hover:shadow-md hover:border-y-n-slate-7 hover:border-e-n-slate-7"
     :class="PRIORITY_BORDER_CLASS[task.priority]"
     @click="emit('open', task)"
   >
