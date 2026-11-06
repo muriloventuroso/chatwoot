@@ -8,8 +8,9 @@ import { computed } from 'vue';
 import { useMapGetter } from 'dashboard/composables/store';
 
 defineProps({
+  // A selector or the element itself.
   to: {
-    type: String,
+    type: [String, Object],
     default: 'body',
   },
 });

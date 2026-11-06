@@ -1,6 +1,11 @@
-import { h } from 'vue';
+import { defineComponent, h, ref } from 'vue';
 import { mount } from '@vue/test-utils';
 import DropdownContainer from '../DropdownContainer.vue';
+import { provideDropdownTeleport } from '../provider';
+
+vi.mock('dashboard/composables/store', () => ({
+  useMapGetter: () => ref(false),
+}));
 
 const mountDropdown = () =>
   mount(DropdownContainer, {
@@ -110,5 +115,34 @@ describe('DropdownContainer', () => {
       wrapper.get('[data-testid="trigger"]').element
     );
     wrapper.unmount();
+  });
+
+  it('renders a teleported menu inside the modal dialog that holds its trigger', async () => {
+    const dialog = document.createElement('dialog');
+    document.body.appendChild(dialog);
+    const TeleportingDropdown = defineComponent({
+      setup() {
+        provideDropdownTeleport();
+        return () =>
+          h(DropdownContainer, null, {
+            trigger: ({ toggle }) =>
+              h(
+                'button',
+                { 'data-testid': 'trigger', onClick: toggle },
+                'Open'
+              ),
+            default: () => h('ul', { 'data-testid': 'menu' }, 'Item'),
+          });
+      },
+    });
+    const wrapper = mount(TeleportingDropdown, { attachTo: dialog });
+
+    await wrapper.get('[data-testid="trigger"]').trigger('click');
+
+    const menu = document.querySelector('[data-dropdown-menu]');
+    expect(menu.closest('dialog')).toBe(dialog);
+    expect(menu.contains(wrapper.element)).toBe(false);
+    wrapper.unmount();
+    dialog.remove();
   });
 });

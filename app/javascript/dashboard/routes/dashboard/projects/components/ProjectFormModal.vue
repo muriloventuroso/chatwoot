@@ -8,6 +8,7 @@ import Dialog from 'dashboard/components-next/dialog/Dialog.vue';
 import Input from 'dashboard/components-next/input/Input.vue';
 import TextArea from 'dashboard/components-next/textarea/TextArea.vue';
 import ProjectSelect from './ProjectSelect.vue';
+import { provideDropdownTeleport } from 'dashboard/components-next/dropdown-menu/base/provider';
 import {
   PROJECT_COLOR_CLASS,
   PROJECT_COLORS,
@@ -15,6 +16,9 @@ import {
 } from '../constants';
 
 const emit = defineEmits(['save']);
+
+// Selects open over the dialog instead of growing its scroll area.
+provideDropdownTeleport();
 const { t } = useI18n();
 const uiFlags = useMapGetter('projects/getUIFlags');
 

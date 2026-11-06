@@ -12,6 +12,7 @@ import Icon from 'dashboard/components-next/icon/Icon.vue';
 import Input from 'dashboard/components-next/input/Input.vue';
 import TextArea from 'dashboard/components-next/textarea/TextArea.vue';
 import ProjectSelect from './ProjectSelect.vue';
+import { provideDropdownTeleport } from 'dashboard/components-next/dropdown-menu/base/provider';
 import {
   nextColumnPosition,
   progressWidthClass,
@@ -25,6 +26,9 @@ const props = defineProps({
 });
 
 const emit = defineEmits(['close', 'deleted', 'changed']);
+
+// Selects open over the dialog instead of growing its scroll area.
+provideDropdownTeleport();
 const { t } = useI18n();
 const store = useStore();
 const { isAdmin } = useAdmin();

@@ -129,7 +129,10 @@ defineExpose({ open, close });
       ]"
       @close.prevent="handleDialogClose"
     >
-      <OnClickOutside @trigger="handleClickOutside">
+      <OnClickOutside
+        :options="{ ignore: ['[data-dropdown-menu]'] }"
+        @trigger="handleClickOutside"
+      >
         <form
           ref="dialogContentRef"
           class="flex flex-col w-full max-h-[90vh] gap-6 p-6 overflow-hidden text-start align-middle transition-all duration-300 ease-in-out transform bg-n-alpha-3 backdrop-blur-[100px] shadow-xl rounded-xl"

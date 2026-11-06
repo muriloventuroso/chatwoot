@@ -5,6 +5,7 @@ import { useI18n } from 'vue-i18n';
 import Dialog from 'dashboard/components-next/dialog/Dialog.vue';
 import Input from 'dashboard/components-next/input/Input.vue';
 import ProjectSelect from './ProjectSelect.vue';
+import { provideDropdownTeleport } from 'dashboard/components-next/dropdown-menu/base/provider';
 import { TASK_STATUSES } from '../constants';
 
 defineProps({
@@ -12,6 +13,9 @@ defineProps({
 });
 
 const emit = defineEmits(['save']);
+
+// Selects open over the dialog instead of growing its scroll area.
+provideDropdownTeleport();
 const { t } = useI18n();
 
 const dialogRef = ref(null);
