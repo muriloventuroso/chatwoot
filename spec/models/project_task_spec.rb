@@ -51,10 +51,26 @@ RSpec.describe ProjectTask do
     expect(second.position).to be > first.position
   end
 
-  it 'does not allow an assignee from another account' do
-    task = build(:project_task, project: project, assignee: create(:user))
-    expect(task).not_to be_valid
-    expect(task.errors[:assignee]).to be_present
+  describe 'assignee' do
+    let(:agent) { create(:user, account: project.account) }
+
+    it 'allows a project member' do
+      create(:project_member, project: project, user: agent)
+      expect(build(:project_task, project: project, assignee: agent)).to be_valid
+    end
+
+    it 'does not allow an account user who is not a project member' do
+      task = build(:project_task, project: project, assignee: agent)
+      expect(task).not_to be_valid
+      expect(task.errors[:assignee]).to be_present
+    end
+
+    it 'keeps tasks editable after their assignee leaves the project' do
+      member = create(:project_member, project: project, user: agent)
+      task = create(:project_task, project: project, assignee: agent)
+      member.destroy!
+      expect(task.update(title: 'Renamed')).to be(true)
+    end
   end
 
   describe 'subtasks' do

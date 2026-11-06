@@ -60,6 +60,10 @@ const members = computed(() =>
   store.getters['projects/getMembersByProject'](projectId.value)
 );
 const agents = useMapGetter('agents/getAgents');
+// Tasks can only be assigned to project members.
+const memberUsers = computed(() =>
+  members.value.map(member => member.user).filter(Boolean)
+);
 const currentUserId = useMapGetter('getCurrentUserID');
 
 const filteredTasks = computed(() => {
@@ -488,7 +492,7 @@ const projectDates = computed(() => {
           v-else
           :tasks="filteredTasks"
           :columns="columns"
-          :agents="agents"
+          :agents="memberUsers"
           @open-task="openTask"
           @update-task="handleUpdateTask"
         />
@@ -500,7 +504,7 @@ const projectDates = computed(() => {
       ref="taskModalRef"
       :project-id="projectId"
       :columns="columns"
-      :agents="agents"
+      :agents="memberUsers"
       @close="refreshProject"
       @changed="refreshProject"
     />

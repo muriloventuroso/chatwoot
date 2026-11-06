@@ -52,7 +52,8 @@ class ProjectTask < ApplicationRecord
   validate :column_belongs_to_same_project
   validate :parent_task_is_root
   validate :parent_task_belongs_to_same_project
-  validate :assignee_belongs_to_account
+  # Only on change, so removing a member does not lock their existing tasks.
+  validate :assignee_is_project_member, if: :assignee_id_changed?
 
   before_validation :set_account_from_project
   before_validation :sync_status_from_column
@@ -136,10 +137,10 @@ class ProjectTask < ApplicationRecord
     errors.add(:column, 'must belong to the same project')
   end
 
-  def assignee_belongs_to_account
-    return if assignee.blank? || account_id.blank?
-    return if assignee.account_users.exists?(account_id: account_id)
+  def assignee_is_project_member
+    return if assignee_id.blank? || project.blank?
+    return if project.project_members.exists?(user_id: assignee_id)
 
-    errors.add(:assignee, 'must belong to the account')
+    errors.add(:assignee, 'must be a member of the project')
   end
 end
