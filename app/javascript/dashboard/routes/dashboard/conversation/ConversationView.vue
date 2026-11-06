@@ -111,6 +111,7 @@ export default {
       // messageId on the next conversation is honored.
       this.scrolledToMessageId = null;
       this.fetchConversationIfUnavailable();
+      this.closeContactPanelOnSmallScreen();
     },
   },
 
@@ -128,6 +129,7 @@ export default {
     this.$store.dispatch('agents/get');
     this.$store.dispatch('portals/index');
     this.initialize();
+    this.closeContactPanelOnSmallScreen();
     this.$watch('$store.state.route', () => this.initialize());
     this.$watch('chatList.length', () => {
       this.setActiveChat();
@@ -135,6 +137,16 @@ export default {
   },
 
   methods: {
+    // The panel's open state is saved on the user, not the device, so a panel left open on the
+    // desktop covered every conversation opened on a phone. There it opens only when asked for.
+    closeContactPanelOnSmallScreen() {
+      if (!this.conversationId || !this.uiSettings.is_contact_sidebar_open) {
+        return;
+      }
+      if (window.innerWidth >= wootConstants.SMALL_SCREEN_BREAKPOINT) return;
+
+      this.updateUISettings({ is_contact_sidebar_open: false });
+    },
     onConversationLoad() {
       this.fetchConversationIfUnavailable();
     },
