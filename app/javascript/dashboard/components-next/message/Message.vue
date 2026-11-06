@@ -884,9 +884,11 @@ provideMessageContext({
         >
           <div class="relative">
             <Component :is="componentToRender" />
+            <!-- Stacked on touch screens: side by side, the two buttons are wider than the margin
+                 a full-width bubble leaves, so they ran off a phone screen. -->
             <div
               v-if="canShowMessageActions"
-              class="absolute top-1/2 -translate-y-1/2 z-10 items-center gap-0.5 rounded-full border border-n-slate-6 bg-n-solid-2 shadow-sm p-0.5 transition-opacity [@media(hover:none)]:opacity-100"
+              class="absolute top-1/2 -translate-y-1/2 z-10 items-center gap-0.5 rounded-full border border-n-slate-6 bg-n-solid-2 shadow-sm p-0.5 transition-opacity [@media(hover:none)]:opacity-100 [@media(hover:none)]:flex-col"
               :class="[
                 canShowReactionToolbar
                   ? 'flex'
