@@ -226,6 +226,15 @@ RSpec.describe 'Public Articles API', type: :request do
       expect(links).to include("/hc/#{portal.slug}/articles/#{translated_article.slug}")
     end
 
+    it 'hides the author in the documentation layout when show_author is off' do
+      portal.update!(config: portal.config.merge('layout' => 'documentation', 'show_author' => false))
+
+      get "/hc/#{portal.slug}/articles/#{article.slug}"
+
+      expect(response).to have_http_status(:success)
+      expect(response.body).not_to include(agent.available_name)
+    end
+
     it 'uses the category locale after a translated category changes language' do
       portal.update!(config: portal.config.merge('allowed_locales' => %w[en es fr]))
       admin = create(:user, account: portal.account, role: :administrator)

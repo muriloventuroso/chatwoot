@@ -44,6 +44,6 @@ class Public::Api::V1::Portals::CategoriesController < Public::Api::V1::Portals:
 
   def load_category_articles
     @articles = @category.articles.published.order(:position).includes(:author)
-    @category_authors = @articles.filter_map(&:author).uniq
+    @category_authors = @portal.show_author? ? @articles.filter_map(&:author).uniq : []
   end
 end

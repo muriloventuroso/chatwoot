@@ -10,7 +10,7 @@
                  portal: portal, article: article %>
     </div>
   </div>
-  <% if article.author.present? %>
+  <% if portal.show_author? && article.author.present? %>
     <div class="mt-6 flex items-center gap-3">
       <%= render 'public/api/v1/portals/documentation_layout/user_avatar',
                  user: article.author,
