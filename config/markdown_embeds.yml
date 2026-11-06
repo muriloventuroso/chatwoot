@@ -11,7 +11,7 @@
 # 3. Create an HTML template using %{name} placeholders matching the capture groups
 
 youtube:
-  regex: 'https?://(?:www\.)?(?:youtube\.com/watch\?v=|youtu\.be/)(?<video_id>[^&/?]+)'
+  regex: 'https?://(?:www\.|m\.)?(?:youtube\.com/(?:watch\?v=|shorts/|embed/|live/)|youtu\.be/)(?<video_id>[^&/?#]+)'
   template: |
     <div style="position: relative; padding-bottom: 62.5%; height: 0;">
      <iframe

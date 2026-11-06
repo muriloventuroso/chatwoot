@@ -7,7 +7,6 @@ import {
   ArticleMarkdownTransformer,
   EditorState,
   Selection,
-  imageResizeView,
   imagePastePlugin,
   embedPreviewPlugin,
   insertImageFiles,
@@ -16,6 +15,7 @@ import {
   fileUploadPlugin,
   setUploadLabels,
   toggleMark,
+  wrapIn,
   wrapInList,
 } from '@chatwoot/prosemirror-schema';
 import {
@@ -31,6 +31,8 @@ import {
 } from 'shared/helpers/FileHelper';
 import { isEscape } from 'shared/helpers/KeyboardHelpers';
 import { collapseSelection } from 'dashboard/helper/editorHelper';
+import { articleImageView } from 'dashboard/helper/articleImageView';
+import { ARTICLE_CALLOUTS } from 'dashboard/constants/editor';
 import { useAlert } from 'dashboard/composables';
 import { useMapGetter } from 'dashboard/composables/store';
 import { useUISettings } from 'dashboard/composables/useUISettings';
@@ -151,7 +153,10 @@ export default {
       this.modelValue || '',
       this.placeholder,
       this.plugins,
-      { onImageUpload: this.openFileBrowser },
+      {
+        onImageUpload: this.openFileBrowser,
+        onVideoClick: this.openVideoInputAtCaret,
+      },
       this.enabledMenuOptions
     );
   },
@@ -206,17 +211,21 @@ export default {
       }
       return false;
     },
-    updateSlashMenuPosition(pos) {
-      if (!editorView) return;
+    // Where a popover anchored under the caret at `pos` goes, relative to the editor.
+    popoverPositionAt(pos) {
       const coords = editorView.coordsAtPos(pos);
       const editorRect = this.$refs.editor.getBoundingClientRect();
       const isRtl = getComputedStyle(this.$refs.editor).direction === 'rtl';
-      this.slashMenuPosition = {
+      return {
         top: coords.bottom - editorRect.top + SLASH_MENU_OFFSET,
         ...(isRtl
           ? { right: editorRect.right - coords.right }
           : { left: coords.left - editorRect.left }),
       };
+    },
+    updateSlashMenuPosition(pos) {
+      if (!editorView) return;
+      this.slashMenuPosition = this.popoverPositionAt(pos);
     },
     removeSlashTriggerText() {
       if (!editorView || !this.slashRange) return;
@@ -235,7 +244,27 @@ export default {
       this.removeSlashTriggerText();
 
       const { schema } = editorView.state;
+      const insertCallout = emoji => {
+        const { $from } = editorView.state.selection;
+        editorView.dispatch(
+          editorView.state.tr.insertText(`${emoji} `, $from.start())
+        );
+        wrapIn(schema.nodes.blockquote)(editorView.state, editorView.dispatch);
+      };
       const commandMap = {
+        blockquote: () =>
+          wrapIn(schema.nodes.blockquote)(
+            editorView.state,
+            editorView.dispatch
+          ),
+        codeBlock: () =>
+          toggleBlockType(schema.nodes.code_block, {})(
+            editorView.state,
+            editorView.dispatch
+          ),
+        calloutNote: () => insertCallout(ARTICLE_CALLOUTS.calloutNote),
+        calloutWarning: () => insertCallout(ARTICLE_CALLOUTS.calloutWarning),
+        calloutTip: () => insertCallout(ARTICLE_CALLOUTS.calloutTip),
         strong: () =>
           toggleMark(schema.marks.strong)(
             editorView.state,
@@ -316,6 +345,12 @@ export default {
       // Capture the caret position before removing the trigger clears it.
       this.videoInputPosition = this.slashMenuPosition;
       this.removeSlashTriggerText();
+      this.showVideoInput = true;
+    },
+    openVideoInputAtCaret() {
+      this.videoInputPosition = this.popoverPositionAt(
+        editorView.state.selection.from
+      );
       this.showVideoInput = true;
     },
     closeVideoInput() {
@@ -439,7 +474,10 @@ export default {
         this.modelValue || '',
         this.placeholder,
         this.plugins,
-        { onImageUpload: this.openFileBrowser },
+        {
+          onImageUpload: this.openFileBrowser,
+          onVideoClick: this.openVideoInputAtCaret,
+        },
         this.enabledMenuOptions
       );
       editorView.updateState(state);
@@ -449,7 +487,11 @@ export default {
       editorView = new EditorView(this.$refs.editor, {
         state: state,
         nodeViews: {
-          image: imageResizeView,
+          image: articleImageView({
+            left: this.$t('HELP_CENTER.ARTICLE_EDITOR.IMAGE_ALIGN.LEFT'),
+            center: this.$t('HELP_CENTER.ARTICLE_EDITOR.IMAGE_ALIGN.CENTER'),
+            right: this.$t('HELP_CENTER.ARTICLE_EDITOR.IMAGE_ALIGN.RIGHT'),
+          }),
         },
         dispatchTransaction: tx => {
           state = state.apply(tx);

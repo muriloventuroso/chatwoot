@@ -167,6 +167,9 @@
       "minimatch@<4": "3.1.5",
       "minimatch@>=9.0.0 <9.0.7": "9.0.9",
       "rollup": ">=4.59.0"
+    },
+    "patchedDependencies": {
+      "@chatwoot/prosemirror-schema@1.4.6": "patches/@chatwoot__prosemirror-schema@1.4.6.patch"
     }
   },
   "lint-staged": {

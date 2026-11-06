@@ -61,6 +61,13 @@
           "ERROR_MESSAGE": "Failed to create the translation. Please try again."
         }
       }
+    },
+    "ARTICLE_EDITOR": {
+      "IMAGE_ALIGN": {
+        "LEFT": "Align left",
+        "CENTER": "Align center",
+        "RIGHT": "Align right"
+      }
     }
   }
 }

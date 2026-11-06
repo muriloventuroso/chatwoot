@@ -11,6 +11,11 @@ overrides:
   minimatch@>=9.0.0 <9.0.7: 9.0.9
   rollup: '>=4.59.0'
 
+patchedDependencies:
+  '@chatwoot/prosemirror-schema@1.4.6':
+    hash: 2e25174c4817e04c87b904e1cc53db7202a185c477e1880b4629e275d18feefb
+    path: patches/@chatwoot__prosemirror-schema@1.4.6.patch
+
 importers:
 
   .:
@@ -29,7 +34,7 @@ importers:
         version: 0.6.2
       '@chatwoot/prosemirror-schema':
         specifier: 1.4.6
-        version: 1.4.6
+        version: 1.4.6(patch_hash=2e25174c4817e04c87b904e1cc53db7202a185c477e1880b4629e275d18feefb)
       '@chatwoot/utils':
         specifier: ^0.0.57
         version: 0.0.57
@@ -5197,7 +5202,7 @@ snapshots:
 
   '@chatwoot/pico-search@0.6.2': {}
 
-  '@chatwoot/prosemirror-schema@1.4.6':
+  '@chatwoot/prosemirror-schema@1.4.6(patch_hash=2e25174c4817e04c87b904e1cc53db7202a185c477e1880b4629e275d18feefb)':
     dependencies:
       linkify-it: 5.0.2
       markdown-it: 14.3.2

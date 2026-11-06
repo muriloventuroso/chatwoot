@@ -1,0 +1,113 @@
+diff --git a/dist/index.es.js b/dist/index.es.js
+index 41a736f4fe3cd158366eb413d6958601fe817253..407c947c98bc7b4454c84d4d6b0e9bad8814bb47 100644
+--- a/dist/index.es.js
++++ b/dist/index.es.js
+@@ -15,8 +15,8 @@ import * as baseListCommand from 'prosemirror-schema-list';
+ import { wrapInList, orderedList, bulletList, listItem } from 'prosemirror-schema-list';
+ export { wrapInList } from 'prosemirror-schema-list';
+ import LinkifyIt from 'linkify-it';
+-import { baseKeymap, chainCommands, selectAll, deleteSelection, toggleMark, exitCode, joinBackward, selectNodeBackward, joinUp, joinDown, selectParentNode, newlineInCode, createParagraphNear as createParagraphNear$1, liftEmptyBlock, splitBlock, setBlockType } from 'prosemirror-commands';
+-export { toggleMark } from 'prosemirror-commands';
++import { wrapIn, lift, baseKeymap, chainCommands, selectAll, deleteSelection, toggleMark, exitCode, joinBackward, selectNodeBackward, joinUp, joinDown, selectParentNode, newlineInCode, createParagraphNear as createParagraphNear$1, liftEmptyBlock, splitBlock, setBlockType } from 'prosemirror-commands';
++export { toggleMark, wrapIn, lift } from 'prosemirror-commands';
+ import { keymap } from 'prosemirror-keymap';
+ import MarkdownIt from 'markdown-it';
+ import { MarkdownParser, MarkdownSerializer, schema } from 'prosemirror-markdown';
+@@ -1796,6 +1796,18 @@ const icons = {
+     ...BaseIcon,
+     path: "M16 4H9a3 3 0 0 0-2.83 4 M14 12a4 4 0 0 1 0 8H6 M4 12h16"
+   },
++  blockquote: {
++    ...BaseIcon,
++    path: "M17 6H3 M21 12H8 M21 18H8 M3 12v6"
++  },
++  video: {
++    ...BaseIcon,
++    path: "M16 13l5.223 3.482a.5.5 0 0 0 .777-.416V7.87a.5.5 0 0 0-.752-.432L16 10.5 M4 6h10a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2z"
++  },
++  codeBlock: {
++    ...BaseIcon,
++    path: "M10 9l-3 3 3 3 M14 15l3-3-3-3 M5 3h14a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2z"
++  },
+   link: {
+     ...BaseIcon,
+     path: "M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71 M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"
+@@ -1900,6 +1912,29 @@ const headerItem = (nodeType, options) => {
+     }
+   });
+ };
++const videoItem = onVideoClick => new MenuItem({
++  title: "Insert video",
++  icon: icons.video,
++  enable: () => true,
++  run() {
++    onVideoClick();
++    return true;
++  }
++});
++const blockquoteItem = nodeType => new MenuItem({
++  title: "Toggle quote",
++  icon: icons.blockquote,
++  active: state => !!blockTypeIsActive(state, nodeType, {}),
++  enable: state => blockTypeIsActive(state, nodeType, {}) ? lift(state) : wrapIn(nodeType)(state),
++  run: (state, dispatch) => blockTypeIsActive(state, nodeType, {}) ? lift(state, dispatch) : wrapIn(nodeType)(state, dispatch)
++});
++const codeBlockItem = nodeType => new MenuItem({
++  title: "Toggle code block",
++  icon: icons.codeBlock,
++  active: state => !!blockTypeIsActive(state, nodeType, {}),
++  enable: state => toggleBlockType(nodeType, {})(state),
++  run: toggleBlockType(nodeType, {})
++});
+ const linkItem = markType => new MenuItem({
+   title: "Add or remove link",
+   icon: icons.link,
+@@ -1973,7 +2008,7 @@ const insertTableItem = schema => new MenuItem({
+ });
+ 
+ // Items that should be hidden when selection is inside a table
+-const HIDE_IN_TABLE = new Set(['bulletList', 'orderedList', 'h1', 'h2', 'h3', 'imageUpload', 'code', 'insertTable', 'strike', 'copilot']);
++const HIDE_IN_TABLE = new Set(['bulletList', 'orderedList', 'h1', 'h2', 'h3', 'imageUpload', 'code', 'insertTable', 'strike', 'copilot', 'blockquote', 'codeBlock', 'video']);
+ 
+ // Wrap a MenuItem so it's hidden (select → false) when inside a table
+ const hideInTable = (key, item, schema) => {
+@@ -1986,7 +2021,8 @@ const hideInTable = (key, item, schema) => {
+ const buildMenuOptions = (schema, {
+   enabledMenuOptions = ["strong", "em", "code", "link", "undo", "redo", "bulletList", "orderedList"],
+   onImageUpload = () => {},
+-  onCopilotClick = () => {}
++  onCopilotClick = () => {},
++  onVideoClick = null
+ }) => {
+   const availableMenuOptions = {
+     strong: markItem(schema.marks.strong, {
+@@ -2006,6 +2042,9 @@ const buildMenuOptions = (schema, {
+       icon: icons.strike
+     }),
+     link: linkItem(schema.marks.link),
++    blockquote: schema.nodes.blockquote ? blockquoteItem(schema.nodes.blockquote) : null,
++    codeBlock: schema.nodes.code_block ? codeBlockItem(schema.nodes.code_block) : null,
++    video: onVideoClick ? videoItem(onVideoClick) : null,
+     bulletList: wrapListItem(schema.nodes.bullet_list, {
+       title: "Wrap in bullet list",
+       icon: icons.bulletList
+@@ -5400,7 +5439,8 @@ const buildEditor = ({
+   placeholder,
+   methods: {
+     onImageUpload,
+-    onCopilotClick
++    onCopilotClick,
++    onVideoClick
+   } = {},
+   plugins = [],
+   enabledMenuOptions,
+@@ -5414,7 +5454,8 @@ schema.nodes.image ? isolateImagesPlugin() : null, Placeholder(placeholder), men
+   content: buildMenuOptions(schema, {
+     enabledMenuOptions,
+     onImageUpload,
+-    onCopilotClick
++    onCopilotClick,
++    onVideoClick
+   })
+ }), new Plugin({
+   props: {

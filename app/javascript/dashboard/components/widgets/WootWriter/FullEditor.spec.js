@@ -468,6 +468,11 @@ describe('FullEditor', () => {
         'Divider',
         'Strikethrough',
         'Code',
+        'Quote',
+        'Code block',
+        'Note box',
+        'Warning box',
+        'Tip box',
         'Bullet List',
         'Ordered List',
       ]);
@@ -703,6 +708,11 @@ describe('FullEditor', () => {
       ['h3', '### Hello'],
       ['bulletList', '* Hello'],
       ['orderedList', '1. Hello'],
+      ['blockquote', '> Hello'],
+      ['codeBlock', '```\nHello\n```'],
+      ['calloutNote', '> ℹ️ Hello'],
+      ['calloutWarning', '> ⚠️ Hello'],
+      ['calloutTip', '> 💡 Hello'],
     ])('turns the block into %s', async (action, markdown) => {
       mountEditor({ modelValue: 'Hello' });
       wrapper.vm.executeSlashCommand(action);
@@ -796,6 +806,23 @@ describe('FullEditor', () => {
   });
 
   describe('video embed', () => {
+    it('opens from the toolbar and inserts the link at the caret', async () => {
+      mountEditor({ modelValue: 'Hello' });
+      clickToolbar('Insert video');
+      await wrapper.vm.$nextTick();
+      const input = wrapper.findComponent({ name: 'VideoEmbedInput' });
+
+      expect(input.props('position')).not.toBeNull();
+      expect(view.state.doc.textContent).toBe('Hello');
+
+      input.vm.$emit('submit', 'https://youtube.com/shorts/dQw4w9WgXcQ');
+      await wrapper.vm.$nextTick();
+
+      expect(lastEmittedValue()).toContain(
+        '<https://youtube.com/shorts/dQw4w9WgXcQ>'
+      );
+    });
+
     const openEmbedInput = async (trigger = '/') => {
       type(trigger);
       await wrapper.vm.$nextTick();
@@ -1494,11 +1521,71 @@ describe('FullEditor', () => {
     });
   });
 
+  describe('image alignment', () => {
+    const alignButton = label =>
+      view.dom.querySelector(`.pm-image-wrapper button[aria-label="${label}"]`);
+    const align = label =>
+      alignButton(label).dispatchEvent(
+        new MouseEvent('mousedown', { bubbles: true })
+      );
+
+    it('stores the alignment on the image url', async () => {
+      mountEditor({
+        modelValue: '![a](https://example.com/a.png?cw_image_width=300px)',
+      });
+      align('Align center');
+      await wrapper.vm.$nextTick();
+
+      expect(lastEmittedValue()).toBe(
+        '![a](https://example.com/a.png?cw_image_width=300px&cw_image_align=center)'
+      );
+      expect(alignButton('Align center').getAttribute('aria-pressed')).toBe(
+        'true'
+      );
+      expect(view.dom.querySelector('.pm-image-wrapper').classList).toContain(
+        'mx-auto'
+      );
+
+      align('Align right');
+      await wrapper.vm.$nextTick();
+
+      expect(lastEmittedValue()).toBe(
+        '![a](https://example.com/a.png?cw_image_width=300px&cw_image_align=right)'
+      );
+      expect(
+        view.dom.querySelector('.pm-image-wrapper').classList
+      ).not.toContain('mx-auto');
+    });
+
+    it('drops the param when the image goes back to the left', async () => {
+      mountEditor({
+        modelValue:
+          '![a](https://example.com/a.png?cw_image_align=center&cw_image_width=300px)',
+      });
+      align('Align left');
+      await wrapper.vm.$nextTick();
+
+      expect(lastEmittedValue()).toBe(
+        '![a](https://example.com/a.png?cw_image_width=300px)'
+      );
+    });
+
+    it('drops the query string when alignment was its only param', async () => {
+      mountEditor({
+        modelValue: '![a](https://example.com/a.png?cw_image_align=right)',
+      });
+      align('Align left');
+      await wrapper.vm.$nextTick();
+
+      expect(lastEmittedValue()).toBe('![a](https://example.com/a.png)');
+    });
+  });
+
   describe('floating toolbar', () => {
     it('renders a button for every enabled option that has one', () => {
       mountEditor();
 
-      // `video` and `horizontalRule` are slash-only keys; buildMenuOptions drops
+      // `horizontalRule` and `callout` are slash-only keys; buildMenuOptions drops
       // what it does not recognise, so they must not add a toolbar button.
       expect(toolbarItems().map(item => item.title)).toEqual([
         'Toggle strong style',
@@ -1514,7 +1601,10 @@ describe('FullEditor', () => {
         'Heading 3',
         'Upload image',
         'Toggle code font',
+        'Toggle quote',
+        'Toggle code block',
         'Insert table',
+        'Insert video',
       ]);
     });
 
@@ -1548,12 +1638,32 @@ describe('FullEditor', () => {
       ['Heading 1', '# Hello'],
       ['Heading 2', '## Hello'],
       ['Heading 3', '### Hello'],
+      ['Toggle quote', '> Hello'],
+      ['Toggle code block', '```\nHello\n```'],
     ])('applies %s to the block', async (title, markdown) => {
       mountEditor({ modelValue: 'Hello' });
       clickToolbar(title);
       await wrapper.vm.$nextTick();
 
       expect(lastEmittedValue().trim()).toBe(markdown);
+    });
+
+    it.each([
+      ['Toggle quote', '> Hello'],
+      ['Toggle code block', '```\nHello\n```'],
+    ])('turns %s back into a paragraph', async (title, markdown) => {
+      mountEditor({ modelValue: markdown });
+      placeCursor(3);
+      await wrapper.vm.$nextTick();
+
+      expect(toolbarItem(title).icon.classList).toContain(
+        'ProseMirror-menu-active'
+      );
+
+      clickToolbar(title);
+      await wrapper.vm.$nextTick();
+
+      expect(lastEmittedValue().trim()).toBe('Hello');
     });
 
     it('inserts a table', async () => {
@@ -1618,7 +1728,10 @@ describe('FullEditor', () => {
         'Heading 3',
         'Upload image',
         'Toggle code font',
+        'Toggle quote',
+        'Toggle code block',
         'Insert table',
+        'Insert video',
       ]);
       expect(toolbarItem('Toggle strong style').hidden).toBe(false);
     });

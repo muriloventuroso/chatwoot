@@ -61,6 +61,13 @@
           "ERROR_MESSAGE": "Falha ao criar a tradução. Tente novamente."
         }
       }
+    },
+    "ARTICLE_EDITOR": {
+      "IMAGE_ALIGN": {
+        "LEFT": "Alinhar à esquerda",
+        "CENTER": "Centralizar",
+        "RIGHT": "Alinhar à direita"
+      }
     }
   }
 }

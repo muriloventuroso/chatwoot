@@ -354,6 +354,27 @@ describe CustomMarkdownRenderer do
     end
   end
 
+  describe '#blockquote' do
+    it 'renders a quote starting with a callout emoji as a callout of that type' do
+      expect(render_markdown('> ℹ️ Read this first')).to include('<blockquote class="cw-callout cw-callout-note">')
+      expect(render_markdown('> ⚠️ Careful')).to include('<blockquote class="cw-callout cw-callout-warning">')
+      expect(render_markdown('> 💡 Shortcut')).to include('<blockquote class="cw-callout cw-callout-tip">')
+    end
+
+    it 'keeps the emoji as the visible icon' do
+      expect(render_markdown('> 💡 Shortcut')).to include('💡 Shortcut')
+    end
+
+    it 'renders any other quote as a plain blockquote' do
+      expect(render_markdown('> Just a quote')).to include("<blockquote>\n<p>Just a quote</p>")
+      expect(render_markdown('> **ℹ️ bold first**')).not_to include('cw-callout')
+    end
+
+    it 'renders an empty quote' do
+      expect(render_markdown('>')).to include('<blockquote>')
+    end
+  end
+
   describe '#image' do
     it 'renders width in px with responsive cap and auto height' do
       markdown = '![Sample](https://example.com/image.jpg?cw_image_width=400px)'
@@ -372,6 +393,11 @@ describe CustomMarkdownRenderer do
     it 'centers an image without width' do
       markdown = '![Sample](https://example.com/image.jpg?cw_image_align=center)'
       expect(render_markdown(markdown)).to include('style="display: block; margin-left: auto; margin-right: auto;"')
+    end
+
+    it 'pushes the image to the right when cw_image_align is right' do
+      markdown = '![Sample](https://example.com/image.jpg?cw_image_align=right)'
+      expect(render_markdown(markdown)).to include('style="display: block; margin-left: auto;"')
     end
 
     it 'ignores other alignments' do

@@ -14,6 +14,11 @@
             [&_th]:!bg-n-slate-2 [&_th]:!text-n-slate-12 [&_th]:!font-semibold [&_th]:!text-start [&_th]:!px-3 [&_th]:!py-2 [&_th]:!border-0 [&_th]:!border-b [&_th]:!border-solid [&_th]:!border-n-weak
             [&_td]:!text-n-slate-11 [&_td]:!align-top [&_td]:!text-start [&_td]:!px-3 [&_td]:!py-2 [&_td]:!border-0 [&_td]:!border-b [&_td]:!border-solid [&_td]:!border-n-weak
             [&_th:not(:last-child)]:!border-e [&_td:not(:last-child)]:!border-e
-            [&_tr:last-child_td]:!border-b-0">
+            [&_tr:last-child_td]:!border-b-0
+            [&_.cw-callout]:!not-italic [&_.cw-callout]:!rounded-lg [&_.cw-callout]:!px-4 [&_.cw-callout]:!py-1 [&_.cw-callout]:!text-n-slate-12
+            [&_.cw-callout_p]:before:!content-none [&_.cw-callout_p]:after:!content-none
+            [&_.cw-callout-note]:!bg-n-blue-2 [&_.cw-callout-note]:!border-n-blue-9
+            [&_.cw-callout-warning]:!bg-n-amber-2 [&_.cw-callout-warning]:!border-n-amber-9
+            [&_.cw-callout-tip]:!bg-n-teal-2 [&_.cw-callout-tip]:!border-n-teal-9">
   <%= parsed_content %>
 </div>

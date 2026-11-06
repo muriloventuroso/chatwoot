@@ -32,7 +32,12 @@ describe 'Markdown Embeds Configuration' do
         'youtube' => [
           { url: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ', expected: { 'video_id' => 'dQw4w9WgXcQ' } },
           { url: 'https://youtu.be/dQw4w9WgXcQ', expected: { 'video_id' => 'dQw4w9WgXcQ' } },
-          { url: 'https://youtube.com/watch?v=abc123XYZ', expected: { 'video_id' => 'abc123XYZ' } }
+          { url: 'https://youtube.com/watch?v=abc123XYZ', expected: { 'video_id' => 'abc123XYZ' } },
+          { url: 'https://youtube.com/shorts/abc123XYZ?feature=share', expected: { 'video_id' => 'abc123XYZ' } },
+          { url: 'https://m.youtube.com/watch?v=abc123XYZ&t=10s', expected: { 'video_id' => 'abc123XYZ' } },
+          { url: 'https://www.youtube.com/embed/abc123XYZ', expected: { 'video_id' => 'abc123XYZ' } },
+          { url: 'https://www.youtube.com/live/abc123XYZ', expected: { 'video_id' => 'abc123XYZ' } },
+          { url: 'https://youtu.be/abc123XYZ#t=10', expected: { 'video_id' => 'abc123XYZ' } }
         ],
         'loom' => [
           { url: 'https://www.loom.com/share/abc123def456', expected: { 'video_id' => 'abc123def456' } },

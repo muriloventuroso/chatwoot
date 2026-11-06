@@ -15,6 +15,11 @@ class CustomMarkdownRenderer < CommonMarker::HtmlRenderer
   # so cells without an explicit colwidth render the same minimum here as in the editor.
   TABLE_CELL_MIN_WIDTH_PX = 50
   COLWIDTHS_COMMENT = /<!--cw-colwidths:([\d,]+)-->/
+  # The article editor writes a callout as a quote whose first paragraph starts with one of these emojis.
+  CALLOUTS = { 'ℹ' => 'note', '⚠' => 'warning', '💡' => 'tip' }.freeze
+  # Markdown has no image alignment, so the article editor (and articles imported from another
+  # help center) carry it as cw_image_align=center|right on the URL, like cw_image_width carries size.
+  IMAGE_ALIGNS = { 'center' => 'display: block; margin-left: auto; margin-right: auto;', 'right' => 'display: block; margin-left: auto;' }.freeze
 
   # The article editor serializes column widths as a `<!--cw-colwidths:...-->` HTML
   # comment immediately before each resized table. Capture it (emitting nothing) so the
@@ -38,6 +43,15 @@ class CustomMarkdownRenderer < CommonMarker::HtmlRenderer
       super
     end
     out('</div>')
+  end
+
+  def blockquote(node)
+    type = callout_type(node)
+    return super unless type
+
+    block do
+      container(%(<blockquote class="cw-callout cw-callout-#{type}">\n), '</blockquote>') { out(:children) }
+    end
   end
 
   def text(node)
@@ -71,6 +85,13 @@ class CustomMarkdownRenderer < CommonMarker::HtmlRenderer
   end
 
   private
+
+  def callout_type(node)
+    text = node.first_child.first_child if node.first_child&.type == :paragraph
+    return unless text&.type == :text
+
+    CALLOUTS.find { |emoji, _type| text.string_content.start_with?(emoji) }&.last
+  end
 
   def sized_widths?(widths)
     widths.is_a?(Array) && widths.any? { |w| w.to_i.positive? }
@@ -131,14 +152,12 @@ class CustomMarkdownRenderer < CommonMarker::HtmlRenderer
     extract_px_param(src, 'cw_image_width')
   end
 
-  # Markdown has no image alignment, so articles imported from another help center
-  # carry it as cw_image_align=center on the URL, the same way cw_image_width carries size.
   def image_style(src)
     width = extract_image_width(src)
     styles = []
     styles << "width: #{width}; max-width: 100%; height: auto;" if width
-    styles << 'display: block; margin-left: auto; margin-right: auto;' if query_param(src, 'cw_image_align') == 'center'
-    styles.join(' ').presence
+    styles << IMAGE_ALIGNS[query_param(src, 'cw_image_align')]
+    styles.compact.join(' ').presence
   end
 
   def query_param(src, key)

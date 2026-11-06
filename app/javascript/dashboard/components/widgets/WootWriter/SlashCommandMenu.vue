@@ -95,6 +95,36 @@ const EDITOR_ACTIONS = [
     menuKey: 'code',
   },
   {
+    value: 'blockquote',
+    labelKey: 'SLASH_COMMANDS.QUOTE',
+    icon: 'i-lucide-text-quote',
+    menuKey: 'blockquote',
+  },
+  {
+    value: 'codeBlock',
+    labelKey: 'SLASH_COMMANDS.CODE_BLOCK',
+    icon: 'i-lucide-square-code',
+    menuKey: 'codeBlock',
+  },
+  {
+    value: 'calloutNote',
+    labelKey: 'SLASH_COMMANDS.CALLOUT_NOTE',
+    icon: 'i-lucide-info',
+    menuKey: 'callout',
+  },
+  {
+    value: 'calloutWarning',
+    labelKey: 'SLASH_COMMANDS.CALLOUT_WARNING',
+    icon: 'i-lucide-triangle-alert',
+    menuKey: 'callout',
+  },
+  {
+    value: 'calloutTip',
+    labelKey: 'SLASH_COMMANDS.CALLOUT_TIP',
+    icon: 'i-lucide-lightbulb',
+    menuKey: 'callout',
+  },
+  {
     value: 'bulletList',
     labelKey: 'SLASH_COMMANDS.BULLET_LIST',
     icon: 'i-lucide-list',

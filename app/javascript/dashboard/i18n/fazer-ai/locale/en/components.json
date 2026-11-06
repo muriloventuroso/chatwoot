@@ -2,5 +2,12 @@
   "DURATION_INPUT": {
     "ADJUSTED_TO_MAX": "Maximum: {value} {unit}",
     "ADJUSTED_TO_MIN": "Minimum: {value} {unit}"
+  },
+  "SLASH_COMMANDS": {
+    "QUOTE": "Quote",
+    "CODE_BLOCK": "Code block",
+    "CALLOUT_NOTE": "Note box",
+    "CALLOUT_WARNING": "Warning box",
+    "CALLOUT_TIP": "Tip box"
   }
 }

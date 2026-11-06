@@ -193,6 +193,9 @@ export const ARTICLE_EDITOR_MENU_OPTIONS = [
   'h3',
   'imageUpload',
   'code',
+  'blockquote',
+  'codeBlock',
+  'callout',
   'insertTable',
   'video',
   'horizontalRule',
@@ -209,7 +212,18 @@ export const MENU_OPTIONS_UNAVAILABLE_IN_TABLE = [
   'insertTable',
   'horizontalRule',
   'video',
+  'blockquote',
+  'codeBlock',
+  'callout',
 ];
+
+// A callout is a quote whose first paragraph starts with one of these emojis;
+// the portal renders it as a colored box (see CustomMarkdownRenderer#blockquote).
+export const ARTICLE_CALLOUTS = {
+  calloutNote: 'ℹ️',
+  calloutWarning: '⚠️',
+  calloutTip: '💡',
+};
 
 // [text](url) -> "text: url" (drop label if it equals the URL). Keep serializer
 // escapes; the re-parse renders them literally, unescaping would crash it.
