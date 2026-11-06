@@ -93,7 +93,11 @@
         "UNASSIGNED": "Sem responsável",
         "DUE_DATE": "Prazo",
         "SAVE": "Salvar tarefa",
-        "DELETE": "Excluir tarefa"
+        "DELETE": "Excluir tarefa",
+        "DESCRIPTION_EMPTY": "Adicionar uma descrição...",
+        "EDIT_DESCRIPTION": "Editar descrição",
+        "SAVE_DESCRIPTION": "Salvar",
+        "CANCEL": "Cancelar"
       },
       "SUBTASKS": {
         "TITLE": "Subtarefas",
@@ -126,6 +130,10 @@
         "TITLE": "Excluir tarefa",
         "MESSAGE": "Tem certeza de que deseja excluir \"{name}\"? As subtarefas, comentários e anexos dela serão removidos.",
         "CONFIRM": "Excluir"
+      },
+      "META": {
+        "CREATED_BY": "Criada por {name} em {time}",
+        "ID": "#{id}"
       }
     },
     "COLUMNS": {

@@ -93,7 +93,11 @@
         "UNASSIGNED": "Sin responsable",
         "DUE_DATE": "Fecha límite",
         "SAVE": "Guardar tarea",
-        "DELETE": "Eliminar tarea"
+        "DELETE": "Eliminar tarea",
+        "DESCRIPTION_EMPTY": "Añadir una descripción...",
+        "EDIT_DESCRIPTION": "Editar descripción",
+        "SAVE_DESCRIPTION": "Guardar",
+        "CANCEL": "Cancelar"
       },
       "SUBTASKS": {
         "TITLE": "Subtareas",
@@ -126,6 +130,10 @@
         "TITLE": "Eliminar tarea",
         "MESSAGE": "¿Seguro que quieres eliminar \"{name}\"? Se eliminarán sus subtareas, comentarios y adjuntos.",
         "CONFIRM": "Eliminar"
+      },
+      "META": {
+        "CREATED_BY": "Creada por {name} el {time}",
+        "ID": "#{id}"
       }
     },
     "COLUMNS": {

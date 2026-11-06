@@ -93,7 +93,11 @@
         "UNASSIGNED": "Unassigned",
         "DUE_DATE": "Due date",
         "SAVE": "Save task",
-        "DELETE": "Delete task"
+        "DELETE": "Delete task",
+        "DESCRIPTION_EMPTY": "Add a description...",
+        "EDIT_DESCRIPTION": "Edit description",
+        "SAVE_DESCRIPTION": "Save",
+        "CANCEL": "Cancel"
       },
       "SUBTASKS": {
         "TITLE": "Subtasks",
@@ -126,6 +130,10 @@
         "TITLE": "Delete task",
         "MESSAGE": "Are you sure you want to delete \"{name}\"? Its subtasks, comments and attachments will be removed.",
         "CONFIRM": "Delete"
+      },
+      "META": {
+        "CREATED_BY": "Created by {name} on {time}",
+        "ID": "#{id}"
       }
     },
     "COLUMNS": {

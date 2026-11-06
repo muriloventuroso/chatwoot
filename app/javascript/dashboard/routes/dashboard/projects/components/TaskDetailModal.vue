@@ -10,6 +10,7 @@ import Button from 'dashboard/components-next/button/Button.vue';
 import Dialog from 'dashboard/components-next/dialog/Dialog.vue';
 import Icon from 'dashboard/components-next/icon/Icon.vue';
 import Input from 'dashboard/components-next/input/Input.vue';
+import TabBar from 'dashboard/components-next/tabbar/TabBar.vue';
 import MessageFormatter from 'shared/helpers/MessageFormatter';
 import ProjectSelect from './ProjectSelect.vue';
 import TaskMarkdownEditor from './TaskMarkdownEditor.vue';
@@ -34,6 +35,7 @@ const { t } = useI18n();
 const store = useStore();
 const { isAdmin } = useAdmin();
 const currentUserId = useMapGetter('getCurrentUserID');
+const allAgents = useMapGetter('agents/getAgents');
 
 const columnOptions = computed(() =>
   props.columns.map(column => ({ value: column.id, label: column.name }))
@@ -66,6 +68,8 @@ const form = ref({
 const subtaskTitle = ref('');
 const commentContent = ref('');
 const isSaving = ref(false);
+const isEditingDescription = ref(false);
+const activeTab = ref('comments');
 // Remounts the editors on each open so they load the task without stealing focus.
 const editorKey = ref(0);
 
@@ -88,19 +92,44 @@ const subtaskProgressClass = computed(() =>
       : 0
   )
 );
+const attachments = computed(() => task.value.attachments || []);
+// The creator may no longer be a project member, so look them up among all agents.
+const creatorName = computed(
+  () =>
+    allAgents.value.find(agent => agent.id === task.value.creator_id)?.name ||
+    ''
+);
+const tabs = computed(() => [
+  {
+    key: 'comments',
+    label: t('PROJECTS.TASK.COMMENTS.TITLE'),
+    count: comments.value.length,
+  },
+  {
+    key: 'subtasks',
+    label: t('PROJECTS.TASK.SUBTASKS.TITLE'),
+    count: subtasks.value.length,
+  },
+  {
+    key: 'attachments',
+    label: t('PROJECTS.TASK.ATTACHMENTS.TITLE'),
+    count: attachments.value.length,
+  },
+]);
+const activeTabIndex = computed(() =>
+  tabs.value.findIndex(tab => tab.key === activeTab.value)
+);
 const isEditing = computed(() => Boolean(taskId.value));
 const isFormInvalid = computed(() => !form.value.title.trim());
 
-const hydrateForm = record => {
-  form.value = {
-    title: record?.title || '',
-    description: record?.description || '',
-    project_column_id: record?.project_column_id ?? null,
-    priority: record?.priority || 'medium',
-    assignee_id: record?.assignee_id || '',
-    due_date: record?.due_date || '',
-  };
-};
+const formFromTask = record => ({
+  title: record?.title || '',
+  description: record?.description || '',
+  project_column_id: record?.project_column_id ?? null,
+  priority: record?.priority || 'medium',
+  assignee_id: record?.assignee_id || '',
+  due_date: record?.due_date || '',
+});
 
 // Does not touch the form, so refreshing subtasks/comments keeps unsaved edits.
 const loadTask = id =>
@@ -111,9 +140,11 @@ const loadTask = id =>
 
 const open = async ({ task: record, columnId } = {}) => {
   taskId.value = record?.id || null;
-  hydrateForm(record || { project_column_id: columnId });
+  form.value = formFromTask(record || { project_column_id: columnId });
   subtaskTitle.value = '';
   commentContent.value = '';
+  isEditingDescription.value = false;
+  activeTab.value = 'comments';
   editorKey.value += 1;
   dialogRef.value?.open();
   if (record?.id) await loadTask(record.id);
@@ -121,55 +152,96 @@ const open = async ({ task: record, columnId } = {}) => {
 
 const close = () => dialogRef.value?.close();
 
-const saveTask = async () => {
+const createTask = async () => {
   if (isFormInvalid.value) return;
   isSaving.value = true;
-  const payload = {
-    title: form.value.title.trim(),
-    description: form.value.description.trim() || null,
-    project_column_id: form.value.project_column_id,
-    priority: form.value.priority,
-    assignee_id: form.value.assignee_id || null,
-    due_date: form.value.due_date || null,
-  };
   try {
-    if (taskId.value) {
-      const { project_column_id: columnId, ...rest } = payload;
-      if (columnId !== task.value.project_column_id) {
-        const siblings = store.getters['projects/getTasksByProject'](
-          props.projectId
-        );
-        await store.dispatch('projects/moveTask', {
-          id: taskId.value,
-          project_column_id: columnId,
-          position: nextColumnPosition(siblings, columnId, taskId.value),
-        });
-      }
-      await store.dispatch('projects/updateTask', {
-        id: taskId.value,
-        ...rest,
-      });
-      emit('changed');
-    } else {
-      const created = await store.dispatch('projects/createTask', {
-        projectId: props.projectId,
-        ...payload,
-      });
-      taskId.value = created.id;
-      await loadTask(created.id);
-      emit('changed');
-    }
+    const created = await store.dispatch('projects/createTask', {
+      projectId: props.projectId,
+      title: form.value.title.trim(),
+      description: form.value.description.trim() || null,
+      project_column_id: form.value.project_column_id,
+      priority: form.value.priority,
+      assignee_id: form.value.assignee_id || null,
+      due_date: form.value.due_date || null,
+    });
+    taskId.value = created.id;
+    await loadTask(created.id);
+    emit('changed');
   } catch (error) {
-    useAlert(
-      t(
-        taskId.value
-          ? 'PROJECTS.TASK.MESSAGES.UPDATE_ERROR'
-          : 'PROJECTS.TASK.MESSAGES.CREATE_ERROR'
-      )
-    );
+    useAlert(t('PROJECTS.TASK.MESSAGES.CREATE_ERROR'));
   } finally {
     isSaving.value = false;
   }
+};
+
+// An existing task saves each field as soon as it changes; on failure the field falls back to the stored task.
+const persist = async request => {
+  try {
+    await request();
+    emit('changed');
+    return true;
+  } catch (error) {
+    useAlert(t('PROJECTS.TASK.MESSAGES.UPDATE_ERROR'));
+    return false;
+  }
+};
+
+const revertField = key => {
+  form.value[key] = formFromTask(task.value)[key];
+};
+
+const saveField = async (key, value) => {
+  if (!isEditing.value) return;
+  const saved = await persist(() =>
+    store.dispatch('projects/updateTask', { id: taskId.value, [key]: value })
+  );
+  if (!saved) revertField(key);
+};
+
+const saveColumn = async columnId => {
+  if (!isEditing.value || columnId === task.value.project_column_id) return;
+  const siblings = store.getters['projects/getTasksByProject'](props.projectId);
+  const saved = await persist(() =>
+    store.dispatch('projects/moveTask', {
+      id: taskId.value,
+      project_column_id: columnId,
+      position: nextColumnPosition(siblings, columnId, taskId.value),
+    })
+  );
+  if (!saved) revertField('project_column_id');
+};
+
+const saveTitle = () => {
+  if (!isEditing.value) return;
+  const title = form.value.title.trim();
+  if (!title) {
+    form.value.title = task.value.title;
+    return;
+  }
+  if (title !== task.value.title) saveField('title', title);
+};
+
+// Saved on blur: typing a year fires an input per keystroke (0002, 0020, ...).
+const saveDueDate = () => {
+  if (form.value.due_date === formFromTask(task.value).due_date) return;
+  saveField('due_date', form.value.due_date || null);
+};
+
+const cancelDescription = () => {
+  form.value.description = task.value.description || '';
+  isEditingDescription.value = false;
+};
+
+// Keeps the editor open on failure so the draft is not lost.
+const saveDescription = async () => {
+  const saved = await persist(() =>
+    store.dispatch('projects/updateTask', {
+      id: taskId.value,
+      description: form.value.description.trim() || null,
+    })
+  );
+  if (saved) isEditingDescription.value = false;
 };
 
 const confirmDelete = () => deleteDialogRef.value?.open();
@@ -297,59 +369,166 @@ defineExpose({ open, close });
     ref="dialogRef"
     width="3xl"
     overflow-y-auto
-    :title="form.title || t('PROJECTS.DETAILS.ADD_TASK')"
+    :title="isEditing ? '' : t('PROJECTS.DETAILS.ADD_TASK')"
     :show-confirm-button="false"
     :show-cancel-button="false"
     @close="emit('close')"
   >
     <div class="flex flex-col gap-6">
       <div class="flex flex-col gap-3">
+        <div
+          v-if="isEditing"
+          class="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-n-slate-10"
+        >
+          <span class="font-medium text-n-slate-11">{{
+            t('PROJECTS.TASK.META.ID', { id: taskId })
+          }}</span>
+          <span v-if="creatorName">
+            {{
+              t('PROJECTS.TASK.META.CREATED_BY', {
+                name: creatorName,
+                time: formattedTime(task.created_at),
+              })
+            }}
+          </span>
+          <Button
+            type="button"
+            variant="ghost"
+            color="ruby"
+            size="xs"
+            icon="i-lucide-trash-2"
+            class="ms-auto"
+            :label="t('PROJECTS.TASK.FORM.DELETE')"
+            @click="confirmDelete"
+          />
+        </div>
         <Input
           v-model="form.title"
           :placeholder="t('PROJECTS.TASK.FORM.TITLE_PLACEHOLDER')"
+          :custom-input-class="isEditing ? '!text-base font-medium' : ''"
+          @blur="saveTitle"
+          @enter="saveTitle"
         />
         <TaskMarkdownEditor
+          v-if="!isEditing"
           :key="`description-${editorKey}`"
           v-model="form.description"
           :placeholder="t('PROJECTS.TASK.FORM.DESCRIPTION_PLACEHOLDER')"
         />
         <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
-          <ProjectSelect
-            v-model="form.project_column_id"
-            :options="columnOptions"
-          />
-          <ProjectSelect v-model="form.priority" :options="priorityOptions" />
-          <ProjectSelect
-            v-model="form.assignee_id"
-            :options="assigneeOptions"
-          />
-          <Input v-model="form.due_date" type="date" />
+          <div class="flex flex-col gap-1">
+            <span class="text-xs text-n-slate-11">
+              {{ t('PROJECTS.TASK.FORM.STATUS') }}
+            </span>
+            <ProjectSelect
+              v-model="form.project_column_id"
+              :options="columnOptions"
+              @update:model-value="saveColumn"
+            />
+          </div>
+          <div class="flex flex-col gap-1">
+            <span class="text-xs text-n-slate-11">
+              {{ t('PROJECTS.TASK.FORM.PRIORITY') }}
+            </span>
+            <ProjectSelect
+              v-model="form.priority"
+              :options="priorityOptions"
+              @update:model-value="value => saveField('priority', value)"
+            />
+          </div>
+          <div class="flex flex-col gap-1">
+            <span class="text-xs text-n-slate-11">
+              {{ t('PROJECTS.TASK.FORM.ASSIGNEE') }}
+            </span>
+            <ProjectSelect
+              v-model="form.assignee_id"
+              :options="assigneeOptions"
+              @update:model-value="
+                value => saveField('assignee_id', value || null)
+              "
+            />
+          </div>
+          <div class="flex flex-col gap-1">
+            <span class="text-xs text-n-slate-11">
+              {{ t('PROJECTS.TASK.FORM.DUE_DATE') }}
+            </span>
+            <Input v-model="form.due_date" type="date" @blur="saveDueDate" />
+          </div>
         </div>
-        <div class="flex items-center justify-between gap-3">
+        <div v-if="!isEditing" class="flex justify-end">
           <Button
-            v-if="isEditing"
-            variant="ghost"
-            color="ruby"
-            :label="t('PROJECTS.TASK.FORM.DELETE')"
-            @click="confirmDelete"
-          />
-          <span v-else />
-          <Button
+            type="button"
             color="blue"
             :label="t('PROJECTS.TASK.FORM.SAVE')"
             :disabled="isFormInvalid"
             :is-loading="isSaving"
-            @click="saveTask"
+            @click="createTask"
           />
         </div>
       </div>
 
-      <template v-if="isEditing">
-        <section class="flex flex-col gap-3">
-          <header class="flex items-center justify-between">
-            <h4 class="text-sm font-medium text-n-slate-12">
-              {{ t('PROJECTS.TASK.SUBTASKS.TITLE') }}
-            </h4>
+      <section v-if="isEditing" class="flex flex-col gap-2">
+        <header class="flex items-center justify-between gap-2">
+          <h4 class="text-sm font-medium text-n-slate-12">
+            {{ t('PROJECTS.TASK.FORM.DESCRIPTION') }}
+          </h4>
+          <Button
+            v-if="!isEditingDescription"
+            type="button"
+            variant="ghost"
+            color="slate"
+            size="xs"
+            icon="i-lucide-pencil"
+            :aria-label="t('PROJECTS.TASK.FORM.EDIT_DESCRIPTION')"
+            @click="isEditingDescription = true"
+          />
+        </header>
+        <template v-if="isEditingDescription">
+          <TaskMarkdownEditor
+            v-model="form.description"
+            :placeholder="t('PROJECTS.TASK.FORM.DESCRIPTION_PLACEHOLDER')"
+          />
+          <div class="flex justify-end gap-2">
+            <Button
+              type="button"
+              variant="faded"
+              color="slate"
+              size="sm"
+              :label="t('PROJECTS.TASK.FORM.CANCEL')"
+              @click="cancelDescription"
+            />
+            <Button
+              type="button"
+              color="blue"
+              size="sm"
+              :label="t('PROJECTS.TASK.FORM.SAVE_DESCRIPTION')"
+              @click="saveDescription"
+            />
+          </div>
+        </template>
+        <div
+          v-else-if="form.description"
+          v-dompurify-html="formatMarkdown(form.description)"
+          class="overflow-y-auto text-sm break-words max-h-96 prose-sm prose dark:prose-invert max-w-none text-n-slate-11 [&>:first-child]:mt-0 [&>:last-child]:mb-0"
+        />
+        <button
+          v-else
+          type="button"
+          class="text-sm text-start text-n-slate-10 hover:text-n-slate-12"
+          @click="isEditingDescription = true"
+        >
+          {{ t('PROJECTS.TASK.FORM.DESCRIPTION_EMPTY') }}
+        </button>
+      </section>
+
+      <section v-if="isEditing" class="flex flex-col gap-4">
+        <TabBar
+          :tabs="tabs"
+          :initial-active-tab="activeTabIndex"
+          @tab-changed="tab => (activeTab = tab.key)"
+        />
+        <div v-if="activeTab === 'subtasks'" class="flex flex-col gap-3">
+          <header class="flex items-center justify-end">
             <span class="text-xs text-n-slate-10">
               {{
                 t('PROJECTS.TASK.SUBTASKS.PROGRESS', {
@@ -393,6 +572,7 @@ defineExpose({ open, close });
                 {{ subtask.title }}
               </span>
               <Button
+                type="button"
                 variant="ghost"
                 color="slate"
                 size="xs"
@@ -410,15 +590,15 @@ defineExpose({ open, close });
             :placeholder="t('PROJECTS.TASK.SUBTASKS.ADD_PLACEHOLDER')"
             @enter="addSubtask"
           />
-        </section>
+        </div>
 
-        <section class="flex flex-col gap-3">
-          <h4 class="text-sm font-medium text-n-slate-12">
-            {{ t('PROJECTS.TASK.ATTACHMENTS.TITLE') }}
-          </h4>
+        <div
+          v-else-if="activeTab === 'attachments'"
+          class="flex flex-col gap-3"
+        >
           <ul class="flex flex-col gap-2">
             <li
-              v-for="attachment in task.attachments || []"
+              v-for="attachment in attachments"
               :key="attachment.id"
               class="flex items-center justify-between gap-2 text-sm"
             >
@@ -431,6 +611,7 @@ defineExpose({ open, close });
                 {{ attachment.filename }}
               </a>
               <Button
+                type="button"
                 variant="ghost"
                 color="slate"
                 size="xs"
@@ -439,10 +620,7 @@ defineExpose({ open, close });
               />
             </li>
           </ul>
-          <p
-            v-if="!(task.attachments || []).length"
-            class="text-sm text-n-slate-10"
-          >
+          <p v-if="!attachments.length" class="text-sm text-n-slate-10">
             {{ t('PROJECTS.TASK.ATTACHMENTS.EMPTY') }}
           </p>
           <input
@@ -452,18 +630,16 @@ defineExpose({ open, close });
             @change="onSelectFiles"
           />
           <Button
+            type="button"
             variant="faded"
             color="slate"
             icon="i-lucide-paperclip"
             :label="t('PROJECTS.TASK.ATTACHMENTS.ADD')"
             @click="fileInputRef?.click()"
           />
-        </section>
+        </div>
 
-        <section class="flex flex-col gap-3">
-          <h4 class="text-sm font-medium text-n-slate-12">
-            {{ t('PROJECTS.TASK.COMMENTS.TITLE') }}
-          </h4>
+        <div v-else class="flex flex-col gap-3">
           <ul class="flex flex-col gap-3">
             <li
               v-for="comment in comments"
@@ -508,13 +684,14 @@ defineExpose({ open, close });
             :placeholder="t('PROJECTS.TASK.COMMENTS.ADD_PLACEHOLDER')"
           />
           <Button
+            type="button"
             color="blue"
             :label="t('PROJECTS.TASK.COMMENTS.ADD')"
             :disabled="!commentContent.trim()"
             @click="addComment"
           />
-        </section>
-      </template>
+        </div>
+      </section>
     </div>
   </Dialog>
 
