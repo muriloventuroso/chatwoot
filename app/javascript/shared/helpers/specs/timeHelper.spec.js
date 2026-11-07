@@ -70,6 +70,11 @@ describe('#dynamicTime', () => {
     Date.now = vi.fn(() => new Date(Date.UTC(2023, 1, 14)).valueOf());
     expect(dynamicTime(1612971343)).toEqual('about 2 years ago');
   });
+
+  it('formats in the given locale', () => {
+    Date.now = vi.fn(() => new Date(Date.UTC(2023, 1, 14)).valueOf());
+    expect(dynamicTime(1612971343, 'pt_BR')).toEqual('há cerca de 2 anos');
+  });
 });
 
 describe('#dateFormat', () => {

@@ -8,6 +8,9 @@ import {
   formatDistanceToNow,
   differenceInDays,
 } from 'date-fns';
+import { es, ptBR } from 'date-fns/locale';
+
+const DATE_FNS_LOCALES = { pt_BR: ptBR, es };
 
 /**
  * Formats a Unix timestamp into a human-readable time format.
@@ -57,9 +60,13 @@ export const relativeDayTimestamp = (time, yesterdayLabel) => {
  * @param {number} time - Unix timestamp.
  * @returns {string} Relative time string.
  */
-export const dynamicTime = time => {
+// locale is optional: shortTimestamp parses the English output, so callers that feed it must omit it.
+export const dynamicTime = (time, locale) => {
   const unixTime = fromUnixTime(time);
-  return formatDistanceToNow(unixTime, { addSuffix: true });
+  return formatDistanceToNow(unixTime, {
+    addSuffix: true,
+    locale: DATE_FNS_LOCALES[locale],
+  });
 };
 
 /**
