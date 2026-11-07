@@ -65,7 +65,7 @@ const description = computed(() => {
 });
 
 const hasDescription = computed(() => {
-  return props.description.length > 0;
+  return !!props.description;
 });
 
 const handleClick = slug => {
