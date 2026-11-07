@@ -1,3 +1,4 @@
+import { useIdle } from '@vueuse/core';
 import AuthAPI from '../api/auth';
 import BaseActionCableConnector from '../../shared/helpers/BaseActionCableConnector';
 import DashboardAudioNotificationHelper from './AudioAlerts/DashboardAudioNotificationHelper';
@@ -26,6 +27,8 @@ import {
 } from 'dashboard/constants/permissions';
 
 const { isImpersonating } = useImpersonation();
+// With auto_offline on, an agent who stops sending presence shows as offline after PRESENCE_DURATION.
+const AGENT_IDLE_TIMEOUT_MS = 20 * 60 * 1000;
 const UNREAD_COUNTS_REFETCH_THROTTLE_MS = 5000;
 const HANDOFF_ALERT_WINDOW_MS = 2500;
 const FILTERED_UNREAD_COUNTS_REFRESH_RETRY_MS = 30000;
@@ -46,6 +49,7 @@ class ActionCableConnector extends BaseActionCableConnector {
   constructor(app, pubsubToken) {
     const { websocketURL = '' } = window.chatwootConfig || {};
     super(app, pubsubToken, websocketURL);
+    this.idle = useIdle(AGENT_IDLE_TIMEOUT_MS).idle;
     this.CancelTyping = [];
     this.pendingHandoffAlerts = new Map();
     this.lastUnreadCountsFetchAt = null;
@@ -800,6 +804,10 @@ class ActionCableConnector extends BaseActionCableConnector {
     }
     useCallsStore().removeCall(data.call_id);
   };
+
+  isPresent() {
+    return !this.idle.value;
+  }
 }
 
 export default {

@@ -694,3 +694,35 @@ describe('ActionCableConnector - Copilot Tests', () => {
     });
   });
 });
+
+describe('ActionCableConnector - idle presence', () => {
+  const PRESENCE_INTERVAL_MS = 20000;
+  const IDLE_TIMEOUT_MS = 20 * 60 * 1000;
+
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  it('stops sending presence after 20 minutes without activity and resumes on activity', () => {
+    vi.useFakeTimers();
+    const actionCable = ActionCableConnector.init(
+      { dispatch: vi.fn(), getters: { getCurrentAccountId: 1 } },
+      'test-token'
+    );
+    const updatePresence = vi
+      .spyOn(actionCable.subscription, 'updatePresence')
+      .mockImplementation(() => {});
+
+    vi.advanceTimersByTime(PRESENCE_INTERVAL_MS);
+    expect(updatePresence).toHaveBeenCalledTimes(1);
+
+    vi.advanceTimersByTime(IDLE_TIMEOUT_MS);
+    updatePresence.mockClear();
+    vi.advanceTimersByTime(PRESENCE_INTERVAL_MS * 3);
+    expect(updatePresence).not.toHaveBeenCalled();
+
+    window.dispatchEvent(new Event('mousemove'));
+    vi.advanceTimersByTime(PRESENCE_INTERVAL_MS);
+    expect(updatePresence).toHaveBeenCalledTimes(1);
+  });
+});

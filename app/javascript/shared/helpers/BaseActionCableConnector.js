@@ -40,11 +40,16 @@ class BaseActionCableConnector {
     this.isAValidEvent = () => true;
     this.triggerPresenceInterval = () => {
       setTimeout(() => {
-        this.subscription.updatePresence();
+        if (this.isPresent()) this.subscription.updatePresence();
         this.triggerPresenceInterval();
       }, presenceInterval);
     };
     this.triggerPresenceInterval();
+  }
+
+  // eslint-disable-next-line class-methods-use-this
+  isPresent() {
+    return true;
   }
 
   checkConnection() {
