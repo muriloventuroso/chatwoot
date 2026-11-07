@@ -1,0 +1,14 @@
+{
+  "REPLY_TIME": {
+    "BACK_ON": {
+      "SUNDAY": "Estaremos de volta no domingo",
+      "MONDAY": "Estaremos de volta na segunda-feira",
+      "TUESDAY": "Estaremos de volta na terça-feira",
+      "WEDNESDAY": "Estaremos de volta na quarta-feira",
+      "THURSDAY": "Estaremos de volta na quinta-feira",
+      "FRIDAY": "Estaremos de volta na sexta-feira",
+      "SATURDAY": "Estaremos de volta no sábado"
+    },
+    "BACK_AT": "Estaremos de volta às {time}"
+  }
+}

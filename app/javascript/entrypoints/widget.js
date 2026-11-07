@@ -19,6 +19,8 @@ import {
 const i18n = createI18n({
   legacy: false, // https://github.com/intlify/vue-i18n/issues/1902
   locale: 'en',
+  // The fork's own strings exist only in en, es and pt_BR; other locales fall back to en.
+  fallbackLocale: 'en',
   messages: i18nMessages,
 });
 

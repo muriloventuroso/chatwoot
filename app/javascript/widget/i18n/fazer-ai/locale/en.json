@@ -1,0 +1,14 @@
+{
+  "REPLY_TIME": {
+    "BACK_ON": {
+      "SUNDAY": "We will be back online on Sunday",
+      "MONDAY": "We will be back online on Monday",
+      "TUESDAY": "We will be back online on Tuesday",
+      "WEDNESDAY": "We will be back online on Wednesday",
+      "THURSDAY": "We will be back online on Thursday",
+      "FRIDAY": "We will be back online on Friday",
+      "SATURDAY": "We will be back online on Saturday"
+    },
+    "BACK_AT": "We will be back online at {time}"
+  }
+}

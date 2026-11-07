@@ -21,7 +21,8 @@ require 'fileutils'
 # namespace), the survey a single file, since it is one small namespace.
 FE_TREES = [
   { upstream: 'app/javascript/dashboard/i18n/locale', fork: 'app/javascript/dashboard/i18n/fazer-ai/locale', layout: :directory },
-  { upstream: 'app/javascript/survey/i18n/locale', fork: 'app/javascript/survey/i18n/fazer-ai/locale', layout: :file }
+  { upstream: 'app/javascript/survey/i18n/locale', fork: 'app/javascript/survey/i18n/fazer-ai/locale', layout: :file },
+  { upstream: 'app/javascript/widget/i18n/locale', fork: 'app/javascript/widget/i18n/fazer-ai/locale', layout: :file }
 ].freeze
 FE_UPSTREAM = FE_TREES.first[:upstream]
 FE_FORK = FE_TREES.first[:fork]

@@ -1,7 +1,7 @@
 <script setup>
 import { computed } from 'vue';
 import { useI18n } from 'vue-i18n';
-import { getTime } from 'dashboard/routes/dashboard/settings/inbox/helpers/businessHour.js';
+import { useLocale } from 'shared/composables/useLocale';
 import { findNextAvailableSlotDetails } from 'widget/helpers/availabilityHelpers';
 
 const props = defineProps({
@@ -44,16 +44,19 @@ const HOUR_THRESHOLD_FOR_EXACT_TIME = 3;
 const MINUTES_IN_HOUR = 60;
 
 const { t } = useI18n();
+const { resolvedLocale } = useLocale();
 
-const dayNames = computed(() => [
-  t('DAY_NAMES.SUNDAY'),
-  t('DAY_NAMES.MONDAY'),
-  t('DAY_NAMES.TUESDAY'),
-  t('DAY_NAMES.WEDNESDAY'),
-  t('DAY_NAMES.THURSDAY'),
-  t('DAY_NAMES.FRIDAY'),
-  t('DAY_NAMES.SATURDAY'),
-]);
+// One whole sentence per weekday: the preposition depends on the day's gender
+// ("na segunda-feira", "no sábado"), so "{day}" interpolation can't read right.
+const DAY_KEYS = [
+  'SUNDAY',
+  'MONDAY',
+  'TUESDAY',
+  'WEDNESDAY',
+  'THURSDAY',
+  'FRIDAY',
+  'SATURDAY',
+];
 
 // Check if all days in working hours are closed
 const allDayClosed = computed(() => {
@@ -107,10 +110,12 @@ const adjustedHoursUntilOpen = computed(() => {
 
 const formattedOpeningTime = computed(() => {
   if (!nextSlot.value) return '';
-  return getTime(
-    nextSlot.value.config.openHour || 0,
-    nextSlot.value.config.openMinutes || 0
-  );
+  const { openHour, openMinutes } = nextSlot.value.config;
+  // Each language's own clock: "14:00" in pt-BR and es, "02:00 PM" in en.
+  return new Intl.DateTimeFormat(resolvedLocale.value, {
+    hour: '2-digit',
+    minute: '2-digit',
+  }).format(new Date(2000, 0, 1, openHour || 0, openMinutes || 0));
 });
 </script>
 
@@ -148,11 +153,7 @@ const formattedOpeningTime = computed(() => {
 
     <!-- Multiple days away (eg: on Monday) -->
     <template v-else-if="nextSlot.daysUntilOpen > 1">
-      {{
-        t('REPLY_TIME.BACK_ON_DAY', {
-          day: dayNames[nextSlot.config.dayOfWeek],
-        })
-      }}
+      {{ t(`REPLY_TIME.BACK_ON.${DAY_KEYS[nextSlot.config.dayOfWeek]}`) }}
     </template>
 
     <!-- Same day - less than 1 hour (eg: in 5 minutes) -->
@@ -174,7 +175,7 @@ const formattedOpeningTime = computed(() => {
     <!-- Same day - 3+ hours away (eg: at 10:00 AM) -->
     <template v-else>
       {{
-        t('REPLY_TIME.BACK_AT_TIME', {
+        t('REPLY_TIME.BACK_AT', {
           time: formattedOpeningTime,
         })
       }}
