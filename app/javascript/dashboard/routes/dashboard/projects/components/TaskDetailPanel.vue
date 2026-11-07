@@ -7,19 +7,28 @@ import { useMapGetter, useStore } from 'dashboard/composables/store';
 
 import Avatar from 'dashboard/components-next/avatar/Avatar.vue';
 import Button from 'dashboard/components-next/button/Button.vue';
+import Checkbox from 'dashboard/components-next/checkbox/Checkbox.vue';
 import Dialog from 'dashboard/components-next/dialog/Dialog.vue';
+import DropdownMenu from 'dashboard/components-next/dropdown-menu/DropdownMenu.vue';
 import Icon from 'dashboard/components-next/icon/Icon.vue';
 import Input from 'dashboard/components-next/input/Input.vue';
+import SidePanel from 'dashboard/components-next/side-panel/SidePanel.vue';
 import TabBar from 'dashboard/components-next/tabbar/TabBar.vue';
 import MessageFormatter from 'shared/helpers/MessageFormatter';
+import { formatBytes } from 'shared/helpers/FileHelper';
 import ProjectSelect from './ProjectSelect.vue';
 import TaskMarkdownEditor from './TaskMarkdownEditor.vue';
 import { provideDropdownTeleport } from 'dashboard/components-next/dropdown-menu/base/provider';
 import {
+  DUE_TONE_CLASS,
+  PRIORITY_CLASS,
+  STATUS_PILL_CLASS,
+  TASK_PRIORITIES,
+  dueTone,
   nextColumnPosition,
   progressWidthClass,
-  TASK_PRIORITIES,
 } from '../constants';
+import { useDueDate } from '../useDueDate';
 
 const props = defineProps({
   projectId: { type: [Number, String], required: true },
@@ -29,11 +38,12 @@ const props = defineProps({
 
 const emit = defineEmits(['close', 'deleted', 'changed']);
 
-// Selects open over the dialog instead of growing its scroll area.
+// Selects open over the panel instead of growing its scroll area.
 provideDropdownTeleport();
 const { t } = useI18n();
 const store = useStore();
 const { isAdmin } = useAdmin();
+const { relativeDue } = useDueDate();
 const currentUserId = useMapGetter('getCurrentUserID');
 const allAgents = useMapGetter('agents/getAgents');
 
@@ -53,7 +63,8 @@ const assigneeOptions = computed(() => [
   ...props.agents.map(agent => ({ value: agent.id, label: agent.name })),
 ]);
 
-const dialogRef = ref(null);
+const panelRef = ref(null);
+const showTaskMenu = ref(false);
 const deleteDialogRef = ref(null);
 const fileInputRef = ref(null);
 const taskId = ref(null);
@@ -69,6 +80,8 @@ const subtaskTitle = ref('');
 const commentContent = ref('');
 const isSaving = ref(false);
 const isEditingDescription = ref(false);
+// The comment editor stays folded into one line until used, so it does not eat a phone screen.
+const isComposing = ref(false);
 const activeTab = ref('comments');
 // Remounts the editors on each open so they load the task without stealing focus.
 const editorKey = ref(0);
@@ -120,6 +133,30 @@ const activeTabIndex = computed(() =>
   tabs.value.findIndex(tab => tab.key === activeTab.value)
 );
 const isEditing = computed(() => Boolean(taskId.value));
+
+const statusPillClass = computed(
+  () =>
+    STATUS_PILL_CLASS[
+      props.columns.find(column => column.id === form.value.project_column_id)
+        ?.category
+    ]
+);
+const assignee = computed(() =>
+  props.agents.find(agent => agent.id === form.value.assignee_id)
+);
+const due = computed(() => {
+  const date = form.value.due_date;
+  if (!isEditing.value || !date || task.value.status === 'done') return null;
+  return { text: relativeDue(date), class: DUE_TONE_CLASS[dueTone(date)] };
+});
+const taskMenuItems = computed(() => [
+  {
+    action: 'delete',
+    value: 'delete',
+    label: t('PROJECTS.TASK.FORM.DELETE'),
+    icon: 'i-lucide-trash',
+  },
+]);
 const isFormInvalid = computed(() => !form.value.title.trim());
 
 const formFromTask = record => ({
@@ -144,13 +181,15 @@ const open = async ({ task: record, columnId } = {}) => {
   subtaskTitle.value = '';
   commentContent.value = '';
   isEditingDescription.value = false;
+  isComposing.value = false;
   activeTab.value = 'comments';
   editorKey.value += 1;
-  dialogRef.value?.open();
+  showTaskMenu.value = false;
+  panelRef.value?.open();
   if (record?.id) await loadTask(record.id);
 };
 
-const close = () => dialogRef.value?.close();
+const close = () => panelRef.value?.close();
 
 const createTask = async () => {
   if (isFormInvalid.value) return;
@@ -244,7 +283,10 @@ const saveDescription = async () => {
   if (saved) isEditingDescription.value = false;
 };
 
-const confirmDelete = () => deleteDialogRef.value?.open();
+const confirmDelete = () => {
+  showTaskMenu.value = false;
+  deleteDialogRef.value?.open();
+};
 
 const deleteTask = async () => {
   try {
@@ -307,10 +349,16 @@ const addComment = async () => {
       content,
     });
     commentContent.value = '';
+    isComposing.value = false;
     await loadTask(taskId.value);
   } catch (error) {
     useAlert(t('PROJECTS.TASK.MESSAGES.COMMENT_ERROR'));
   }
+};
+
+const cancelComment = () => {
+  commentContent.value = '';
+  isComposing.value = false;
 };
 
 const canDeleteComment = comment =>
@@ -365,25 +413,25 @@ defineExpose({ open, close });
 </script>
 
 <template>
-  <Dialog
-    ref="dialogRef"
-    width="3xl"
-    overflow-y-auto
-    :title="isEditing ? '' : t('PROJECTS.DETAILS.ADD_TASK')"
-    :show-confirm-button="false"
-    :show-cancel-button="false"
+  <SidePanel
+    ref="panelRef"
+    width="2xl"
+    :title="isEditing ? form.title : t('PROJECTS.DETAILS.NEW_TASK')"
     @close="emit('close')"
   >
-    <div class="flex flex-col gap-6">
-      <div class="flex flex-col gap-3">
-        <div
-          v-if="isEditing"
-          class="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-n-slate-10"
+    <template #header>
+      <div class="flex flex-col min-w-0 gap-0.5">
+        <h3
+          v-if="!isEditing"
+          class="mb-0 text-base font-medium text-n-slate-12"
         >
-          <span class="font-medium text-n-slate-11">{{
-            t('PROJECTS.TASK.META.ID', { id: taskId })
-          }}</span>
-          <span v-if="creatorName">
+          {{ t('PROJECTS.DETAILS.NEW_TASK') }}
+        </h3>
+        <template v-else>
+          <span class="text-sm font-medium text-n-slate-12">
+            {{ t('PROJECTS.TASK.META.ID', { id: taskId }) }}
+          </span>
+          <span v-if="creatorName" class="text-xs text-n-slate-11">
             {{
               t('PROJECTS.TASK.META.CREATED_BY', {
                 name: creatorName,
@@ -391,85 +439,135 @@ defineExpose({ open, close });
               })
             }}
           </span>
-          <Button
-            type="button"
-            variant="ghost"
-            color="ruby"
-            size="xs"
-            icon="i-lucide-trash-2"
-            class="ms-auto"
-            :label="t('PROJECTS.TASK.FORM.DELETE')"
-            @click="confirmDelete"
-          />
-        </div>
-        <Input
-          v-model="form.title"
-          :placeholder="t('PROJECTS.TASK.FORM.TITLE_PLACEHOLDER')"
-          :custom-input-class="isEditing ? '!text-base font-medium' : ''"
-          @blur="saveTitle"
-          @enter="saveTitle"
+        </template>
+      </div>
+    </template>
+    <template v-if="isEditing" #header-actions>
+      <div v-on-clickaway="() => (showTaskMenu = false)" class="relative">
+        <Button
+          variant="ghost"
+          color="slate"
+          size="sm"
+          icon="i-lucide-ellipsis-vertical"
+          :aria-label="t('PROJECTS.TASK.ACTIONS')"
+          :aria-expanded="showTaskMenu"
+          @click="showTaskMenu = !showTaskMenu"
         />
+        <DropdownMenu
+          v-if="showTaskMenu"
+          :menu-items="taskMenuItems"
+          class="mt-1 end-0 top-full w-44"
+          @action="confirmDelete"
+        />
+      </div>
+    </template>
+
+    <div class="flex flex-col gap-6">
+      <div class="flex flex-col gap-4">
+        <input
+          v-model="form.title"
+          type="text"
+          :autofocus="!isEditing"
+          :aria-label="t('PROJECTS.TASK.FORM.TITLE')"
+          :placeholder="t('PROJECTS.TASK.FORM.TITLE_PLACEHOLDER')"
+          class="w-full px-2 py-1 -mx-2 text-xl font-medium bg-transparent border border-transparent rounded-lg outline-none reset-base text-n-slate-12 hover:border-n-weak focus:border-n-brand placeholder:text-n-slate-10"
+          @blur="saveTitle"
+          @keydown.enter.prevent="saveTitle"
+        />
+
+        <dl
+          class="grid items-center mb-0 reset-base grid-cols-[7.5rem_minmax(0,1fr)] sm:grid-cols-[9rem_minmax(0,1fr)] gap-x-2 gap-y-1"
+        >
+          <dt class="flex items-center gap-2 text-sm text-n-slate-11">
+            <Icon icon="i-lucide-columns-3" class="size-4 shrink-0" />
+            {{ t('PROJECTS.TASK.FORM.STATUS') }}
+          </dt>
+          <dd data-field="status" class="mb-0">
+            <ProjectSelect
+              v-model="form.project_column_id"
+              :options="columnOptions"
+              :trigger-class="[
+                'h-9 font-medium !border-transparent hover:!border-n-weak',
+                statusPillClass,
+              ]"
+              class="sm:max-w-60"
+              @update:model-value="saveColumn"
+            />
+          </dd>
+
+          <dt class="flex items-center gap-2 text-sm text-n-slate-11">
+            <Icon icon="i-lucide-user-round" class="size-4 shrink-0" />
+            {{ t('PROJECTS.TASK.FORM.ASSIGNEE') }}
+          </dt>
+          <dd data-field="assignee" class="flex items-center gap-1 mb-0">
+            <Avatar
+              v-if="assignee"
+              :name="assignee.name"
+              :src="assignee.thumbnail"
+              :size="20"
+              rounded-full
+              class="ms-2"
+            />
+            <ProjectSelect
+              v-model="form.assignee_id"
+              :options="assigneeOptions"
+              trigger-class="h-9 text-n-slate-12 bg-transparent !border-transparent hover:!border-n-weak"
+              class="flex-1 min-w-0 sm:max-w-60"
+              @update:model-value="
+                value => saveField('assignee_id', value || null)
+              "
+            />
+          </dd>
+
+          <dt class="flex items-center gap-2 text-sm text-n-slate-11">
+            <Icon icon="i-lucide-flag" class="size-4 shrink-0" />
+            {{ t('PROJECTS.TASK.FORM.PRIORITY') }}
+          </dt>
+          <dd data-field="priority" class="mb-0">
+            <ProjectSelect
+              v-model="form.priority"
+              :options="priorityOptions"
+              :trigger-class="[
+                'h-9 font-medium !border-transparent hover:!border-n-weak',
+                PRIORITY_CLASS[form.priority],
+              ]"
+              class="sm:max-w-60"
+              @update:model-value="value => saveField('priority', value)"
+            />
+          </dd>
+
+          <dt class="flex items-center gap-2 text-sm text-n-slate-11">
+            <Icon icon="i-lucide-calendar" class="size-4 shrink-0" />
+            {{ t('PROJECTS.TASK.FORM.DUE_DATE') }}
+          </dt>
+          <dd
+            data-field="due_date"
+            class="flex flex-wrap items-center mb-0 gap-x-2"
+          >
+            <input
+              v-model="form.due_date"
+              type="date"
+              :aria-label="t('PROJECTS.TASK.FORM.DUE_DATE')"
+              class="h-9 px-3 text-sm bg-transparent border border-transparent rounded-lg reset-base text-n-slate-12 hover:border-n-weak focus:border-n-brand"
+              @blur="saveDueDate"
+            />
+            <span v-if="due" class="text-xs" :class="due.class">
+              {{ due.text }}
+            </span>
+          </dd>
+        </dl>
+
         <TaskMarkdownEditor
           v-if="!isEditing"
           :key="`description-${editorKey}`"
           v-model="form.description"
           :placeholder="t('PROJECTS.TASK.FORM.DESCRIPTION_PLACEHOLDER')"
         />
-        <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
-          <div class="flex flex-col gap-1">
-            <span class="text-xs text-n-slate-11">
-              {{ t('PROJECTS.TASK.FORM.STATUS') }}
-            </span>
-            <ProjectSelect
-              v-model="form.project_column_id"
-              :options="columnOptions"
-              @update:model-value="saveColumn"
-            />
-          </div>
-          <div class="flex flex-col gap-1">
-            <span class="text-xs text-n-slate-11">
-              {{ t('PROJECTS.TASK.FORM.PRIORITY') }}
-            </span>
-            <ProjectSelect
-              v-model="form.priority"
-              :options="priorityOptions"
-              @update:model-value="value => saveField('priority', value)"
-            />
-          </div>
-          <div class="flex flex-col gap-1">
-            <span class="text-xs text-n-slate-11">
-              {{ t('PROJECTS.TASK.FORM.ASSIGNEE') }}
-            </span>
-            <ProjectSelect
-              v-model="form.assignee_id"
-              :options="assigneeOptions"
-              @update:model-value="
-                value => saveField('assignee_id', value || null)
-              "
-            />
-          </div>
-          <div class="flex flex-col gap-1">
-            <span class="text-xs text-n-slate-11">
-              {{ t('PROJECTS.TASK.FORM.DUE_DATE') }}
-            </span>
-            <Input v-model="form.due_date" type="date" @blur="saveDueDate" />
-          </div>
-        </div>
-        <div v-if="!isEditing" class="flex justify-end">
-          <Button
-            type="button"
-            color="blue"
-            :label="t('PROJECTS.TASK.FORM.SAVE')"
-            :disabled="isFormInvalid"
-            :is-loading="isSaving"
-            @click="createTask"
-          />
-        </div>
       </div>
 
       <section v-if="isEditing" class="flex flex-col gap-2">
         <header class="flex items-center justify-between gap-2">
-          <h4 class="text-sm font-medium text-n-slate-12">
+          <h4 class="mb-0 text-sm font-medium text-n-slate-12">
             {{ t('PROJECTS.TASK.FORM.DESCRIPTION') }}
           </h4>
           <Button
@@ -514,7 +612,7 @@ defineExpose({ open, close });
         <button
           v-else
           type="button"
-          class="text-sm text-start text-n-slate-10 hover:text-n-slate-12"
+          class="px-3 py-2 text-sm border border-dashed rounded-lg text-start border-n-weak text-n-slate-10 hover:text-n-slate-12 hover:border-n-strong"
           @click="isEditingDescription = true"
         >
           {{ t('PROJECTS.TASK.FORM.DESCRIPTION_EMPTY') }}
@@ -522,14 +620,26 @@ defineExpose({ open, close });
       </section>
 
       <section v-if="isEditing" class="flex flex-col gap-4">
-        <TabBar
-          :tabs="tabs"
-          :initial-active-tab="activeTabIndex"
-          @tab-changed="tab => (activeTab = tab.key)"
-        />
+        <div class="-mx-1 overflow-x-auto">
+          <TabBar
+            :tabs="tabs"
+            :initial-active-tab="activeTabIndex"
+            class="mx-1 !w-max"
+            @tab-changed="tab => (activeTab = tab.key)"
+          />
+        </div>
+
         <div v-if="activeTab === 'subtasks'" class="flex flex-col gap-3">
-          <header class="flex items-center justify-end">
-            <span class="text-xs text-n-slate-10">
+          <div v-if="subtasks.length" class="flex items-center gap-3">
+            <span
+              class="flex-1 h-1.5 overflow-hidden rounded-full bg-n-slate-4"
+            >
+              <span
+                class="block h-full rounded-full bg-n-teal-9"
+                :class="subtaskProgressClass"
+              />
+            </span>
+            <span class="text-xs tabular-nums text-n-slate-11">
               {{
                 t('PROJECTS.TASK.SUBTASKS.PROGRESS', {
                   done: completedSubtasks,
@@ -537,51 +647,44 @@ defineExpose({ open, close });
                 })
               }}
             </span>
-          </header>
-          <div
-            v-if="subtasks.length"
-            class="h-1 overflow-hidden rounded-full bg-n-slate-4"
-          >
-            <div class="h-full bg-n-brand" :class="subtaskProgressClass" />
           </div>
-          <ul class="flex flex-col gap-2">
+          <ul class="flex flex-col mb-0 reset-base">
             <li
               v-for="subtask in subtasks"
               :key="subtask.id"
-              class="flex items-center gap-2"
+              class="flex items-center gap-3 px-2 py-1.5 -mx-2 rounded-lg group hover:bg-n-alpha-1"
             >
-              <button
-                type="button"
-                class="flex items-center justify-center size-5 rounded border border-n-weak"
-                @click="toggleSubtask(subtask)"
+              <label
+                class="flex items-center flex-1 min-w-0 gap-3 cursor-pointer"
               >
-                <Icon
-                  v-if="subtask.status === 'done'"
-                  icon="i-lucide-check"
-                  class="size-3.5 text-n-teal-11"
+                <Checkbox
+                  :model-value="subtask.status === 'done'"
+                  @change="toggleSubtask(subtask)"
                 />
-              </button>
-              <span
-                class="flex-1 text-sm text-n-slate-12"
-                :class="
-                  subtask.status === 'done'
-                    ? 'line-through text-n-slate-10'
-                    : ''
-                "
-              >
-                {{ subtask.title }}
-              </span>
+                <span
+                  class="flex-1 text-sm break-words"
+                  :class="
+                    subtask.status === 'done'
+                      ? 'line-through text-n-slate-10'
+                      : 'text-n-slate-12'
+                  "
+                >
+                  {{ subtask.title }}
+                </span>
+              </label>
               <Button
                 type="button"
                 variant="ghost"
                 color="slate"
                 size="xs"
                 icon="i-lucide-x"
+                class="md:opacity-0 md:group-hover:opacity-100 focus-visible:opacity-100"
+                :aria-label="t('PROJECTS.TASK.SUBTASKS.DELETE')"
                 @click="removeSubtask(subtask)"
               />
             </li>
           </ul>
-          <p v-if="!subtasks.length" class="text-sm text-n-slate-10">
+          <p v-if="!subtasks.length" class="mb-0 text-sm text-n-slate-10">
             {{ t('PROJECTS.TASK.SUBTASKS.EMPTY') }}
           </p>
           <Input
@@ -596,31 +699,49 @@ defineExpose({ open, close });
           v-else-if="activeTab === 'attachments'"
           class="flex flex-col gap-3"
         >
-          <ul class="flex flex-col gap-2">
+          <ul class="flex flex-col gap-2 mb-0 reset-base">
             <li
               v-for="attachment in attachments"
               :key="attachment.id"
-              class="flex items-center justify-between gap-2 text-sm"
+              class="flex items-center gap-3 p-2 border rounded-lg border-n-weak"
             >
+              <img
+                v-if="attachment.file_type?.startsWith('image/')"
+                :src="attachment.file_url"
+                :alt="attachment.filename"
+                class="object-cover rounded-md size-10 shrink-0"
+              />
+              <span
+                v-else
+                class="flex items-center justify-center rounded-md size-10 shrink-0 bg-n-alpha-2 text-n-slate-11"
+              >
+                <Icon icon="i-lucide-file" class="size-5" />
+              </span>
               <a
                 :href="attachment.file_url"
                 target="_blank"
                 rel="noopener noreferrer"
-                class="truncate text-n-brand"
+                class="flex flex-col flex-1 min-w-0"
               >
-                {{ attachment.filename }}
+                <span class="text-sm truncate text-n-slate-12 hover:underline">
+                  {{ attachment.filename }}
+                </span>
+                <span class="text-xs text-n-slate-11">
+                  {{ formatBytes(attachment.byte_size, 1) }}
+                </span>
               </a>
               <Button
                 type="button"
                 variant="ghost"
                 color="slate"
                 size="xs"
-                icon="i-lucide-x"
+                icon="i-lucide-trash"
+                :aria-label="t('PROJECTS.TASK.ATTACHMENTS.DELETE')"
                 @click="removeAttachment(attachment)"
               />
             </li>
           </ul>
-          <p v-if="!attachments.length" class="text-sm text-n-slate-10">
+          <p v-if="!attachments.length" class="mb-0 text-sm text-n-slate-10">
             {{ t('PROJECTS.TASK.ATTACHMENTS.EMPTY') }}
           </p>
           <input
@@ -633,67 +754,117 @@ defineExpose({ open, close });
             type="button"
             variant="faded"
             color="slate"
+            size="sm"
             icon="i-lucide-paperclip"
+            class="self-start"
             :label="t('PROJECTS.TASK.ATTACHMENTS.ADD')"
             @click="fileInputRef?.click()"
           />
         </div>
 
         <div v-else class="flex flex-col gap-3">
-          <ul class="flex flex-col gap-3">
+          <ul class="flex flex-col gap-4 mb-0 reset-base">
             <li
               v-for="comment in comments"
               :key="comment.id"
-              class="flex gap-2"
+              class="flex gap-3 group"
             >
               <Avatar
                 :name="comment.author?.name || ''"
                 :src="comment.author?.thumbnail"
-                :size="24"
+                :size="28"
+                rounded-full
               />
-              <div class="flex flex-col flex-1 gap-1">
-                <div class="flex items-center justify-between gap-2">
-                  <span class="text-xs font-medium text-n-slate-12">
+              <div class="flex flex-col flex-1 min-w-0 gap-1">
+                <div class="flex items-center gap-2">
+                  <span class="text-sm font-medium text-n-slate-12">
                     {{ comment.author?.name }}
                   </span>
                   <span class="text-xs text-n-slate-10">
                     {{ formattedTime(comment.created_at) }}
                   </span>
+                  <Button
+                    v-if="canDeleteComment(comment)"
+                    type="button"
+                    variant="ghost"
+                    color="slate"
+                    size="xs"
+                    icon="i-lucide-trash"
+                    class="ms-auto md:opacity-0 md:group-hover:opacity-100 focus-visible:opacity-100"
+                    :aria-label="t('PROJECTS.TASK.COMMENTS.DELETE')"
+                    @click="removeComment(comment)"
+                  />
                 </div>
                 <div
                   v-dompurify-html="formatMarkdown(comment.content)"
                   class="text-sm break-words prose-sm prose dark:prose-invert max-w-none text-n-slate-11 [&>:first-child]:mt-0 [&>:last-child]:mb-0"
                 />
-                <button
-                  v-if="canDeleteComment(comment)"
-                  type="button"
-                  class="self-start text-xs text-n-ruby-11"
-                  @click="removeComment(comment)"
-                >
-                  {{ t('PROJECTS.TASK.COMMENTS.DELETE') }}
-                </button>
               </div>
             </li>
           </ul>
-          <p v-if="!comments.length" class="text-sm text-n-slate-10">
+          <p v-if="!comments.length" class="mb-0 text-sm text-n-slate-10">
             {{ t('PROJECTS.TASK.COMMENTS.EMPTY') }}
           </p>
-          <TaskMarkdownEditor
-            :key="`comment-${editorKey}`"
-            v-model="commentContent"
-            :placeholder="t('PROJECTS.TASK.COMMENTS.ADD_PLACEHOLDER')"
+        </div>
+      </section>
+    </div>
+
+    <template v-if="!isEditing || activeTab === 'comments'" #footer>
+      <div v-if="!isEditing" class="flex justify-end gap-2">
+        <Button
+          type="button"
+          variant="faded"
+          color="slate"
+          :label="t('PROJECTS.TASK.FORM.CANCEL')"
+          @click="close"
+        />
+        <Button
+          type="button"
+          color="blue"
+          :label="t('PROJECTS.TASK.FORM.SAVE')"
+          :disabled="isFormInvalid"
+          :is-loading="isSaving"
+          @click="createTask"
+        />
+      </div>
+      <div v-else-if="isComposing" class="flex flex-col gap-2">
+        <TaskMarkdownEditor
+          :key="`comment-${editorKey}`"
+          v-model="commentContent"
+          autofocus
+          :placeholder="t('PROJECTS.TASK.COMMENTS.ADD_PLACEHOLDER')"
+          class="overflow-y-auto max-h-56"
+        />
+        <div class="flex justify-end gap-2">
+          <Button
+            type="button"
+            variant="faded"
+            color="slate"
+            size="sm"
+            :label="t('PROJECTS.TASK.FORM.CANCEL')"
+            @click="cancelComment"
           />
           <Button
             type="button"
             color="blue"
+            size="sm"
             :label="t('PROJECTS.TASK.COMMENTS.ADD')"
             :disabled="!commentContent.trim()"
             @click="addComment"
           />
         </div>
-      </section>
-    </div>
-  </Dialog>
+      </div>
+      <button
+        v-else
+        type="button"
+        class="flex items-center w-full gap-2 px-3 py-2.5 text-sm border rounded-lg text-start border-n-weak text-n-slate-10 hover:border-n-strong hover:text-n-slate-11"
+        @click="isComposing = true"
+      >
+        <Icon icon="i-lucide-message-square-plus" class="size-4" />
+        {{ t('PROJECTS.TASK.COMMENTS.ADD_PLACEHOLDER') }}
+      </button>
+    </template>
+  </SidePanel>
 
   <Dialog
     ref="deleteDialogRef"

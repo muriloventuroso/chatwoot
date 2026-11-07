@@ -3,13 +3,13 @@
     "TITLE": "Proyectos",
     "NEW_PROJECT": "Nuevo proyecto",
     "SEARCH_PLACEHOLDER": "Buscar proyectos",
-    "EMPTY": "Aún no hay proyectos. Crea tu primer proyecto para empezar.",
-    "NO_RESULTS": "Ningún proyecto coincide con la búsqueda.",
-    "TASKS_COUNT": "{count} tarea | {count} tareas",
+    "NO_RESULTS": "Ningún proyecto coincide con estos filtros.",
     "FILTERS": {
-      "ALL": "Todos los proyectos",
       "MINE": "Mis proyectos",
-      "STATUS_ALL": "Todos los estados"
+      "STATUS_ALL": "Todos",
+      "EVERYONE": "Todos",
+      "ME": "{name} (tú)",
+      "ANY_PRIORITY": "Cualquiera"
     },
     "STATUS": {
       "ACTIVE": "Activo",
@@ -27,14 +27,16 @@
       "COLOR": "Color",
       "START_DATE": "Fecha de inicio",
       "END_DATE": "Fecha de finalización",
-      "SAVE": "Guardar proyecto"
+      "SAVE": "Guardar proyecto",
+      "COLOR_OPTION": "Color {index}",
+      "DATE_ERROR": "La fecha de finalización debe ser igual o posterior a la de inicio"
     },
     "ACTIONS": {
       "EDIT": "Editar",
       "DELETE": "Eliminar",
       "ARCHIVE": "Archivar",
-      "COMPLETE": "Completar",
-      "VIEW": "Abrir proyecto"
+      "COMPLETE": "Marcar como completado",
+      "REACTIVATE": "Reactivar"
     },
     "DELETE": {
       "TITLE": "Eliminar proyecto",
@@ -54,22 +56,26 @@
       "TITLE": "Miembros",
       "ADD": "Agregar miembros",
       "EMPTY": "Aún no hay miembros",
-      "SELECT_PLACEHOLDER": "Selecciona los agentes",
-      "REMOVE": "Quitar miembro"
+      "REMOVE": "Quitar miembro",
+      "MANAGE": "Gestionar miembros",
+      "DESCRIPTION": "Solo los miembros pueden ser responsables de las tareas de este proyecto.",
+      "REMOVE_NAMED": "Quitar a {name}",
+      "REMOVE_DIALOG": {
+        "TITLE": "¿Quitar miembro?",
+        "MESSAGE": "{name} ya no podrá ser responsable de nuevas tareas de este proyecto. Las tareas ya asignadas se mantienen como están.",
+        "CONFIRM": "Quitar"
+      }
     },
     "DETAILS": {
-      "BACK": "Volver a proyectos",
       "BOARD": "Tablero",
       "LIST": "Lista",
       "SEARCH_TASKS": "Buscar tareas",
-      "ALL_ASSIGNEES": "Todos los responsables",
-      "ALL_PRIORITIES": "Todas las prioridades",
-      "ONLY_MINE": "Solo mías",
       "ADD_TASK": "Agregar tarea",
       "NO_TASKS": "Sin tareas",
-      "OVERDUE": "Vencida",
       "LOAD_ERROR": "No se pudo cargar este proyecto",
-      "RETRY": "Reintentar"
+      "RETRY": "Reintentar",
+      "FILTERS": "Filtros",
+      "NEW_TASK": "Nueva tarea"
     },
     "TASK": {
       "STATUS": {
@@ -92,7 +98,7 @@
         "ASSIGNEE": "Responsable",
         "UNASSIGNED": "Sin responsable",
         "DUE_DATE": "Fecha límite",
-        "SAVE": "Guardar tarea",
+        "SAVE": "Crear tarea",
         "DELETE": "Eliminar tarea",
         "DESCRIPTION_EMPTY": "Añadir una descripción...",
         "EDIT_DESCRIPTION": "Editar descripción",
@@ -103,7 +109,8 @@
         "TITLE": "Subtareas",
         "ADD_PLACEHOLDER": "Agrega una subtarea y pulsa Enter",
         "EMPTY": "Aún no hay subtareas",
-        "PROGRESS": "{done} de {total} hechas"
+        "PROGRESS": "{done} de {total} hechas",
+        "DELETE": "Quitar subtarea"
       },
       "COMMENTS": {
         "TITLE": "Comentarios",
@@ -134,7 +141,8 @@
       "META": {
         "CREATED_BY": "Creada por {name} el {time}",
         "ID": "#{id}"
-      }
+      },
+      "ACTIONS": "Acciones de la tarea"
     },
     "COLUMNS": {
       "ADD": "Añadir columna",
@@ -169,6 +177,35 @@
       "DUE_TODAY": "Vence hoy",
       "DAYS_LATE": "{count} día de retraso | {count} días de retraso",
       "DAYS_LEFT": "Falta {count} día | Faltan {count} días"
+    },
+    "CLEAR_FILTERS": "Limpiar filtros",
+    "EMPTY_STATE": {
+      "TITLE": "Aún no hay proyectos",
+      "DESCRIPTION": "Crea un proyecto para organizar tareas en un tablero, asignarlas a tu equipo y seguir los plazos.",
+      "CREATE": "Crear proyecto"
+    },
+    "CARD": {
+      "ACTIONS": "Acciones del proyecto",
+      "TASKS_DONE": "{done} de {total} tareas completadas",
+      "NO_TASKS": "Aún no hay tareas",
+      "OVERDUE": "{count} atrasada | {count} atrasadas",
+      "NO_DEADLINE": "Sin fecha límite"
+    },
+    "DUE": {
+      "TODAY": "vence hoy",
+      "TOMORROW": "vence mañana",
+      "IN_DAYS": "falta {count} día | faltan {count} días",
+      "LATE": "{count} día de retraso | {count} días de retraso"
+    },
+    "BOARD": {
+      "DROP_HINT": "Arrastra tareas aquí"
+    },
+    "SUMMARY": {
+      "PROGRESS": "Progreso",
+      "DONE": "Completadas",
+      "OVERDUE": "Atrasadas",
+      "DUE_SOON": "Vencen esta semana",
+      "DEADLINE": "Fecha límite"
     }
   }
 }

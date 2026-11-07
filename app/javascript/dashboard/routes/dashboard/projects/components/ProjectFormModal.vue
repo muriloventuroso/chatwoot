@@ -41,7 +41,13 @@ const statusOptions = computed(() =>
 );
 
 const isEditing = computed(() => editingId.value !== null);
-const isFormInvalid = computed(() => !form.name.trim());
+// Bare `YYYY-MM-DD` strings compare correctly as text.
+const hasInvalidDates = computed(
+  () => !!form.start_date && !!form.end_date && form.end_date < form.start_date
+);
+const isFormInvalid = computed(
+  () => !form.name.trim() || hasInvalidDates.value
+);
 // Blocks a second click from sending a duplicate create while the first is in flight.
 const isSaving = computed(
   () => uiFlags.value.isCreating || uiFlags.value.isUpdating
@@ -113,26 +119,31 @@ defineExpose({ open, close });
         />
       </div>
       <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
-        <div class="flex flex-col gap-1">
+        <!-- A new project always starts active. -->
+        <div v-if="isEditing" class="flex flex-col gap-1">
           <label class="text-sm font-medium text-n-slate-12">
             {{ t('PROJECTS.FORM.STATUS') }}
           </label>
           <ProjectSelect v-model="form.status" :options="statusOptions" />
         </div>
         <div class="flex flex-col gap-1">
-          <label class="text-sm font-medium text-n-slate-12">
+          <span class="text-sm font-medium text-n-slate-12">
             {{ t('PROJECTS.FORM.COLOR') }}
-          </label>
-          <div class="flex items-center gap-2 h-10">
+          </span>
+          <div class="flex items-center h-10 gap-2">
             <button
-              v-for="color in PROJECT_COLORS"
+              v-for="(color, index) in PROJECT_COLORS"
               :key="color"
               type="button"
-              class="w-6 h-6 rounded-full"
+              class="rounded-full size-6"
               :class="[
                 PROJECT_COLOR_CLASS[color],
                 form.color === color ? 'ring-2 ring-offset-2 ring-n-brand' : '',
               ]"
+              :aria-label="
+                t('PROJECTS.FORM.COLOR_OPTION', { index: index + 1 })
+              "
+              :aria-pressed="form.color === color"
               @click="form.color = color"
             />
           </div>
@@ -147,10 +158,15 @@ defineExpose({ open, close });
           <label class="text-sm font-medium text-n-slate-12">
             {{ t('PROJECTS.FORM.END_DATE') }}
           </label>
-          <Input v-model="form.end_date" type="date" />
+          <Input
+            v-model="form.end_date"
+            type="date"
+            :message="hasInvalidDates ? t('PROJECTS.FORM.DATE_ERROR') : ''"
+            :message-type="hasInvalidDates ? 'error' : 'info'"
+          />
         </div>
       </div>
-      <div class="flex items-center justify-between gap-3">
+      <div class="flex items-center justify-end gap-2">
         <Button
           :label="t('DIALOG.BUTTONS.CANCEL')"
           variant="faded"

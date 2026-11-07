@@ -3,13 +3,13 @@
     "TITLE": "Projects",
     "NEW_PROJECT": "New project",
     "SEARCH_PLACEHOLDER": "Search projects",
-    "EMPTY": "No projects yet. Create your first project to get started.",
-    "NO_RESULTS": "No projects match your search.",
-    "TASKS_COUNT": "{count} task | {count} tasks",
+    "NO_RESULTS": "No projects match these filters.",
     "FILTERS": {
-      "ALL": "All projects",
       "MINE": "My projects",
-      "STATUS_ALL": "All statuses"
+      "STATUS_ALL": "All",
+      "EVERYONE": "Everyone",
+      "ME": "{name} (you)",
+      "ANY_PRIORITY": "Any"
     },
     "STATUS": {
       "ACTIVE": "Active",
@@ -27,14 +27,16 @@
       "COLOR": "Color",
       "START_DATE": "Start date",
       "END_DATE": "End date",
-      "SAVE": "Save project"
+      "SAVE": "Save project",
+      "COLOR_OPTION": "Color {index}",
+      "DATE_ERROR": "The end date must be on or after the start date"
     },
     "ACTIONS": {
       "EDIT": "Edit",
       "DELETE": "Delete",
       "ARCHIVE": "Archive",
       "COMPLETE": "Mark as completed",
-      "VIEW": "Open project"
+      "REACTIVATE": "Reactivate"
     },
     "DELETE": {
       "TITLE": "Delete project",
@@ -54,22 +56,26 @@
       "TITLE": "Members",
       "ADD": "Add members",
       "EMPTY": "No members yet",
-      "SELECT_PLACEHOLDER": "Select agents",
-      "REMOVE": "Remove member"
+      "REMOVE": "Remove member",
+      "MANAGE": "Manage members",
+      "DESCRIPTION": "Only members can be assigned to this project's tasks.",
+      "REMOVE_NAMED": "Remove {name}",
+      "REMOVE_DIALOG": {
+        "TITLE": "Remove member?",
+        "MESSAGE": "{name} will no longer be assignable to new tasks in this project. Tasks already assigned to them stay as they are.",
+        "CONFIRM": "Remove"
+      }
     },
     "DETAILS": {
-      "BACK": "Back to projects",
       "BOARD": "Board",
       "LIST": "List",
       "SEARCH_TASKS": "Search tasks",
-      "ALL_ASSIGNEES": "All assignees",
-      "ALL_PRIORITIES": "All priorities",
-      "ONLY_MINE": "Only mine",
       "ADD_TASK": "Add task",
       "NO_TASKS": "No tasks",
-      "OVERDUE": "Overdue",
       "LOAD_ERROR": "Could not load this project",
-      "RETRY": "Try again"
+      "RETRY": "Try again",
+      "FILTERS": "Filters",
+      "NEW_TASK": "New task"
     },
     "TASK": {
       "STATUS": {
@@ -92,7 +98,7 @@
         "ASSIGNEE": "Assignee",
         "UNASSIGNED": "Unassigned",
         "DUE_DATE": "Due date",
-        "SAVE": "Save task",
+        "SAVE": "Create task",
         "DELETE": "Delete task",
         "DESCRIPTION_EMPTY": "Add a description...",
         "EDIT_DESCRIPTION": "Edit description",
@@ -103,7 +109,8 @@
         "TITLE": "Subtasks",
         "ADD_PLACEHOLDER": "Add a subtask and press Enter",
         "EMPTY": "No subtasks yet",
-        "PROGRESS": "{done} of {total} done"
+        "PROGRESS": "{done} of {total} done",
+        "DELETE": "Remove subtask"
       },
       "COMMENTS": {
         "TITLE": "Comments",
@@ -134,7 +141,8 @@
       "META": {
         "CREATED_BY": "Created by {name} on {time}",
         "ID": "#{id}"
-      }
+      },
+      "ACTIONS": "Task actions"
     },
     "COLUMNS": {
       "ADD": "Add column",
@@ -169,6 +177,35 @@
       "DUE_TODAY": "Due today",
       "DAYS_LATE": "{count} day late | {count} days late",
       "DAYS_LEFT": "{count} day left | {count} days left"
+    },
+    "CLEAR_FILTERS": "Clear filters",
+    "EMPTY_STATE": {
+      "TITLE": "No projects yet",
+      "DESCRIPTION": "Create a project to organize tasks on a board, assign them to your team and keep an eye on deadlines.",
+      "CREATE": "Create project"
+    },
+    "CARD": {
+      "ACTIONS": "Project actions",
+      "TASKS_DONE": "{done} of {total} tasks done",
+      "NO_TASKS": "No tasks yet",
+      "OVERDUE": "{count} overdue | {count} overdue",
+      "NO_DEADLINE": "No deadline"
+    },
+    "DUE": {
+      "TODAY": "due today",
+      "TOMORROW": "due tomorrow",
+      "IN_DAYS": "{count} day left | {count} days left",
+      "LATE": "{count} day late | {count} days late"
+    },
+    "BOARD": {
+      "DROP_HINT": "Drag tasks here"
+    },
+    "SUMMARY": {
+      "PROGRESS": "Progress",
+      "DONE": "Done",
+      "OVERDUE": "Overdue",
+      "DUE_SOON": "Due this week",
+      "DEADLINE": "Deadline"
     }
   }
 }

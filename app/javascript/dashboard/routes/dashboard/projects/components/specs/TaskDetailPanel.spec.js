@@ -1,7 +1,7 @@
 import { mount, flushPromises } from '@vue/test-utils';
 import { createStore } from 'vuex';
 import { withFullI18n } from 'test-i18n';
-import TaskDetailModal from '../TaskDetailModal.vue';
+import TaskDetailPanel from '../TaskDetailPanel.vue';
 
 withFullI18n();
 
@@ -21,11 +21,12 @@ const task = {
 };
 
 const stubs = {
-  Dialog: {
-    name: 'Dialog',
-    template: '<div><slot /></div>',
+  SidePanel: {
+    name: 'SidePanel',
+    template: '<div><slot name="header" /><slot /><slot name="footer" /></div>',
     methods: { open() {}, close() {} },
   },
+  Dialog: true,
   TaskMarkdownEditor: true,
   ProjectSelect: {
     name: 'ProjectSelect',
@@ -35,7 +36,7 @@ const stubs = {
   },
 };
 
-const mountModal = async ({ updateTask = vi.fn() } = {}) => {
+const mountPanel = async ({ updateTask = vi.fn() } = {}) => {
   const store = createStore({
     getters: {
       getCurrentUserID: () => 3,
@@ -56,22 +57,26 @@ const mountModal = async ({ updateTask = vi.fn() } = {}) => {
       },
     },
   });
-  const wrapper = mount(TaskDetailModal, {
+  const wrapper = mount(TaskDetailPanel, {
     props: { projectId: 1 },
-    global: { plugins: [store], stubs, directives: { dompurifyHtml: {} } },
+    global: {
+      plugins: [store],
+      stubs,
+      directives: { dompurifyHtml: {}, onClickaway: {} },
+    },
   });
   await wrapper.vm.open({ task });
   await flushPromises();
   return wrapper;
 };
 
-describe('TaskDetailModal', () => {
+describe('TaskDetailPanel', () => {
   it('puts a field back to the stored value when saving it fails', async () => {
     const updateTask = vi.fn().mockRejectedValue(new Error('422'));
-    const wrapper = await mountModal({ updateTask });
-    const prioritySelect = wrapper.findAllComponents({
-      name: 'ProjectSelect',
-    })[1];
+    const wrapper = await mountPanel({ updateTask });
+    const prioritySelect = wrapper
+      .find('[data-field="priority"]')
+      .findComponent({ name: 'ProjectSelect' });
 
     prioritySelect.vm.$emit('update:modelValue', 'high');
     await flushPromises();
@@ -85,7 +90,7 @@ describe('TaskDetailModal', () => {
 
   it('saves the due date once, on blur, with the final value', async () => {
     const updateTask = vi.fn();
-    const wrapper = await mountModal({ updateTask });
+    const wrapper = await mountPanel({ updateTask });
     const dateInput = wrapper.find('input[type="date"]');
 
     await dateInput.setValue('0002-11-20');

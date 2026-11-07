@@ -8,7 +8,7 @@ import DropdownMenu from 'dashboard/components-next/dropdown-menu/DropdownMenu.v
 import Icon from 'dashboard/components-next/icon/Icon.vue';
 import Input from 'dashboard/components-next/input/Input.vue';
 import ProjectTaskCard from './ProjectTaskCard.vue';
-import { STATUS_DOT_CLASS } from '../constants';
+import { STATUS_ACCENT_CLASS, STATUS_DOT_CLASS } from '../constants';
 
 const props = defineProps({
   columns: { type: Array, default: () => [] },
@@ -25,6 +25,9 @@ const emit = defineEmits([
   'deleteColumn',
 ]);
 const { t } = useI18n();
+
+// A press this long starts a drag on touch screens; a shorter one scrolls the board.
+const TOUCH_DRAG_DELAY_MS = 200;
 
 // Keyed by column id.
 const columnTasks = reactive({});
@@ -49,11 +52,15 @@ const startCreate = columnId => {
   drafting[columnId] = true;
 };
 
-const submitDraft = columnId => {
+// Enter keeps the field open for the next task; leaving it closes it.
+const submitDraft = (columnId, { keepOpen = false } = {}) => {
   const title = (draftTitles[columnId] || '').trim();
-  drafting[columnId] = false;
+  drafting[columnId] = keepOpen;
   draftTitles[columnId] = '';
-  if (!title) return;
+  if (!title) {
+    drafting[columnId] = false;
+    return;
+  }
   emit('createTask', { columnId, title });
 };
 
@@ -123,86 +130,101 @@ const onChange = (columnId, event) => {
 </script>
 
 <template>
-  <div class="flex flex-col flex-1 gap-4 md:flex-row md:overflow-x-auto">
+  <div
+    data-board
+    class="flex items-start h-full gap-3 px-4 pb-4 max-md:pb-20 overflow-x-auto snap-x snap-mandatory scroll-px-4 sm:px-6 sm:scroll-px-6 md:snap-none"
+  >
     <section
       v-for="(column, index) in columns"
       :key="column.id"
-      class="flex flex-col gap-3 p-3 rounded-xl bg-n-surface-2 md:w-72 md:shrink-0"
+      :data-column="column.id"
+      class="flex flex-col max-h-full border-t-2 shrink-0 snap-start rounded-xl bg-n-surface-2 w-[85vw] max-w-80 md:w-72"
+      :class="STATUS_ACCENT_CLASS[column.category]"
     >
-      <header class="flex items-center justify-between gap-2">
+      <header class="flex items-center justify-between gap-2 px-3 pt-2.5 pb-2">
         <span
           class="flex items-center min-w-0 gap-2 text-sm font-medium text-n-slate-12"
         >
           <span
-            class="w-2 h-2 rounded-full shrink-0"
+            class="rounded-full size-2 shrink-0"
             :class="STATUS_DOT_CLASS[column.category]"
           />
           <span class="truncate">{{ column.name }}</span>
-          <span class="text-xs text-n-slate-10">
+          <span
+            class="px-1.5 text-xs rounded-full tabular-nums bg-n-alpha-2 text-n-slate-11"
+          >
             {{ columnTasks[column.id]?.length || 0 }}
           </span>
         </span>
-        <div class="flex items-center shrink-0">
+        <div
+          v-on-clickaway="() => closeMenu(column.id)"
+          class="relative shrink-0 -me-1"
+        >
           <Button
             variant="ghost"
             color="slate"
-            icon="i-lucide-plus"
+            icon="i-lucide-ellipsis"
             size="xs"
-            :aria-label="t('PROJECTS.DETAILS.ADD_TASK')"
-            @click="startCreate(column.id)"
+            :aria-label="t('PROJECTS.COLUMNS.MENU')"
+            :aria-expanded="openMenuId === column.id"
+            :class="openMenuId === column.id ? 'bg-n-alpha-2' : ''"
+            @click="toggleMenu(column.id)"
           />
-          <div v-on-clickaway="() => closeMenu(column.id)" class="relative">
-            <Button
-              variant="ghost"
-              color="slate"
-              icon="i-lucide-ellipsis-vertical"
-              size="xs"
-              :aria-label="t('PROJECTS.COLUMNS.MENU')"
-              :class="openMenuId === column.id ? 'bg-n-alpha-2' : ''"
-              @click="toggleMenu(column.id)"
-            />
-            <DropdownMenu
-              v-if="openMenuId === column.id"
-              :menu-items="menuItems(index)"
-              class="end-0 mt-1 w-52 top-full"
-              @action="handleMenuAction(column, $event)"
-            />
-          </div>
+          <DropdownMenu
+            v-if="openMenuId === column.id"
+            :menu-items="menuItems(index)"
+            class="mt-1 end-0 w-52 top-full"
+            @action="handleMenuAction(column, $event)"
+          />
         </div>
       </header>
-      <Input
-        v-if="drafting[column.id]"
-        :key="`draft-${column.id}`"
-        v-model="draftTitles[column.id]"
-        size="sm"
-        autofocus
-        :placeholder="t('PROJECTS.TASK.FORM.TITLE_PLACEHOLDER')"
-        @enter="submitDraft(column.id)"
-        @blur="submitDraft(column.id)"
-      />
       <Draggable
         v-model="columnTasks[column.id]"
         group="project-tasks"
         item-key="id"
-        class="flex flex-col flex-1 gap-2 min-h-16"
+        class="flex flex-col flex-1 gap-2 px-2 pb-1 overflow-y-auto min-h-16"
+        ghost-class="opacity-40"
+        :animation="150"
+        :delay="TOUCH_DRAG_DELAY_MS"
+        delay-on-touch-only
         @change="onChange(column.id, $event)"
       >
         <template #item="{ element }">
           <ProjectTaskCard :task="element" @open="emit('openTask', $event)" />
         </template>
+        <template v-if="!columnTasks[column.id]?.length" #footer>
+          <p
+            class="flex items-center justify-center h-16 mb-0 text-xs border border-dashed rounded-lg border-n-weak text-n-slate-10"
+          >
+            {{ t('PROJECTS.BOARD.DROP_HINT') }}
+          </p>
+        </template>
       </Draggable>
-      <button
-        type="button"
-        class="flex items-center gap-1 text-sm text-n-slate-11 hover:text-n-slate-12"
-        @click="startCreate(column.id)"
-      >
-        <Icon icon="i-lucide-plus" class="size-4" />
-        {{ t('PROJECTS.DETAILS.ADD_TASK') }}
-      </button>
+      <footer class="p-2">
+        <Input
+          v-if="drafting[column.id]"
+          :key="`draft-${column.id}`"
+          v-model="draftTitles[column.id]"
+          size="sm"
+          autofocus
+          :placeholder="t('PROJECTS.TASK.FORM.TITLE_PLACEHOLDER')"
+          @enter="submitDraft(column.id, { keepOpen: true })"
+          @blur="submitDraft(column.id)"
+        />
+        <button
+          v-else
+          type="button"
+          class="flex items-center w-full gap-1.5 px-2 py-1.5 text-sm rounded-lg text-n-slate-11 hover:text-n-slate-12 hover:bg-n-alpha-2"
+          @click="startCreate(column.id)"
+        >
+          <Icon icon="i-lucide-plus" class="size-4" />
+          {{ t('PROJECTS.DETAILS.ADD_TASK') }}
+        </button>
+      </footer>
     </section>
     <button
       type="button"
-      class="flex items-center justify-center gap-2 p-3 text-sm border border-dashed rounded-xl border-n-weak text-n-slate-11 hover:text-n-slate-12 hover:border-n-strong md:self-start md:w-72 md:shrink-0"
+      class="flex items-center justify-center gap-2 p-3 text-sm border border-dashed shrink-0 snap-start rounded-xl border-n-weak text-n-slate-11 hover:text-n-slate-12 hover:border-n-strong w-[85vw] max-w-80 md:w-72"
       @click="emit('addColumn')"
     >
       <Icon icon="i-lucide-plus" class="size-4" />

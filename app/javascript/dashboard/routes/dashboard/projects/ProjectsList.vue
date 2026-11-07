@@ -1,48 +1,32 @@
 <script setup>
 import { computed, onMounted, ref } from 'vue';
 import { useI18n } from 'vue-i18n';
-import { useRouter } from 'vue-router';
 import { picoSearch } from '@chatwoot/pico-search';
 import { useAlert } from 'dashboard/composables';
-import { useAccount } from 'dashboard/composables/useAccount';
 import { useMapGetter, useStore } from 'dashboard/composables/store';
 
-import Avatar from 'dashboard/components-next/avatar/Avatar.vue';
 import Button from 'dashboard/components-next/button/Button.vue';
 import CompanySearchInput from 'dashboard/components-next/Companies/CompanySearchInput.vue';
 import Dialog from 'dashboard/components-next/dialog/Dialog.vue';
-import DropdownMenu from 'dashboard/components-next/dropdown-menu/DropdownMenu.vue';
-import FilterSelect from 'dashboard/components-next/filter/inputs/FilterSelect.vue';
 import Icon from 'dashboard/components-next/icon/Icon.vue';
 import Spinner from 'dashboard/components-next/spinner/Spinner.vue';
+import TabBar from 'dashboard/components-next/tabbar/TabBar.vue';
+import ProjectCard from './components/ProjectCard.vue';
 import ProjectFormModal from './components/ProjectFormModal.vue';
-import {
-  PROJECT_COLOR_CLASS,
-  PROJECT_STATUSES,
-  progressWidthClass,
-} from './constants';
+import { PROJECT_STATUSES } from './constants';
+import { useProjectActions } from './useProjectActions';
 
 const { t } = useI18n();
 const store = useStore();
-const router = useRouter();
-const { accountScopedRoute } = useAccount();
+const { updateStatus, deleteProject: removeProject } = useProjectActions();
 
 const searchQuery = ref('');
-const statusFilter = ref('');
+// Archived and completed projects stay out of the way until asked for.
+const statusFilter = ref('active');
 const onlyMine = ref(false);
 const formModalRef = ref(null);
 const deleteDialogRef = ref(null);
 const projectToDelete = ref(null);
-const showActionsMenu = ref(false);
-
-const actionsMenuItems = computed(() => [
-  {
-    label: t('PROJECTS.NEW_PROJECT'),
-    action: 'create',
-    value: 'create',
-    icon: 'i-lucide-plus',
-  },
-]);
 
 const projects = useMapGetter('projects/getProjects');
 const uiFlags = useMapGetter('projects/getUIFlags');
@@ -60,13 +44,26 @@ const fetchProjects = async () => {
 
 onMounted(fetchProjects);
 
-const statusOptions = computed(() => [
-  { value: '', label: t('PROJECTS.FILTERS.STATUS_ALL') },
+const statusTabs = computed(() => [
   ...PROJECT_STATUSES.map(status => ({
-    value: status,
+    key: status,
     label: t(`PROJECTS.STATUS.${status.toUpperCase()}`),
   })),
+  { key: '', label: t('PROJECTS.FILTERS.STATUS_ALL') },
 ]);
+const activeTabIndex = computed(() =>
+  statusTabs.value.findIndex(tab => tab.key === statusFilter.value)
+);
+
+const selectStatus = ({ key }) => {
+  statusFilter.value = key;
+  fetchProjects();
+};
+
+const toggleOnlyMine = () => {
+  onlyMine.value = !onlyMine.value;
+  fetchProjects();
+};
 
 const filteredProjects = computed(() => {
   const query = searchQuery.value.trim();
@@ -74,20 +71,24 @@ const filteredProjects = computed(() => {
   return picoSearch(projects.value, query, ['name', 'description']);
 });
 
-const openCreate = () => {
-  showActionsMenu.value = false;
-  formModalRef.value?.open();
+// The first visit with nothing at all shows the onboarding empty state; any filter gets a reset.
+const isFiltered = computed(
+  () =>
+    Boolean(searchQuery.value.trim()) ||
+    onlyMine.value ||
+    statusFilter.value !== 'active'
+);
+
+const clearFilters = () => {
+  searchQuery.value = '';
+  if (onlyMine.value || statusFilter.value !== 'active') {
+    onlyMine.value = false;
+    statusFilter.value = 'active';
+    fetchProjects();
+  }
 };
 
-const toggleOnlyMine = () => {
-  onlyMine.value = !onlyMine.value;
-  fetchProjects();
-};
-const openEdit = project => formModalRef.value?.open(project);
-
-const openProject = project => {
-  router.push(accountScopedRoute('project_details', { projectId: project.id }));
-};
+const openCreate = () => formModalRef.value?.open();
 
 const saveProject = async payload => {
   try {
@@ -111,225 +112,125 @@ const saveProject = async payload => {
   }
 };
 
-const updateProjectStatus = async (project, status) => {
-  try {
-    await store.dispatch('projects/updateProject', {
-      id: project.id,
-      status,
-    });
-    useAlert(t('PROJECTS.MESSAGES.UPDATE_SUCCESS'));
-    await fetchProjects();
-  } catch (error) {
-    useAlert(t('PROJECTS.MESSAGES.UPDATE_ERROR'));
-  }
-};
-
-const tasksCountLabel = count =>
-  t('PROJECTS.TASKS_COUNT', count || 0, { count: count || 0 });
-
 const confirmDelete = project => {
   projectToDelete.value = project;
   deleteDialogRef.value?.open();
 };
 
 const deleteProject = async () => {
-  if (!projectToDelete.value) return;
-  try {
-    await store.dispatch('projects/deleteProject', projectToDelete.value.id);
-    useAlert(t('PROJECTS.MESSAGES.DELETE_SUCCESS'));
+  if (await removeProject(projectToDelete.value))
     deleteDialogRef.value?.close();
-  } catch (error) {
-    useAlert(t('PROJECTS.MESSAGES.DELETE_ERROR'));
-  }
 };
 
-const colorClass = project =>
-  PROJECT_COLOR_CLASS[project.color] || 'bg-n-brand';
+const onCardAction = ({ action, project }) => {
+  if (action === 'edit') formModalRef.value?.open(project);
+  else if (action === 'delete') confirmDelete(project);
+  else updateStatus(project, action).then(saved => saved && fetchProjects());
+};
 </script>
 
 <template>
-  <section class="flex w-full h-full overflow-hidden bg-n-surface-1">
-    <div class="flex flex-col w-full h-full">
-      <header class="sticky top-0 z-10 px-6">
-        <div
-          class="flex flex-col justify-between w-full gap-4 py-6 mx-auto sm:flex-row sm:items-center max-w-5xl"
-        >
-          <h1 class="mb-0 text-xl font-medium shrink-0 text-n-slate-12">
+  <section class="flex flex-col w-full h-full overflow-hidden bg-n-surface-1">
+    <header class="px-4 shrink-0 sm:px-6">
+      <div class="flex flex-col w-full max-w-5xl gap-4 pt-6 pb-4 mx-auto">
+        <div class="flex flex-wrap items-center gap-3">
+          <h1 class="flex-1 mb-0 text-xl font-medium text-n-slate-12">
             {{ t('PROJECTS.TITLE') }}
           </h1>
-          <div class="flex flex-wrap items-center min-w-0 gap-2 sm:gap-4">
-            <CompanySearchInput
-              v-model="searchQuery"
-              :placeholder="t('PROJECTS.SEARCH_PLACEHOLDER')"
-              class="flex-1 min-w-0"
+          <CompanySearchInput
+            v-model="searchQuery"
+            :placeholder="t('PROJECTS.SEARCH_PLACEHOLDER')"
+            class="order-last sm:order-none"
+          />
+          <Button
+            color="blue"
+            size="sm"
+            icon="i-lucide-plus"
+            :label="t('PROJECTS.NEW_PROJECT')"
+            @click="openCreate"
+          />
+        </div>
+        <div class="flex items-center justify-between gap-3">
+          <div class="min-w-0 -mx-1 overflow-x-auto">
+            <TabBar
+              class="mx-1"
+              :tabs="statusTabs"
+              :initial-active-tab="activeTabIndex"
+              @tab-changed="selectStatus"
             />
-            <div class="flex items-center flex-shrink-0 gap-2">
-              <FilterSelect
-                v-model="statusFilter"
-                variant="ghost"
-                :options="statusOptions"
-                @update:model-value="fetchProjects"
-              />
-              <Button
-                icon="i-lucide-user-round"
-                size="sm"
-                :variant="onlyMine ? 'faded' : 'ghost'"
-                :color="onlyMine ? 'blue' : 'slate'"
-                :label="t('PROJECTS.FILTERS.MINE')"
-                :aria-pressed="onlyMine"
-                @click="toggleOnlyMine"
-              />
-              <div
-                v-on-clickaway="() => (showActionsMenu = false)"
-                class="relative"
-              >
-                <Button
-                  icon="i-lucide-ellipsis-vertical"
-                  color="slate"
-                  variant="ghost"
-                  size="sm"
-                  :class="showActionsMenu ? 'bg-n-alpha-2' : ''"
-                  @click="showActionsMenu = !showActionsMenu"
-                />
-                <DropdownMenu
-                  v-if="showActionsMenu"
-                  :menu-items="actionsMenuItems"
-                  class="end-0 mt-1 w-52 top-full"
-                  @action="openCreate"
-                />
-              </div>
-            </div>
           </div>
-        </div>
-      </header>
-
-      <main class="flex-1 px-6 overflow-y-auto">
-        <div class="w-full py-4 mx-auto max-w-5xl">
-          <div v-if="uiFlags.isFetching" class="flex justify-center p-8">
-            <Spinner />
-          </div>
-          <div
-            v-else-if="!filteredProjects.length"
-            class="flex items-center justify-center p-8 text-base text-n-slate-11"
+          <Button
+            icon="i-lucide-user-round"
+            size="sm"
+            class="shrink-0"
+            :variant="onlyMine ? 'faded' : 'ghost'"
+            :color="onlyMine ? 'blue' : 'slate'"
+            :aria-label="t('PROJECTS.FILTERS.MINE')"
+            :aria-pressed="onlyMine"
+            @click="toggleOnlyMine"
           >
-            {{ searchQuery ? t('PROJECTS.NO_RESULTS') : t('PROJECTS.EMPTY') }}
-          </div>
-          <div v-else class="divide-y divide-n-weak">
-            <div
-              v-for="project in filteredProjects"
-              :key="project.id"
-              class="flex items-start justify-between gap-4 py-4 cursor-pointer group max-sm:flex-col"
-              @click="openProject(project)"
-            >
-              <div class="flex items-start flex-1 min-w-0 gap-3">
-                <span
-                  class="flex items-center justify-center text-white rounded-lg size-9 shrink-0"
-                  :class="colorClass(project)"
-                >
-                  <Icon icon="i-lucide-folder-kanban" class="size-4" />
-                </span>
-                <div class="flex flex-col flex-1 min-w-0 gap-1">
-                  <span
-                    class="block truncate text-heading-3 text-n-slate-12 group-hover:text-n-blue-11"
-                  >
-                    {{ project.name }}
-                  </span>
-                  <p
-                    v-if="project.description"
-                    class="mb-0 text-n-slate-11 text-body-main line-clamp-2 sm:line-clamp-1"
-                  >
-                    {{ project.description }}
-                  </p>
-                  <div class="overflow-hidden">
-                    <div
-                      class="flex flex-wrap items-center gap-y-1 -ms-[calc(0.75rem+1px)] text-body-main text-n-slate-11 [&>span]:inline-flex [&>span]:items-center [&>span]:gap-1.5 [&>span]:me-3 [&>span]:before:content-[''] [&>span]:before:w-px [&>span]:before:h-3 [&>span]:before:shrink-0 [&>span]:before:bg-n-slate-6 [&>span]:before:me-1.5"
-                    >
-                      <span>
-                        {{
-                          t(`PROJECTS.STATUS.${project.status.toUpperCase()}`)
-                        }}
-                      </span>
-                      <span>
-                        <Icon
-                          icon="i-lucide-list-checks"
-                          class="size-3.5 shrink-0 text-n-slate-10"
-                        />
-                        {{ tasksCountLabel(project.tasks_count) }}
-                      </span>
-                      <span>
-                        <span
-                          class="w-16 h-1.5 overflow-hidden rounded-full bg-n-slate-4"
-                        >
-                          <span
-                            class="block h-full bg-n-brand"
-                            :class="progressWidthClass(project.progress)"
-                          />
-                        </span>
-                        {{ `${project.progress}%` }}
-                      </span>
-                    </div>
-                  </div>
-                </div>
-              </div>
-              <div
-                class="flex items-center gap-3 shrink-0 max-sm:ps-12"
-                @click.stop
-              >
-                <div v-if="project.members?.length" class="flex -space-x-2">
-                  <Avatar
-                    v-for="member in project.members.slice(0, 4)"
-                    :key="member.id"
-                    :name="member.name"
-                    :src="member.thumbnail"
-                    :size="24"
-                  />
-                </div>
-                <div class="flex gap-1">
-                  <Button
-                    v-if="project.status === 'active'"
-                    variant="ghost"
-                    color="slate"
-                    size="xs"
-                    icon="i-lucide-check"
-                    :aria-label="t('PROJECTS.ACTIONS.COMPLETE')"
-                    :title="t('PROJECTS.ACTIONS.COMPLETE')"
-                    @click="updateProjectStatus(project, 'completed')"
-                  />
-                  <Button
-                    v-if="project.status !== 'archived'"
-                    variant="ghost"
-                    color="slate"
-                    size="xs"
-                    icon="i-lucide-archive"
-                    :aria-label="t('PROJECTS.ACTIONS.ARCHIVE')"
-                    :title="t('PROJECTS.ACTIONS.ARCHIVE')"
-                    @click="updateProjectStatus(project, 'archived')"
-                  />
-                  <Button
-                    variant="ghost"
-                    color="slate"
-                    size="xs"
-                    icon="i-lucide-pencil"
-                    :aria-label="t('PROJECTS.ACTIONS.EDIT')"
-                    :title="t('PROJECTS.ACTIONS.EDIT')"
-                    @click="openEdit(project)"
-                  />
-                  <Button
-                    variant="ghost"
-                    color="slate"
-                    size="xs"
-                    icon="i-lucide-trash"
-                    :aria-label="t('PROJECTS.ACTIONS.DELETE')"
-                    :title="t('PROJECTS.ACTIONS.DELETE')"
-                    @click="confirmDelete(project)"
-                  />
-                </div>
-              </div>
-            </div>
-          </div>
+            <span class="max-sm:hidden">{{ t('PROJECTS.FILTERS.MINE') }}</span>
+          </Button>
         </div>
-      </main>
-    </div>
+      </div>
+    </header>
+
+    <main class="flex-1 px-4 overflow-y-auto sm:px-6">
+      <div class="w-full max-w-5xl pt-2 pb-8 mx-auto max-md:pb-24">
+        <div v-if="uiFlags.isFetching" class="flex justify-center p-8">
+          <Spinner />
+        </div>
+        <div
+          v-else-if="!filteredProjects.length"
+          class="flex flex-col items-center gap-3 px-6 py-16 text-center border border-dashed rounded-xl border-n-weak"
+        >
+          <span
+            class="flex items-center justify-center rounded-full size-12 bg-n-alpha-2 text-n-slate-11"
+          >
+            <Icon icon="i-lucide-folder-kanban" class="size-6" />
+          </span>
+          <template v-if="isFiltered">
+            <p class="mb-0 text-body-main text-n-slate-11">
+              {{ t('PROJECTS.NO_RESULTS') }}
+            </p>
+            <Button
+              variant="faded"
+              color="slate"
+              size="sm"
+              :label="t('PROJECTS.CLEAR_FILTERS')"
+              @click="clearFilters"
+            />
+          </template>
+          <template v-else>
+            <h2 class="mb-0 text-heading-2 text-n-slate-12">
+              {{ t('PROJECTS.EMPTY_STATE.TITLE') }}
+            </h2>
+            <p class="max-w-md mb-0 text-body-main text-n-slate-11">
+              {{ t('PROJECTS.EMPTY_STATE.DESCRIPTION') }}
+            </p>
+            <Button
+              color="blue"
+              size="sm"
+              icon="i-lucide-plus"
+              :label="t('PROJECTS.EMPTY_STATE.CREATE')"
+              @click="openCreate"
+            />
+          </template>
+        </div>
+        <div
+          v-else
+          class="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3"
+        >
+          <ProjectCard
+            v-for="project in filteredProjects"
+            :key="project.id"
+            :project="project"
+            :show-status="!statusFilter"
+            @action="onCardAction"
+          />
+        </div>
+      </div>
+    </main>
 
     <ProjectFormModal ref="formModalRef" @save="saveProject" />
     <Dialog

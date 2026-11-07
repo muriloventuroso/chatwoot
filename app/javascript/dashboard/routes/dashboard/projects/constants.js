@@ -1,6 +1,8 @@
 export const PROJECT_STATUSES = ['active', 'completed', 'archived'];
 export const TASK_STATUSES = ['todo', 'in_progress', 'done'];
 export const TASK_PRIORITIES = ['low', 'medium', 'high'];
+// Assignee filter value for tasks with nobody on them.
+export const UNASSIGNED = 'none';
 
 export const PROJECT_COLORS = [
   '#3A5BC7',
@@ -61,10 +63,36 @@ export const PRIORITY_CLASS = {
   high: 'bg-n-ruby-3 text-n-ruby-11',
 };
 
-export const PRIORITY_BORDER_CLASS = {
-  low: 'border-s-n-slate-8',
-  medium: 'border-s-n-amber-9',
-  high: 'border-s-n-ruby-9',
+export const PRIORITY_ICON_CLASS = {
+  low: 'text-n-slate-10',
+  medium: 'text-n-amber-10',
+  high: 'text-n-ruby-10',
+};
+
+export const STATUS_ACCENT_CLASS = {
+  todo: 'border-t-n-slate-8',
+  in_progress: 'border-t-n-amber-9',
+  done: 'border-t-n-teal-9',
+};
+
+// Column categories, shown as Monday-style status pills.
+export const STATUS_PILL_CLASS = {
+  todo: 'bg-n-slate-3 text-n-slate-12',
+  in_progress: 'bg-n-amber-3 text-n-amber-11',
+  done: 'bg-n-teal-3 text-n-teal-11',
+};
+
+export const PROJECT_STATUS_CLASS = {
+  active: 'bg-n-blue-3 text-n-blue-11',
+  completed: 'bg-n-teal-3 text-n-teal-11',
+  archived: 'bg-n-slate-3 text-n-slate-11',
+};
+
+export const DUE_TONE_CLASS = {
+  late: 'text-n-ruby-11',
+  soon: 'text-n-amber-11',
+  normal: 'text-n-slate-11',
+  muted: 'text-n-slate-10',
 };
 
 // Whole days from today to the due date; negative when it has passed.
@@ -76,6 +104,14 @@ export const daysUntilDue = dueDate =>
       86400000
   );
 
+// How urgent a due date looks: nothing pending is ever late.
+export const dueTone = (dueDate, isDone = false, soonDays = 1) => {
+  if (isDone) return 'muted';
+  const days = daysUntilDue(dueDate);
+  if (days < 0) return 'late';
+  return days <= soonDays ? 'soon' : 'normal';
+};
+
 export const taskProgress = task => {
   if (task.status === 'done') return 100;
   if (!task.subtasks_count) return 0;
@@ -83,3 +119,21 @@ export const taskProgress = task => {
     (task.completed_subtasks_count / task.subtasks_count) * 100
   );
 };
+
+// Root-task counts for the project summary; "due soon" means within the next week.
+export const taskSummary = tasks =>
+  tasks.reduce(
+    (summary, task) => {
+      summary.total += 1;
+      if (task.status === 'done') {
+        summary.done += 1;
+        return summary;
+      }
+      if (!task.due_date) return summary;
+      const days = daysUntilDue(task.due_date);
+      if (days < 0) summary.overdue += 1;
+      else if (days <= 7) summary.dueSoon += 1;
+      return summary;
+    },
+    { total: 0, done: 0, overdue: 0, dueSoon: 0 }
+  );

@@ -2,45 +2,65 @@
 import { computed, onMounted, ref, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useRoute, useRouter } from 'vue-router';
+import { useStorage } from '@vueuse/core';
 import { useAlert } from 'dashboard/composables';
 import { useAccount } from 'dashboard/composables/useAccount';
 import { useMapGetter, useStore } from 'dashboard/composables/store';
 
 import Avatar from 'dashboard/components-next/avatar/Avatar.vue';
 import Button from 'dashboard/components-next/button/Button.vue';
+import CompanySearchInput from 'dashboard/components-next/Companies/CompanySearchInput.vue';
 import Dialog from 'dashboard/components-next/dialog/Dialog.vue';
+import DropdownMenu from 'dashboard/components-next/dropdown-menu/DropdownMenu.vue';
 import Icon from 'dashboard/components-next/icon/Icon.vue';
-import Input from 'dashboard/components-next/input/Input.vue';
+import Popover from 'dashboard/components-next/popover/Popover.vue';
 import Spinner from 'dashboard/components-next/spinner/Spinner.vue';
+import TabBar from 'dashboard/components-next/tabbar/TabBar.vue';
 import { SET_PROJECT_TASK } from 'dashboard/store/modules/projects/types';
 import ColumnFormModal from './components/ColumnFormModal.vue';
 import ProjectBoard from './components/ProjectBoard.vue';
 import ProjectFormModal from './components/ProjectFormModal.vue';
-import ProjectSelect from './components/ProjectSelect.vue';
-import TaskDetailModal from './components/TaskDetailModal.vue';
+import ProjectMembersPanel from './components/ProjectMembersPanel.vue';
+import TaskDetailPanel from './components/TaskDetailPanel.vue';
+import TaskFilters from './components/TaskFilters.vue';
 import TaskListView from './components/TaskListView.vue';
 import {
+  DUE_TONE_CLASS,
   PROJECT_COLOR_CLASS,
-  TASK_PRIORITIES,
+  PROJECT_STATUS_CLASS,
+  UNASSIGNED,
+  dueTone,
   nextColumnPosition,
   progressWidthClass,
+  taskSummary,
 } from './constants';
+import { useDueDate } from './useDueDate';
+import { useProjectActions } from './useProjectActions';
 
 const { t } = useI18n();
 const store = useStore();
 const route = useRoute();
 const router = useRouter();
 const { accountScopedRoute } = useAccount();
+const { formatDate, relativeDue } = useDueDate();
+const { menuItems, updateStatus, deleteProject } = useProjectActions();
 
-const view = ref('board');
+const MAX_HEADER_AVATARS = 3;
+// A project deadline gets the "soon" warning a week ahead.
+const DEADLINE_WARNING_DAYS = 7;
+
+// Remembered across visits, like the last tab of a table in Monday.
+const view = useStorage('projects:task-view', 'board');
 const searchQuery = ref('');
 const assigneeFilter = ref('');
 const priorityFilter = ref('');
-const onlyMine = ref(false);
+const showProjectMenu = ref(false);
 const formModalRef = ref(null);
 const taskModalRef = ref(null);
 const columnModalRef = ref(null);
+const membersPanelRef = ref(null);
 const deleteColumnDialogRef = ref(null);
+const deleteProjectDialogRef = ref(null);
 const columnToDelete = ref(null);
 const isSavingColumn = ref(false);
 const isLoading = ref(false);
@@ -64,49 +84,57 @@ const agents = useMapGetter('agents/getAgents');
 const memberUsers = computed(() =>
   members.value.map(member => member.user).filter(Boolean)
 );
-const currentUserId = useMapGetter('getCurrentUserID');
+
+const viewTabs = computed(() => [
+  {
+    key: 'board',
+    label: t('PROJECTS.DETAILS.BOARD'),
+    icon: 'i-lucide-square-kanban',
+  },
+  { key: 'list', label: t('PROJECTS.DETAILS.LIST'), icon: 'i-lucide-list' },
+]);
+
+const activeFiltersCount = computed(
+  () => Number(assigneeFilter.value !== '') + Number(!!priorityFilter.value)
+);
+const hasFilters = computed(
+  () => activeFiltersCount.value > 0 || !!searchQuery.value.trim()
+);
+
+const clearFilters = () => {
+  searchQuery.value = '';
+  assigneeFilter.value = '';
+  priorityFilter.value = '';
+};
+
+const matchesAssignee = task => {
+  if (assigneeFilter.value === '') return true;
+  if (assigneeFilter.value === UNASSIGNED) return !task.assignee_id;
+  return task.assignee_id === assigneeFilter.value;
+};
 
 const filteredTasks = computed(() => {
-  return tasks.value.filter(task => {
-    const query = searchQuery.value.trim().toLowerCase();
-    if (query && !task.title?.toLowerCase().includes(query)) return false;
-    if (
-      assigneeFilter.value &&
-      String(task.assignee_id) !== String(assigneeFilter.value)
-    ) {
-      return false;
-    }
-    if (priorityFilter.value && task.priority !== priorityFilter.value) {
-      return false;
-    }
-    if (onlyMine.value && task.assignee_id !== currentUserId.value) {
-      return false;
-    }
-    return true;
-  });
+  const query = searchQuery.value.trim().toLowerCase();
+  return tasks.value.filter(
+    task =>
+      (!query || task.title?.toLowerCase().includes(query)) &&
+      matchesAssignee(task) &&
+      (!priorityFilter.value || task.priority === priorityFilter.value)
+  );
 });
 
-const toAgentOption = agent => ({ value: agent.id, label: agent.name });
+const summary = computed(() => taskSummary(tasks.value));
 
-const addMemberOptions = computed(() => {
-  const memberIds = new Set(members.value.map(member => member.user_id));
-  return agents.value
-    .filter(agent => !memberIds.has(agent.id))
-    .map(toAgentOption);
+const deadline = computed(() => {
+  const date = project.value?.end_date;
+  if (!date) return null;
+  const isActive = project.value.status === 'active';
+  return {
+    date: formatDate(date),
+    relative: isActive ? relativeDue(date) : '',
+    class: DUE_TONE_CLASS[dueTone(date, !isActive, DEADLINE_WARNING_DAYS)],
+  };
 });
-
-const assigneeOptions = computed(() => [
-  { value: '', label: t('PROJECTS.DETAILS.ALL_ASSIGNEES') },
-  ...agents.value.map(toAgentOption),
-]);
-
-const priorityOptions = computed(() => [
-  { value: '', label: t('PROJECTS.DETAILS.ALL_PRIORITIES') },
-  ...TASK_PRIORITIES.map(priority => ({
-    value: priority,
-    label: t(`PROJECTS.TASK.PRIORITY.${priority.toUpperCase()}`),
-  })),
-]);
 
 const loadProject = async () => {
   isLoading.value = true;
@@ -142,8 +170,6 @@ const refreshBoard = () =>
 onMounted(loadProject);
 watch(projectId, loadProject);
 
-const goBack = () => router.push(accountScopedRoute('projects_list'));
-
 const saveProject = async payload => {
   try {
     await store.dispatch('projects/updateProject', payload);
@@ -152,6 +178,19 @@ const saveProject = async payload => {
   } catch (error) {
     useAlert(t('PROJECTS.MESSAGES.UPDATE_ERROR'));
   }
+};
+
+const onProjectAction = ({ action }) => {
+  showProjectMenu.value = false;
+  if (action === 'edit') formModalRef.value?.open(project.value);
+  else if (action === 'delete') deleteProjectDialogRef.value?.open();
+  else updateStatus(project.value, action);
+};
+
+const confirmDeleteProject = async () => {
+  if (!(await deleteProject(project.value))) return;
+  deleteProjectDialogRef.value?.close();
+  router.push(accountScopedRoute('projects_list'));
 };
 
 const handleMove = async ({ task, columnId, position }) => {
@@ -310,18 +349,6 @@ const removeMember = async member => {
 const colorClass = computed(
   () => PROJECT_COLOR_CLASS[project.value?.color] || 'bg-n-brand'
 );
-
-const formatDate = date => {
-  if (!date) return '';
-  return new Date(`${date}T00:00:00`).toLocaleDateString();
-};
-
-const projectDates = computed(() => {
-  const start = formatDate(project.value?.start_date);
-  const end = formatDate(project.value?.end_date);
-  if (start && end) return `${start} – ${end}`;
-  return start || end;
-});
 </script>
 
 <template>
@@ -344,138 +371,248 @@ const projectDates = computed(() => {
       />
     </div>
     <template v-else-if="project">
-      <header
-        class="flex flex-col gap-4 px-6 py-5 border-b border-n-weak shrink-0"
-      >
-        <div class="flex items-start justify-between gap-3">
-          <div class="flex items-start gap-3 min-w-0">
+      <header class="flex flex-col gap-4 px-4 pt-4 pb-3 sm:px-6 shrink-0">
+        <div class="flex items-start gap-3">
+          <div class="flex flex-col flex-1 min-w-0 gap-1">
+            <router-link
+              :to="accountScopedRoute('projects_list')"
+              class="inline-flex items-center self-start gap-1 text-xs text-n-slate-11 hover:text-n-slate-12"
+            >
+              <Icon
+                icon="i-lucide-chevron-left"
+                class="size-3.5 rtl:rotate-180"
+              />
+              {{ t('PROJECTS.TITLE') }}
+            </router-link>
+            <div class="flex items-center min-w-0 gap-2">
+              <span class="rounded-full size-3 shrink-0" :class="colorClass" />
+              <h1
+                class="mb-0 text-xl font-medium truncate text-n-slate-12"
+                :title="project.name"
+              >
+                {{ project.name }}
+              </h1>
+              <span
+                class="px-2 py-0.5 rounded-md text-label-small shrink-0 max-sm:hidden"
+                :class="PROJECT_STATUS_CLASS[project.status]"
+              >
+                {{ t(`PROJECTS.STATUS.${project.status.toUpperCase()}`) }}
+              </span>
+            </div>
+            <p
+              v-if="project.description"
+              class="mb-0 text-sm text-n-slate-11 line-clamp-1"
+              :title="project.description"
+            >
+              {{ project.description }}
+            </p>
+          </div>
+          <div class="flex items-center gap-1 pt-4 shrink-0 sm:gap-2">
+            <button
+              type="button"
+              class="flex items-center gap-1.5 p-1 rounded-lg hover:bg-n-alpha-2"
+              :aria-label="t('PROJECTS.MEMBERS.MANAGE')"
+              :title="t('PROJECTS.MEMBERS.MANAGE')"
+              @click="membersPanelRef?.open()"
+            >
+              <span
+                v-if="memberUsers.length"
+                class="flex -space-x-1.5 rtl:space-x-reverse max-sm:hidden"
+              >
+                <Avatar
+                  v-for="user in memberUsers.slice(0, MAX_HEADER_AVATARS)"
+                  :key="user.id"
+                  :name="user.name"
+                  :src="user.thumbnail"
+                  :size="24"
+                  rounded-full
+                  class="rounded-full ring-2 ring-n-surface-1"
+                />
+              </span>
+              <Icon
+                icon="i-lucide-users"
+                class="size-4 text-n-slate-11"
+                :class="{ 'sm:hidden': memberUsers.length }"
+              />
+              <span class="text-xs font-medium text-n-slate-11 tabular-nums">
+                {{ memberUsers.length }}
+              </span>
+            </button>
+            <div
+              v-on-clickaway="() => (showProjectMenu = false)"
+              class="relative"
+            >
+              <Button
+                variant="ghost"
+                color="slate"
+                size="sm"
+                icon="i-lucide-ellipsis-vertical"
+                :aria-label="t('PROJECTS.CARD.ACTIONS')"
+                :aria-expanded="showProjectMenu"
+                @click="showProjectMenu = !showProjectMenu"
+              />
+              <DropdownMenu
+                v-if="showProjectMenu"
+                :menu-items="menuItems(project)"
+                class="mt-1 end-0 top-full w-52"
+                @action="onProjectAction"
+              />
+            </div>
             <Button
+              color="blue"
+              size="sm"
+              icon="i-lucide-plus"
+              :aria-label="t('PROJECTS.DETAILS.NEW_TASK')"
+              @click="openNewTask"
+            >
+              <span class="max-sm:hidden">
+                {{ t('PROJECTS.DETAILS.NEW_TASK') }}
+              </span>
+            </Button>
+          </div>
+        </div>
+
+        <dl
+          class="flex gap-2 mb-0 -mx-4 overflow-x-auto reset-base px-4 sm:mx-0 sm:px-0 [scrollbar-width:none]"
+        >
+          <div
+            class="flex flex-col justify-center gap-1 px-3 py-2 border rounded-lg shrink-0 border-n-weak bg-n-solid-1 min-w-36"
+          >
+            <dt class="text-xs text-n-slate-11">
+              {{ t('PROJECTS.SUMMARY.PROGRESS') }}
+            </dt>
+            <dd class="flex items-center gap-2 mb-0">
+              <span
+                class="flex-1 h-1.5 overflow-hidden rounded-full bg-n-slate-4"
+              >
+                <span
+                  class="block h-full rounded-full bg-n-brand"
+                  :class="progressWidthClass(project.progress)"
+                />
+              </span>
+              <span class="text-sm font-medium tabular-nums text-n-slate-12">
+                {{ `${project.progress}%` }}
+              </span>
+            </dd>
+          </div>
+          <div
+            class="flex flex-col justify-center gap-0.5 px-3 py-2 border rounded-lg shrink-0 border-n-weak bg-n-solid-1"
+          >
+            <dt class="text-xs text-n-slate-11">
+              {{ t('PROJECTS.SUMMARY.DONE') }}
+            </dt>
+            <dd class="mb-0 text-sm font-medium tabular-nums text-n-slate-12">
+              {{ `${summary.done}/${summary.total}` }}
+            </dd>
+          </div>
+          <div
+            class="flex flex-col justify-center gap-0.5 px-3 py-2 border rounded-lg shrink-0"
+            :class="
+              summary.overdue
+                ? 'border-n-ruby-6 bg-n-ruby-2'
+                : 'border-n-weak bg-n-solid-1'
+            "
+          >
+            <dt class="text-xs text-n-slate-11">
+              {{ t('PROJECTS.SUMMARY.OVERDUE') }}
+            </dt>
+            <dd
+              class="mb-0 text-sm font-medium tabular-nums"
+              :class="summary.overdue ? 'text-n-ruby-11' : 'text-n-slate-12'"
+            >
+              {{ summary.overdue }}
+            </dd>
+          </div>
+          <div
+            class="flex flex-col justify-center gap-0.5 px-3 py-2 border rounded-lg shrink-0 border-n-weak bg-n-solid-1"
+          >
+            <dt class="text-xs text-n-slate-11">
+              {{ t('PROJECTS.SUMMARY.DUE_SOON') }}
+            </dt>
+            <dd class="mb-0 text-sm font-medium tabular-nums text-n-slate-12">
+              {{ summary.dueSoon }}
+            </dd>
+          </div>
+          <div
+            class="flex flex-col justify-center gap-0.5 px-3 py-2 border rounded-lg shrink-0 border-n-weak bg-n-solid-1"
+          >
+            <dt class="text-xs text-n-slate-11">
+              {{ t('PROJECTS.SUMMARY.DEADLINE') }}
+            </dt>
+            <dd
+              v-if="deadline"
+              class="mb-0 text-sm font-medium whitespace-nowrap"
+              :class="deadline.class"
+            >
+              {{ deadline.date }}
+              <span v-if="deadline.relative" class="font-normal">
+                {{ ` · ${deadline.relative}` }}
+              </span>
+            </dd>
+            <dd v-else class="mb-0 text-sm text-n-slate-10">
+              {{ t('PROJECTS.CARD.NO_DEADLINE') }}
+            </dd>
+          </div>
+        </dl>
+
+        <div class="flex flex-wrap items-center gap-2">
+          <TabBar
+            :tabs="viewTabs"
+            :initial-active-tab="viewTabs.findIndex(tab => tab.key === view)"
+            @tab-changed="tab => (view = tab.key)"
+          />
+          <div class="flex items-center gap-2 ms-auto">
+            <Button
+              v-if="hasFilters"
               variant="ghost"
               color="slate"
-              icon="i-lucide-arrow-left"
-              :aria-label="t('PROJECTS.DETAILS.BACK')"
-              :title="t('PROJECTS.DETAILS.BACK')"
-              @click="goBack"
+              size="sm"
+              :label="t('PROJECTS.CLEAR_FILTERS')"
+              class="max-sm:hidden"
+              @click="clearFilters"
             />
-            <div class="min-w-0">
-              <div class="flex items-center gap-2">
-                <span class="w-3 h-3 rounded-full" :class="colorClass" />
-                <h1 class="text-xl font-medium truncate text-n-slate-12">
-                  {{ project.name }}
-                </h1>
-              </div>
-              <p
-                v-if="project.description"
-                class="mt-1 text-sm text-n-slate-11"
+            <Popover align="end">
+              <Button
+                :variant="activeFiltersCount ? 'faded' : 'ghost'"
+                :color="activeFiltersCount ? 'blue' : 'slate'"
+                size="sm"
+                icon="i-lucide-list-filter"
+                :aria-label="t('PROJECTS.DETAILS.FILTERS')"
               >
-                {{ project.description }}
-              </p>
-              <p
-                v-if="projectDates"
-                class="flex items-center gap-1 mt-1 text-xs text-n-slate-10"
-              >
-                <Icon icon="i-lucide-calendar" class="size-3.5" />
-                {{ projectDates }}
-              </p>
-            </div>
+                <span class="max-sm:hidden">
+                  {{ t('PROJECTS.DETAILS.FILTERS') }}
+                </span>
+                <span
+                  v-if="activeFiltersCount"
+                  class="px-1.5 text-xs rounded-full bg-n-brand text-white tabular-nums"
+                >
+                  {{ activeFiltersCount }}
+                </span>
+              </Button>
+              <template #content>
+                <TaskFilters
+                  v-model:assignee="assigneeFilter"
+                  v-model:priority="priorityFilter"
+                  :people="memberUsers"
+                  @clear="clearFilters"
+                />
+              </template>
+            </Popover>
           </div>
-          <Button
-            variant="faded"
-            color="slate"
-            icon="i-lucide-pencil"
-            :label="t('PROJECTS.ACTIONS.EDIT')"
-            @click="formModalRef?.open(project)"
-          />
-        </div>
-        <div class="flex flex-col gap-3 lg:flex-row lg:items-center">
-          <div class="flex items-center flex-1 gap-3">
-            <div class="h-1.5 flex-1 overflow-hidden rounded-full bg-n-slate-4">
-              <div
-                class="h-full bg-n-brand"
-                :class="progressWidthClass(project.progress)"
-              />
-            </div>
-            <span class="text-xs text-n-slate-10">{{ project.progress }}%</span>
-          </div>
-          <div class="flex items-center gap-2">
-            <div
-              v-for="member in members"
-              :key="member.id"
-              class="flex items-center gap-1 px-1.5 py-1 rounded-full bg-n-slate-3"
-            >
-              <Avatar
-                :name="member.user?.name || ''"
-                :src="member.user?.thumbnail"
-                :size="20"
-              />
-              <span class="text-xs text-n-slate-12">
-                {{ member.user?.name }}
-              </span>
-              <button
-                type="button"
-                class="text-n-slate-10 hover:text-n-ruby-11"
-                :title="t('PROJECTS.MEMBERS.REMOVE')"
-                @click="removeMember(member)"
-              >
-                <Icon icon="i-lucide-x" class="size-3" />
-              </button>
-            </div>
-            <ProjectSelect
-              model-value=""
-              :options="addMemberOptions"
-              :placeholder="t('PROJECTS.MEMBERS.ADD')"
-              trigger-class="h-8 bg-n-solid-1 text-n-slate-12"
-              @update:model-value="addMember"
-            />
-          </div>
-        </div>
-        <div class="flex flex-col gap-3 lg:flex-row lg:items-center">
-          <div class="flex gap-2 shrink-0">
-            <Button
-              :variant="view === 'board' ? 'solid' : 'ghost'"
-              :color="view === 'board' ? 'blue' : 'slate'"
-              :label="t('PROJECTS.DETAILS.BOARD')"
-              @click="view = 'board'"
-            />
-            <Button
-              :variant="view === 'list' ? 'solid' : 'ghost'"
-              :color="view === 'list' ? 'blue' : 'slate'"
-              :label="t('PROJECTS.DETAILS.LIST')"
-              @click="view = 'list'"
-            />
-          </div>
-          <Input
+          <CompanySearchInput
             v-model="searchQuery"
-            class="lg:flex-1 lg:min-w-48"
             :placeholder="t('PROJECTS.DETAILS.SEARCH_TASKS')"
-          />
-          <ProjectSelect
-            v-model="assigneeFilter"
-            :options="assigneeOptions"
-            class="lg:w-44 lg:shrink-0"
-          />
-          <ProjectSelect
-            v-model="priorityFilter"
-            :options="priorityOptions"
-            class="lg:w-44 lg:shrink-0"
-          />
-          <label
-            class="flex items-center gap-2 text-sm whitespace-nowrap shrink-0 text-n-slate-12"
-          >
-            <input v-model="onlyMine" type="checkbox" />
-            {{ t('PROJECTS.DETAILS.ONLY_MINE') }}
-          </label>
-          <Button
-            color="blue"
-            icon="i-lucide-plus"
-            class="shrink-0"
-            :label="t('PROJECTS.DETAILS.ADD_TASK')"
-            @click="openNewTask"
+            class="max-sm:order-last sm:!w-60"
           />
         </div>
       </header>
 
-      <div class="flex-1 p-6 overflow-auto">
+      <div
+        class="flex-1 min-h-0"
+        :class="{
+          'px-4 pb-6 max-md:pb-24 overflow-y-auto sm:px-6': view === 'list',
+        }"
+      >
         <ProjectBoard
           v-if="view === 'board'"
           :columns="columns"
@@ -501,7 +638,14 @@ const projectDates = computed(() => {
     </template>
 
     <ProjectFormModal ref="formModalRef" @save="saveProject" />
-    <TaskDetailModal
+    <ProjectMembersPanel
+      ref="membersPanelRef"
+      :members="members"
+      :agents="agents"
+      @add="addMember"
+      @remove="removeMember"
+    />
+    <TaskDetailPanel
       ref="taskModalRef"
       :project-id="projectId"
       :columns="columns"
@@ -525,6 +669,14 @@ const projectDates = computed(() => {
       "
       :confirm-button-label="t('PROJECTS.COLUMNS.DELETE_DIALOG.CONFIRM')"
       @confirm="deleteColumn"
+    />
+    <Dialog
+      ref="deleteProjectDialogRef"
+      type="alert"
+      :title="t('PROJECTS.DELETE.TITLE')"
+      :description="t('PROJECTS.DELETE.MESSAGE', { name: project?.name })"
+      :confirm-button-label="t('PROJECTS.DELETE.CONFIRM')"
+      @confirm="confirmDeleteProject"
     />
   </section>
 </template>
