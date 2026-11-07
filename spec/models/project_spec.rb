@@ -53,4 +53,16 @@ RSpec.describe Project do
       expect(project.progress).to eq(100)
     end
   end
+
+  describe '#overdue_tasks_count' do
+    it 'counts the root tasks past their due date that are not done' do
+      create(:project_task, project: project, status: :todo, due_date: Date.yesterday)
+      create(:project_task, project: project, status: :done, due_date: Date.yesterday)
+      create(:project_task, project: project, status: :todo, due_date: Date.current)
+      parent = create(:project_task, project: project, status: :todo)
+      create(:project_task, project: project, parent_task: parent, status: :todo, due_date: Date.yesterday)
+
+      expect(project.overdue_tasks_count).to eq(1)
+    end
+  end
 end

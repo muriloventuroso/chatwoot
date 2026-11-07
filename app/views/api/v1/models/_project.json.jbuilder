@@ -10,6 +10,7 @@ json.created_by_id resource.created_by_id
 json.progress resource.progress
 json.tasks_count resource.tasks_count
 json.completed_tasks_count resource.completed_tasks_count
+json.overdue_tasks_count resource.overdue_tasks_count
 json.member_ids resource.members.map(&:id)
 json.members resource.members do |member|
   json.id member.id

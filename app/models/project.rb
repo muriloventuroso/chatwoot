@@ -55,6 +55,10 @@ class Project < ApplicationRecord
     root_tasks.count(&:done?)
   end
 
+  def overdue_tasks_count
+    root_tasks.count { |task| !task.done? && task.due_date&.past? }
+  end
+
   def create_default_columns!
     ProjectColumn.categories.each_key do |category|
       columns.create!(name: I18n.t("projects.default_columns.#{category}"), category: category)
