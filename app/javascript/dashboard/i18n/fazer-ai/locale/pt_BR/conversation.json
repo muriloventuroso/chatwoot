@@ -115,7 +115,14 @@
       }
     },
     "HEADER": {
-      "WHATSAPP_CALL_GROUP_UNSUPPORTED": "Não é possível ligar para um grupo pelo WhatsApp"
+      "WHATSAPP_CALL_GROUP_UNSUPPORTED": "Não é possível ligar para um grupo pelo WhatsApp",
+      "MESSAGE_SEARCH": {
+        "BUTTON": "Buscar nesta conversa",
+        "PLACEHOLDER": "Buscar mensagens nesta conversa",
+        "EMPTY": "Nenhuma mensagem encontrada",
+        "LOAD_MORE": "Carregar mais",
+        "ERROR": "Não foi possível buscar as mensagens. Tente de novo."
+      }
     },
     "WHATSAPP_NUMBER_MISSING_BANNER": "Este número não tinha WhatsApp na verificação de {date}. Mensagens enviadas para ele não são entregues."
   },

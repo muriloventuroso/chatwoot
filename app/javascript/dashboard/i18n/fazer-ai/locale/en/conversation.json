@@ -115,7 +115,14 @@
       }
     },
     "HEADER": {
-      "WHATSAPP_CALL_GROUP_UNSUPPORTED": "WhatsApp calls cannot be placed to a group"
+      "WHATSAPP_CALL_GROUP_UNSUPPORTED": "WhatsApp calls cannot be placed to a group",
+      "MESSAGE_SEARCH": {
+        "BUTTON": "Search in this conversation",
+        "PLACEHOLDER": "Search messages in this conversation",
+        "EMPTY": "No messages found",
+        "LOAD_MORE": "Load more",
+        "ERROR": "Could not search the messages. Try again."
+      }
     },
     "WHATSAPP_NUMBER_MISSING_BANNER": "This number had no WhatsApp when checked on {date}. Messages sent to it are not delivered."
   },

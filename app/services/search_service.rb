@@ -107,9 +107,19 @@ class SearchService
   end
 
   def message_base_query
-    query = current_account.messages.where('created_at >= ?', search_window_start)
+    # One conversation is small enough to search in full, so the account-wide window does not apply to it
+    query = if params[:conversation_id].present?
+              current_account.messages.where(conversation_id: searched_conversation.id)
+            else
+              current_account.messages.where('created_at >= ?', search_window_start)
+            end
     query = query.where(inbox_id: accessable_inbox_ids) unless should_skip_inbox_filtering?
     query
+  end
+
+  # The dashboard knows conversations by display_id
+  def searched_conversation
+    @searched_conversation ||= current_account.conversations.find_by!(display_id: params[:conversation_id])
   end
 
   def apply_message_filters(query)

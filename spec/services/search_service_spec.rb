@@ -90,6 +90,40 @@ describe SearchService do
         expect(search.perform[:messages].map(&:id)).to eq([message2.id, message.id])
       end
 
+      context 'when scoped to a conversation' do
+        let!(:searched_conversation) do
+          # A conversation in another account pushes the internal id away from the display_id the param carries
+          create(:conversation)
+          create(:conversation, account: account, inbox: inbox)
+        end
+
+        it 'returns only that conversation messages, including ones older than the search window' do
+          old = create(:message, account: account, inbox: inbox, conversation: searched_conversation, content: 'Harry old',
+                                 created_at: (Limits.search_time_range_limit_days + 10).days.ago)
+          recent = create(:message, account: account, inbox: inbox, conversation: searched_conversation, content: 'Harry recent')
+          params = { q: 'Harry', conversation_id: searched_conversation.display_id }
+          search = described_class.new(current_user: user, current_account: account, params: params, search_type: 'Message')
+
+          expect(search.perform[:messages].map(&:id)).to eq([recent.id, old.id])
+        end
+
+        it 'returns nothing for a conversation in an inbox the agent cannot access' do
+          hidden = create(:conversation, account: account, inbox: create(:inbox, account: account))
+          create(:message, account: account, inbox: hidden.inbox, conversation: hidden, content: 'Harry hidden')
+          params = { q: 'Harry', conversation_id: hidden.display_id }
+          search = described_class.new(current_user: user, current_account: account, params: params, search_type: 'Message')
+
+          expect(search.perform[:messages]).to be_empty
+        end
+
+        it 'raises not found instead of searching the whole account when the conversation does not exist' do
+          params = { q: 'Harry', conversation_id: 999_999 }
+          search = described_class.new(current_user: user, current_account: account, params: params, search_type: 'Message')
+
+          expect { search.perform }.to raise_error(ActiveRecord::RecordNotFound)
+        end
+      end
+
       context 'with feature flag for search type' do
         let(:params) { { q: 'Harry' } }
         let(:search_type) { 'Message' }
@@ -710,6 +744,22 @@ describe SearchService do
               created_at: hash_including(lte: be_within(1.second).of(90.days.from_now))
             )
           )
+        ).and_return(search_results)
+
+        search_service.perform
+      end
+    end
+
+    context 'when scoped to a conversation' do
+      it 'filters by the conversation internal id with no time window' do
+        create(:conversation) # pushes the internal id away from the display_id the param carries
+        searched = create(:conversation, account: account, inbox: inbox)
+        params = { q: 'test', conversation_id: searched.display_id }
+        search_service = described_class.new(current_user: user, current_account: account, params: params, search_type: search_type)
+
+        expect(Message).to receive(:search).with(
+          'test',
+          hash_including(where: { account_id: account.id, conversation_id: searched.id })
         ).and_return(search_results)
 
         search_service.perform
