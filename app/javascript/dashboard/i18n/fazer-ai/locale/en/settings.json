@@ -59,5 +59,9 @@
     "TITLE": {
       "PIN_CONVERSATION": "Pin / unpin conversation"
     }
+  },
+  "CHANGELOG_CARD": {
+    "READ_MORE": "Read more",
+    "DISMISS": "Dismiss"
   }
 }

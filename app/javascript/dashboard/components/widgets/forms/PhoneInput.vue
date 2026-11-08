@@ -53,7 +53,9 @@ export default {
       ];
     },
     dropdownFirstItemName() {
-      return this.activeCountryCode ? 'Clear selection' : 'Select Country';
+      return this.activeCountryCode
+        ? this.$t('GENERAL.PHONE_INPUT.CLEAR_SELECTION')
+        : this.$t('GENERAL.PHONE_INPUT.SELECT_COUNTRY');
     },
     filteredCountriesBySearch() {
       return this.countries.filter(country => {

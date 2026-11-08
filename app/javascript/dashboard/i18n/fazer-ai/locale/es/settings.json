@@ -59,5 +59,9 @@
     "TITLE": {
       "PIN_CONVERSATION": "Fijar / dejar de fijar la conversación"
     }
+  },
+  "CHANGELOG_CARD": {
+    "READ_MORE": "Leer más",
+    "DISMISS": "Descartar"
   }
 }

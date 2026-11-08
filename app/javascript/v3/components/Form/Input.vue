@@ -1,5 +1,6 @@
 <script setup>
 import { computed } from 'vue';
+import { useI18n } from 'vue-i18n';
 import { useToggle } from '@vueuse/core';
 
 import Button from 'dashboard/components-next/button/Button.vue';
@@ -47,6 +48,8 @@ const model = defineModel({
   type: [String, Number],
   required: true,
 });
+
+const { t } = useI18n();
 
 const [isPasswordVisible, togglePasswordVisibility] = useToggle();
 
@@ -96,7 +99,9 @@ const currentInputType = computed(() => {
       link
       :icon="isPasswordVisible ? 'i-lucide-eye-off' : 'i-lucide-eye'"
       class="absolute inset-y-0 right-0 pr-3"
-      :aria-label="isPasswordVisible ? 'Hide password' : 'Show password'"
+      :aria-label="
+        isPasswordVisible ? t('LOGIN.PASSWORD.HIDE') : t('LOGIN.PASSWORD.SHOW')
+      "
       :aria-pressed="isPasswordVisible"
       @click="togglePasswordVisibility()"
     />

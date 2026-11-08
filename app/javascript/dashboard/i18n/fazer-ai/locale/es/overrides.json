@@ -10,6 +10,35 @@
       "WHATSAPP_NOTE": "Nota: puede crear una plantilla nueva (que se enviará a WhatsApp para su aprobación como Utilidad, aunque Meta puede clasificarla como Marketing según el contenido) o usar una plantilla ya aprobada de su administrador de plantillas de Meta. Las encuestas se envían una sola vez por conversación, según la regla de la encuesta."
     }
   },
+  "MACROS": {
+    "ACTIONS": {
+      "REMOVE_ASSIGNED_AGENT": "Eliminar agente asignado"
+    }
+  },
+  "CONTACT_PANEL": {
+    "CLICK_TO_EDIT": "Haz clic para editar"
+  },
+  "SLASH_COMMANDS": {
+    "HEADING_1": "Título 1",
+    "HEADING_2": "Título 2",
+    "HEADING_3": "Título 3",
+    "BOLD": "Negrita",
+    "ITALIC": "Cursiva",
+    "STRIKETHROUGH": "Tachado",
+    "CODE": "Código",
+    "BULLET_LIST": "Lista con viñetas",
+    "ORDERED_LIST": "Lista numerada",
+    "TABLE": "Tabla"
+  },
+  "CAPTAIN": {
+    "CUSTOM_TOOLS": {
+      "FORM": {
+        "AUTH_TYPES": {
+          "BASIC": "Autenticación básica"
+        }
+      }
+    }
+  },
   "AUTOMATION": {
     "HEADER_BTN_TXT": "Crear automatización",
     "COUNT": "{n} automatización | {n} automatizaciones",
@@ -54,6 +83,11 @@
         "CARD": {
           "VIEWS": "{count} visita | {count} visitas"
         }
+      }
+    },
+    "EDIT_ARTICLE_PAGE": {
+      "EDIT_ARTICLE": {
+        "EDITOR_PLACEHOLDER": "Escriba el contenido aquí. Escriba '/' para ver las opciones de formato."
       }
     }
   }

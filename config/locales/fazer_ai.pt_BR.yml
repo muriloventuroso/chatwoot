@@ -25,6 +25,8 @@ pt_BR:
     request:
       unexpected: Não foi possível completar a requisição.
     account:
+      support_email:
+        invalid: não é um endereço de e-mail válido
       brand_name:
         invalid: não pode conter < ou >
       brand_url:

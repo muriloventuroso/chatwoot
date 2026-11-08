@@ -59,5 +59,9 @@
     "TITLE": {
       "PIN_CONVERSATION": "Fixar / desafixar conversa"
     }
+  },
+  "CHANGELOG_CARD": {
+    "READ_MORE": "Ler mais",
+    "DISMISS": "Dispensar"
   }
 }

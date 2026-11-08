@@ -25,6 +25,8 @@ es:
     request:
       unexpected: No se pudo completar la solicitud.
     account:
+      support_email:
+        invalid: no es una dirección de correo válida
       brand_name:
         invalid: no puede contener < ni >
       brand_url:

@@ -14,6 +14,7 @@ describe('fazer.ai widget translation overlay', () => {
     expect(messages.pt_BR.REPLY_TIME.BACK_TOMORROW).toBe(
       upstreamPtBr.REPLY_TIME.BACK_TOMORROW
     );
+    expect(messages.pt_BR.COMPONENTS.FILE_BUBBLE.DOWNLOAD).toBe('Baixar');
   });
 
   it('leaves a language without a fork file untouched', () => {

@@ -1,4 +1,8 @@
 {
+  "PHONE_INPUT": {
+    "CLEAR_SELECTION": "Clear selection",
+    "SELECT_COUNTRY": "Select country"
+  },
   "REPLY_TIME": {
     "BACK_ON": {
       "SUNDAY": "We will be back online on Sunday",

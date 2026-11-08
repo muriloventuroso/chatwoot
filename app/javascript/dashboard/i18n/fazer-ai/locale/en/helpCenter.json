@@ -62,6 +62,13 @@
         }
       }
     },
+    "CATEGORY_PAGE": {
+      "CATEGORY_CARD": {
+        "EDIT": "Edit",
+        "DELETE": "Delete",
+        "NO_DESCRIPTION": "No description added"
+      }
+    },
     "ARTICLE_EDITOR": {
       "IMAGE_ALIGN": {
         "LEFT": "Align left",

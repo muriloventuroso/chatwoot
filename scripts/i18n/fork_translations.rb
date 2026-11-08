@@ -158,7 +158,7 @@ class ForkTranslations # rubocop:disable Metrics/ClassLength
   # different message trees at runtime, so one having a key translated says nothing about
   # the other, and merging them lets a translated dashboard key mask a missing survey one.
   def key_scopes(locale)
-    scopes = FE_TREES.to_h { |tree| [tree[:fork], keys_in(tree_fork_paths(tree, locale))] }
+    scopes = FE_TREES.to_h { |tree| [tree[:fork], fork_owned_keys(tree, locale)] }
     scopes.merge('config/locales' => keys_in(Dir["config/locales/fazer_ai*.#{locale}.yml"]))
   end
 
@@ -166,13 +166,22 @@ class ForkTranslations # rubocop:disable Metrics/ClassLength
     tree_paths(tree[:fork], tree[:layout], locale).reject { |path| File.basename(path) == OVERRIDES }
   end
 
-  # Only a directory-layout tree can carry overrides; a single-file tree has nowhere to
-  # put them, and none of them needs to replace an upstream string today.
+  # Directory-layout trees keep replacements in overrides.json. A single-file tree has
+  # nowhere else to put them, so a key that already exists upstream is a replacement
+  # and is treated as an override (exempt from coverage, allowed to duplicate).
   def override_keys(tree, locale)
-    return {} unless tree[:layout] == :directory
+    if tree[:layout] == :directory
+      path = File.join(tree[:fork], locale, OVERRIDES)
+      return File.exist?(path) ? keys_in([path]) : {}
+    end
 
-    path = File.join(tree[:fork], locale, OVERRIDES)
-    File.exist?(path) ? keys_in([path]) : {}
+    fork = keys_in(tree_fork_paths(tree, locale))
+    upstream = keys_in(tree_paths(tree[:upstream], tree[:layout], locale))
+    fork.select { |key, _| upstream.key?(key) }
+  end
+
+  def fork_owned_keys(tree, locale)
+    keys_in(tree_fork_paths(tree, locale)).reject { |key, _| override_keys(tree, locale).key?(key) }
   end
 
   def check_reference_locale_exists
@@ -213,10 +222,7 @@ class ForkTranslations # rubocop:disable Metrics/ClassLength
 
   def check_tree_not_duplicated(tree, locale)
     upstream = keys_in(tree_paths(tree[:upstream], tree[:layout], locale))
-    duplicated = keys_in(tree_fork_paths(tree, locale)).keys & upstream.keys
-    unless duplicated.empty?
-      @errors << "#{tree[:fork]} #{locale}: #{duplicated.size} chaves do fork tambem existem no upstream (#{duplicated.first(3).join(', ')})"
-    end
+    report_duplicated_fork_keys(tree, locale, upstream) if tree[:layout] == :directory
 
     # The mirror case: an override that upstream does not define replaces nothing, so it
     # belongs in a regular fork file instead.
@@ -224,6 +230,13 @@ class ForkTranslations # rubocop:disable Metrics/ClassLength
     return if dangling.empty?
 
     @errors << "#{tree[:fork]} #{locale}: #{dangling.size} overrides nao existem no upstream (#{dangling.first(3).join(', ')})"
+  end
+
+  def report_duplicated_fork_keys(tree, locale, upstream)
+    duplicated = keys_in(tree_fork_paths(tree, locale)).keys & upstream.keys
+    return if duplicated.empty?
+
+    @errors << "#{tree[:fork]} #{locale}: #{duplicated.size} chaves do fork tambem existem no upstream (#{duplicated.first(3).join(', ')})"
   end
 
   # Anything translated in another language but absent from the reference is

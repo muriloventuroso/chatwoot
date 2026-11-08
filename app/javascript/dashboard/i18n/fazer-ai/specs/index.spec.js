@@ -34,6 +34,18 @@ describe('fazer.ai translation overlay', () => {
     expect(mergedKeys.length).toBeGreaterThan(upstreamKeys.length);
   });
 
+  it('translates help center category card labels in pt_BR', () => {
+    expect(messages.pt_BR.HELP_CENTER.CATEGORY_PAGE.CATEGORY_CARD.EDIT).toBe(
+      'Editar'
+    );
+    expect(
+      messages.pt_BR.HELP_CENTER.CATEGORY_PAGE.CATEGORY_CARD.NO_DESCRIPTION
+    ).toBe('Nenhuma descrição adicionada');
+    expect(messages.pt_BR.CONTACT_PANEL.CLICK_TO_EDIT).toBe(
+      'Clique para editar'
+    );
+  });
+
   it('lets overrides.json replace an upstream string', () => {
     expect(messages.en.CONVERSATION.UNSUPPORTED_MESSAGE).not.toBe(
       upstreamEn.CONVERSATION.UNSUPPORTED_MESSAGE

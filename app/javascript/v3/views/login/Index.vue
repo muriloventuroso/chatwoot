@@ -547,7 +547,7 @@ export default {
       v-if="globalConfig.displayManifest"
       class="mt-8 text-center text-xs text-n-slate-10"
     >
-      powered by
+      {{ $t('LOGIN.POWERED_BY') }}
       <a
         href="https://fazer.ai"
         target="_blank"

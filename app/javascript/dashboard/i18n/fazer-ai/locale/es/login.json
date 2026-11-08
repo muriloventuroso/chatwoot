@@ -1,0 +1,9 @@
+{
+  "LOGIN": {
+    "POWERED_BY": "Desarrollado por",
+    "PASSWORD": {
+      "SHOW": "Mostrar contraseña",
+      "HIDE": "Ocultar contraseña"
+    }
+  }
+}

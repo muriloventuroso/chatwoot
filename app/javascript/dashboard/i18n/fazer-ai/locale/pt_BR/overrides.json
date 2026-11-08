@@ -77,12 +77,46 @@
       "REMOVE_ASSIGNED_AGENT": "Remover agente atribuído"
     }
   },
+  "MACROS": {
+    "ACTIONS": {
+      "REMOVE_ASSIGNED_AGENT": "Remover agente atribuído"
+    }
+  },
+  "CONTACT_PANEL": {
+    "CLICK_TO_EDIT": "Clique para editar"
+  },
+  "SLASH_COMMANDS": {
+    "HEADING_1": "Título 1",
+    "HEADING_2": "Título 2",
+    "HEADING_3": "Título 3",
+    "BOLD": "Negrito",
+    "ITALIC": "Itálico",
+    "STRIKETHROUGH": "Tachado",
+    "CODE": "Código",
+    "BULLET_LIST": "Lista com marcadores",
+    "ORDERED_LIST": "Lista numerada",
+    "TABLE": "Tabela"
+  },
+  "CAPTAIN": {
+    "CUSTOM_TOOLS": {
+      "FORM": {
+        "AUTH_TYPES": {
+          "BASIC": "Autenticação básica"
+        }
+      }
+    }
+  },
   "HELP_CENTER": {
     "ARTICLES_PAGE": {
       "ARTICLE_CARD": {
         "CARD": {
           "VIEWS": "{count} visualização | {count} visualizações"
         }
+      }
+    },
+    "EDIT_ARTICLE_PAGE": {
+      "EDIT_ARTICLE": {
+        "EDITOR_PLACEHOLDER": "Escreva o conteúdo aqui. Digite '/' para opções de formatação."
       }
     }
   }

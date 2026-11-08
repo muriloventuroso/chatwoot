@@ -170,7 +170,7 @@ pt_BR:
           invited_by: Convidado por
           workspace: Espaço de trabalho
           sign_in_method: Método de acesso
-          sign_in_method_value: Single Sign-On (SSO)
+          sign_in_method_value: Logon único (SSO)
           new_email: Novo e-mail
         welcome:
           eyebrow: Boas-vindas

@@ -1,4 +1,13 @@
 {
+  "PHONE_INPUT": {
+    "CLEAR_SELECTION": "Limpar seleção",
+    "SELECT_COUNTRY": "Selecionar país"
+  },
+  "COMPONENTS": {
+    "FILE_BUBBLE": {
+      "DOWNLOAD": "Baixar"
+    }
+  },
   "REPLY_TIME": {
     "BACK_ON": {
       "SUNDAY": "Estaremos de volta no domingo",

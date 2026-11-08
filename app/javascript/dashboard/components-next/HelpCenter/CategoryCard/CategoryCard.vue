@@ -45,23 +45,25 @@ const { t } = useI18n();
 
 const [showActionsDropdown, toggleDropdown] = useToggle();
 
-const categoryMenuItems = [
+const categoryMenuItems = computed(() => [
   {
-    label: 'Edit',
+    label: t('HELP_CENTER.CATEGORY_PAGE.CATEGORY_CARD.EDIT'),
     action: 'edit',
     value: 'edit',
     icon: 'i-lucide-pencil',
   },
   {
-    label: 'Delete',
+    label: t('HELP_CENTER.CATEGORY_PAGE.CATEGORY_CARD.DELETE'),
     action: 'delete',
     value: 'delete',
     icon: 'i-lucide-trash',
   },
-];
+]);
 
 const description = computed(() => {
-  return props.description ? props.description : 'No description added';
+  return props.description
+    ? props.description
+    : t('HELP_CENTER.CATEGORY_PAGE.CATEGORY_CARD.NO_DESCRIPTION');
 });
 
 const hasDescription = computed(() => {

@@ -1,5 +1,6 @@
 <script setup>
 import { computed } from 'vue';
+import { useI18n } from 'vue-i18n';
 import { dateRanges } from '../helpers/DatePickerHelper';
 import { format, isSameYear, isValid } from 'date-fns';
 import Icon from 'dashboard/components-next/icon/Icon.vue';
@@ -28,12 +29,14 @@ const props = defineProps({
 
 const emit = defineEmits(['open', 'navigateMonth']);
 
+const { t } = useI18n();
+
 const formatDateRange = computed(() => {
   const startDate = props.selectedStartDate;
   const endDate = props.selectedEndDate;
 
   if (!isValid(startDate) || !isValid(endDate)) {
-    return 'Select a date range';
+    return t('DATE_PICKER.SELECT_RANGE');
   }
 
   const crossesYears = !isSameYear(startDate, endDate);

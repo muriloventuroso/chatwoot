@@ -25,6 +25,8 @@ en:
     request:
       unexpected: The request could not be completed.
     account:
+      support_email:
+        invalid: is not a valid email address
       brand_name:
         invalid: cannot contain < or >
       brand_url:
