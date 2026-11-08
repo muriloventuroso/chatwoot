@@ -51,6 +51,29 @@ describe HookListener do
     end
   end
 
+  describe '#conversation_resolved' do
+    let(:event_name) { 'conversation.resolved' }
+    let(:resolved_event) { Events::Base.new(event_name, Time.zone.now, conversation: conversation) }
+
+    before { conversation.update!(status: :resolved) }
+
+    it 'enqueues the AI summary authored by the assignee when the OpenAI integration is enabled' do
+      allow(Integrations::Openai::KeyValidator).to receive(:valid?).and_return(true)
+      create(:integrations_hook, :openai, account: account)
+
+      expect { listener.conversation_resolved(resolved_event) }
+        .to have_enqueued_job(Integrations::Openai::ConversationSummaryJob).with(conversation, user)
+    end
+
+    it 'does not enqueue the AI summary when the OpenAI integration is disabled' do
+      allow(Integrations::Openai::KeyValidator).to receive(:valid?).and_return(true)
+      create(:integrations_hook, :openai, account: account, status: :disabled)
+
+      expect { listener.conversation_resolved(resolved_event) }
+        .not_to have_enqueued_job(Integrations::Openai::ConversationSummaryJob)
+    end
+  end
+
   describe 'hook job enqueuing behavior' do
     let(:event_name) { 'message.created' }
 

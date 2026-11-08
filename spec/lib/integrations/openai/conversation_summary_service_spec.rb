@@ -52,6 +52,14 @@ RSpec.describe Integrations::Openai::ConversationSummaryService do
       expect(conversation.messages.where(private: true)).to be_empty
     end
 
+    it 'saves the note without a sender when there is no user, as on an unassigned resolution' do
+      described_class.new(conversation: conversation, user: nil).perform
+
+      note = conversation.messages.where(private: true).last
+      expect(note.content).to include('Customer is waiting for a missing order.')
+      expect(note.sender).to be_nil
+    end
+
     it 'does not create a note when OpenAI returns no summary' do
       allow(openai_client).to receive(:chat).and_return({ 'choices' => [] })
 

@@ -1,13 +1,14 @@
 # Summarizes a conversation with the account's OpenAI integration key, on an agent's request,
 # and saves the result as a private note in the conversation. Used both by the manual
-# "summarize" action and by the automatic handoff summary when a conversation changes agent.
+# "summarize" action, by the automatic handoff summary when a conversation changes agent, and on
+# every resolution (HookListener). Without a user, as on an unassigned resolution, the note has no sender.
 #
 # Captain's SummaryService does a similar call, but it runs on Captain's installation key and
 # credits and is stripped from CE images; this one only needs the OpenAI integration hook.
 class Integrations::Openai::ConversationSummaryService
   MESSAGE_LIMIT = 50
 
-  pattr_initialize [:conversation!, :user!]
+  pattr_initialize [:conversation!, :user]
 
   def self.summarizable?(conversation)
     conversation.messages.exists?(message_type: [:incoming, :outgoing], private: false)
