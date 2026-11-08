@@ -518,8 +518,10 @@ class Message < ApplicationRecord
       return
     end
 
-    # Bot responses also clear waiting_since (simpler than checking on next customer message)
-    conversation.update!(waiting_since: nil) if bot_response? && !preserve_waiting_since
+    # Bot responses also clear waiting_since (simpler than checking on next customer message), but only
+    # while the bot owns the conversation: once handed off to a human (open), a bot message such as an
+    # away notice is no reply, and clearing it lets auto-resolve close a conversation no agent answered.
+    conversation.update!(waiting_since: nil) if bot_response? && conversation.pending? && !preserve_waiting_since
   end
 
   def set_waiting_since_on_incoming_message

@@ -1386,7 +1386,7 @@ RSpec.describe Conversation do
         message
       end
 
-      it 'calculates reply time from the most recent customer message after bot response' do
+      it 'keeps measuring reply time from the customer message a bot answered on an open conversation' do
         # Initial conversation: customer message -> agent first reply (to establish first_reply_created_at)
         create_customer_message(conversation, created_at: 10.hours.ago)
         create_agent_message(conversation, created_at: 9.hours.ago)
@@ -1397,19 +1397,19 @@ RSpec.describe Conversation do
         # Bot responds
         create_bot_message(conversation, created_at: 4.hours.ago)
 
-        # Customer message 2 (after bot response) - should reset waiting_since
+        # Customer message 2: the customer is still waiting for a human since message 1
         create_customer_message(conversation, created_at: 2.hours.ago)
 
-        # Human agent replies - should create reply_time event from customer message 2
+        # Human agent replies - should create reply_time event from customer message 1
         create_agent_message(conversation, created_at: 1.hour.ago)
 
         reply_events = account.reporting_events.where(name: 'reply_time', conversation_id: conversation.id)
         expect(reply_events.count).to eq(1) # Only the second agent reply creates a reply_time event
-        # Reply time should be 1 hour (from customer message 2 to agent reply)
-        expect(reply_events.first.value).to be_within(60).of(3600)
+        # A bot message on an open conversation is no reply, so the 4 hours since customer message 1 count
+        expect(reply_events.first.value).to be_within(60).of(4 * 3600)
       end
 
-      it 'handles multiple bot responses before customer messages again' do
+      it 'ignores several bot messages on an open conversation' do
         # Initial conversation: customer message -> agent first reply
         create_customer_message(conversation, created_at: 10.hours.ago)
         create_agent_message(conversation, created_at: 9.hours.ago)
@@ -1421,7 +1421,7 @@ RSpec.describe Conversation do
         create_bot_message(conversation, created_at: 5.hours.ago)
         create_bot_message(conversation, created_at: 4.hours.ago)
 
-        # Customer message 2 (after multiple bot responses) - should reset waiting_since
+        # Customer message 2: still waiting for a human since message 1
         create_customer_message(conversation, created_at: 2.hours.ago)
 
         # Human agent replies
@@ -1429,8 +1429,8 @@ RSpec.describe Conversation do
 
         reply_events = account.reporting_events.where(name: 'reply_time', conversation_id: conversation.id)
         expect(reply_events.count).to eq(1) # Only the second agent reply creates a reply_time event
-        # Reply time should be 1 hour (from customer message 2 to agent reply)
-        expect(reply_events.first.value).to be_within(60).of(3600)
+        # Reply time runs from customer message 1 to the agent reply: 5 hours
+        expect(reply_events.first.value).to be_within(60).of(5 * 3600)
       end
     end
   end

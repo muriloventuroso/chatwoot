@@ -910,6 +910,7 @@ RSpec.describe Message do
     end
 
     context 'when bot has responded to the conversation' do
+      let(:conversation) { create(:conversation, status: :pending) }
       let(:agent_bot) { create(:agent_bot, account: conversation.account) }
 
       before do
@@ -963,6 +964,19 @@ RSpec.describe Message do
 
         conversation.reload
         expect(conversation.waiting_since).to be_nil
+      end
+    end
+
+    context 'when a bot messages a conversation it already handed off' do
+      let(:agent_bot) { create(:agent_bot, account: conversation.account) }
+
+      it 'keeps waiting_since so auto-resolve still skips it' do
+        original_waiting_since = 45.minutes.ago
+        conversation.update!(waiting_since: original_waiting_since)
+
+        create(:message, conversation: conversation, message_type: :outgoing, sender: agent_bot)
+
+        expect(conversation.reload.waiting_since).to be_within(1.second).of(original_waiting_since)
       end
     end
 
