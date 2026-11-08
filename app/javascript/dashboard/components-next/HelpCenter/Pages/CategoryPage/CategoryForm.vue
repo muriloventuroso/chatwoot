@@ -19,6 +19,7 @@ import Input from 'dashboard/components-next/input/Input.vue';
 import TextArea from 'dashboard/components-next/textarea/TextArea.vue';
 import Button from 'dashboard/components-next/button/Button.vue';
 import EmojiIcon from 'dashboard/components-next/emoji-icon-picker/EmojiIcon.vue';
+import DropdownFloating from 'dashboard/components-next/dropdown-menu/base/DropdownFloating.vue';
 
 const props = defineProps({
   mode: {
@@ -69,6 +70,7 @@ const isUpdatingCategory = computed(() => {
 });
 
 const isEmojiPickerOpen = ref(false);
+const emojiPickerTriggerRef = ref(null);
 
 const state = reactive({
   id: '',
@@ -216,8 +218,12 @@ defineExpose({ state, isSubmitDisabled });
           custom-input-class="!h-10 ltr:!pl-12 rtl:!pr-12"
         >
           <template #prefix>
-            <OnClickOutside @trigger="isEmojiPickerOpen = false">
+            <OnClickOutside
+              :options="{ ignore: ['[data-dropdown-menu]'] }"
+              @trigger="isEmojiPickerOpen = false"
+            >
               <Button
+                ref="emojiPickerTriggerRef"
                 type="button"
                 variant="ghost"
                 color="slate"
@@ -232,16 +238,19 @@ defineExpose({ state, isSubmitDisabled });
                 />
                 <span v-else class="i-lucide-smile-plus size-4" />
               </Button>
-              <EmojiIconPicker
+              <DropdownFloating
                 v-if="isEmojiPickerOpen"
-                class="left-0 top-16"
-                :value="state.icon"
-                :color="state.iconColor"
-                show-remove-button
-                @select="onSelectIcon"
-                @color-change="onColorChange"
-                @remove="onRemoveIcon"
-              />
+                :trigger="() => emojiPickerTriggerRef?.$el"
+              >
+                <EmojiIconPicker
+                  :value="state.icon"
+                  :color="state.iconColor"
+                  show-remove-button
+                  @select="onSelectIcon"
+                  @color-change="onColorChange"
+                  @remove="onRemoveIcon"
+                />
+              </DropdownFloating>
             </OnClickOutside>
           </template>
         </Input>
