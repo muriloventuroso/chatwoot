@@ -86,6 +86,8 @@ const records = computed(() =>
 );
 
 const filteredRecords = computed(() => {
+  // No short code starts with a space, so `/ ` is a plain slash: matching nothing hands it back
+  if (/^\s/.test(searchQuery.value)) return [];
   if (!searchTerm.value) return records.value;
 
   return picoSearch(records.value, searchTerm.value, [

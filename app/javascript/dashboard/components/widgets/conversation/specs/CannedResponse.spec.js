@@ -40,4 +40,12 @@ describe('CannedResponse', () => {
     await search.setValue(' Agora com: {{');
     expect(wrapper.emitted('release')).toEqual([[{ text: ' Agora com: {{' }]]);
   });
+
+  it('hands back a space typed right after the slash', async () => {
+    const wrapper = mountList();
+
+    await wrapper.get('input').setValue(' ');
+
+    expect(wrapper.emitted('release')).toEqual([[{ text: ' ' }]]);
+  });
 });
