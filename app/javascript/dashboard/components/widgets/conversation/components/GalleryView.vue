@@ -183,12 +183,12 @@ onMounted(() => {
         @click="onClose"
       >
         <header
-          class="z-10 flex items-center justify-between w-full h-16 px-6 py-2 bg-n-background border-b border-n-weak"
+          class="z-10 flex items-center justify-between w-full h-16 px-3 md:px-6 py-2 bg-n-background border-b border-n-weak"
           @click.stop
         >
           <div
             v-if="senderDetails"
-            class="flex items-center min-w-[15rem] shrink-0"
+            class="flex items-center min-w-0 md:min-w-[15rem] md:shrink-0"
           >
             <Avatar
               v-if="senderDetails.avatar"
@@ -215,7 +215,7 @@ onMounted(() => {
           </div>
 
           <div
-            class="flex-1 mx-2 px-2 truncate text-sm font-medium text-center text-n-slate-12"
+            class="hidden md:block flex-1 mx-2 px-2 truncate text-sm font-medium text-center text-n-slate-12"
           >
             <span v-dompurify-html="fileNameFromDataUrl" class="truncate" />
           </div>
@@ -238,6 +238,7 @@ onMounted(() => {
             <NextButton
               v-if="isImage"
               icon="i-lucide-rotate-ccw"
+              class="hidden md:inline-flex"
               slate
               ghost
               @click="onRotate('counter-clockwise')"
@@ -245,6 +246,7 @@ onMounted(() => {
             <NextButton
               v-if="isImage"
               icon="i-lucide-rotate-cw"
+              class="hidden md:inline-flex"
               slate
               ghost
               @click="onRotate('clockwise')"
