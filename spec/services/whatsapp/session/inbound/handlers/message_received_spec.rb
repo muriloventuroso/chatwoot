@@ -31,6 +31,12 @@ RSpec.describe Whatsapp::Session::Inbound::Handlers::MessageReceived do
     expect(message.conversation).to eq(inbox.conversations.last)
   end
 
+  it 'dates the message to when WhatsApp sent it, so one delivered late sorts where it belongs' do
+    dispatch
+
+    expect(inbox.messages.find_by(source_id: '3EB0AAAA0001').created_at.to_f).to be_within(0.001).of(1_755_440_000.123)
+  end
+
   # The Baileys and Z-API writers both acknowledge every incoming row, which is what puts
   # the second tick on the contact's screen and, when the inbox asks for it, marks the
   # chat read. Without it every message this layer stores stays unread on their phone.

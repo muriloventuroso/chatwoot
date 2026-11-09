@@ -255,6 +255,31 @@ describe('#mutations', () => {
       ]);
     });
 
+    it('puts a live message delivered late where it belongs by time', () => {
+      const state = {
+        allConversations: [
+          {
+            id: 1,
+            dataFetched: true,
+            timestamp: 1700000000,
+            messages: [
+              { id: 10, conversation_id: 1, created_at: 1600000000 },
+              { id: 11, conversation_id: 1, created_at: 1700000000 },
+            ],
+          },
+        ],
+        selectedChatId: 1,
+      };
+      mutations[types.ADD_MESSAGE](state, {
+        id: 12,
+        conversation_id: 1,
+        created_at: 1650000000,
+      });
+      const [chat] = state.allConversations;
+      expect(chat.messages.map(m => m.id)).toEqual([10, 12, 11]);
+      expect(chat.timestamp).toBe(1700000000);
+    });
+
     it('skips SCROLL_TO_MESSAGE when the history of the thread is exhausted', () => {
       const state = {
         allConversations: [{ id: 1, updated_at: 1 }],

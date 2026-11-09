@@ -459,6 +459,16 @@ describe Whatsapp::IncomingMessageBaileysService do
         expect(message.content_attributes[:external_created_at]).to eq(timestamp)
       end
 
+      context 'when the message is delivered late' do
+        let(:timestamp) { 1.hour.ago.to_i }
+
+        it 'dates it to when WhatsApp sent it' do
+          described_class.new(inbox: inbox, params: params).perform
+
+          expect(inbox.messages.find_by!(source_id: 'msg_123').created_at).to be_within(1.second).of(Time.zone.at(timestamp))
+        end
+      end
+
       # A contact created by hand or through the API has no contact_inbox, so nothing but
       # its number can find it, and the builder matched that exactly: WhatsApp reporting
       # the other ninth-digit form filed a second, unblocked contact that the bot answered

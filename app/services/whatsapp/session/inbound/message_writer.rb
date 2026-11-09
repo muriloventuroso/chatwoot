@@ -237,9 +237,11 @@ class Whatsapp::Session::Inbound::MessageWriter
     }
     # Dated to when it was sent, not to when it was filed. The thread renders in
     # `created_at` order, so an import written at today's timestamp would stack a year of
-    # conversation on top of this morning's, in whatever order it was imported. It is also
-    # the clock Inbound::Coverage reads to decide what a later import already had eyes on.
-    attributes[:created_at] = inbound.sent_at if imported
+    # conversation on top of this morning's, and a live message delivered late (reconnect,
+    # phone offline) would sit below replies it predates. Capped at now so a clock ahead of
+    # ours cannot place it after messages written later. It is also the clock
+    # Inbound::Coverage reads to decide what a later import already had eyes on.
+    attributes[:created_at] = [inbound.sent_at, Time.current].min if inbound.timestamp
     attributes
   end
 

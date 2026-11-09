@@ -52,13 +52,14 @@ const holdsTheStart = chat =>
       (chat.dataFetched && chat.messages.length < MESSAGE_PAGE_SIZE)
   );
 
-// Imported history is older than what the thread shows, so it goes in by time
-// rather than at the end. Older than the first loaded message, it only goes in
+// Imported history, and a WhatsApp message delivered late (dated to when it was
+// sent), is older than what the thread shows, so it goes in by time rather than
+// at the end. Older than the first loaded message, it only goes in
 // when the thread is loaded back to its start: otherwise the older pages are
 // still to be fetched, and the first message is the cursor they are fetched
 // from, so putting history in front of it would skip everything in between.
 // It is on the server either way, and paging back brings it.
-const insertImported = (chat, message) => {
+const insertByTime = (chat, message) => {
   const first = chat.messages[0];
   const before = other =>
     other.created_at > message.created_at ||
@@ -301,12 +302,14 @@ export const mutations = {
       // and it moves neither the conversation's place in the list nor the
       // viewport of the agent who asked for it.
       const isImported = message.content_attributes?.imported === true;
-      if (isImported) {
-        insertImported(chat, message);
+      const last = chat.messages[chat.messages.length - 1];
+      const isLate = isImported || last?.created_at > message.created_at;
+      if (isLate) {
+        insertByTime(chat, message);
       } else {
         chat.messages.push(message);
+        chat.timestamp = message.created_at;
       }
-      if (!isImported) chat.timestamp = message.created_at;
       const { conversation: { unread_count: unreadCount = 0 } = {} } = message;
       chat.unread_count = unreadCount;
       // Reactions render as chips on their parent bubble, not as standalone

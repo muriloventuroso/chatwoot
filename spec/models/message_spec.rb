@@ -1053,6 +1053,13 @@ RSpec.describe Message do
       expect(message.created_at).to eq message.conversation.last_activity_at
     end
 
+    it 'does not move conversation last_activity_at back for a message dated in the past' do
+      message.conversation.update!(last_activity_at: 1.minute.ago)
+      message.created_at = 1.hour.ago
+
+      expect { message.save! }.not_to(change { message.conversation.reload.last_activity_at })
+    end
+
     it 'updates contact last_activity_at when created' do
       expect { message.save! }.to(change { message.sender.last_activity_at })
     end

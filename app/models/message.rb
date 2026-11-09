@@ -675,7 +675,8 @@ class Message < ApplicationRecord
 
   def set_conversation_activity
     # rubocop:disable Rails/SkipsModelValidations
-    conversation.update_columns(last_activity_at: created_at, updated_at: Time.current)
+    # A WhatsApp message delivered late is dated to when it was sent; it must not move the activity back.
+    conversation.update_columns(last_activity_at: [created_at, conversation.last_activity_at].compact.max, updated_at: Time.current)
     # rubocop:enable Rails/SkipsModelValidations
   end
 

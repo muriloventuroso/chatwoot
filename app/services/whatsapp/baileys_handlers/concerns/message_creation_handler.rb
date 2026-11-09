@@ -27,8 +27,19 @@ module Whatsapp::BaileysHandlers::Concerns::MessageCreationHandler # rubocop:dis
       source_id: raw_message_id,
       sender: incoming? ? sender : nil,
       message_type: incoming? ? :incoming : :outgoing,
-      content_attributes: build_message_content_attributes
+      content_attributes: build_message_content_attributes,
+      created_at: whatsapp_sent_at
     }
+  end
+
+  # Dated to when WhatsApp says it was sent, not to when it reached us: the thread renders in
+  # `created_at` order, so a message delivered late (reconnect, phone offline, history dump)
+  # would otherwise sit below replies it predates. WhatsApp stamps whole seconds, so it is the
+  # end of that second (a tie goes to arrival order), capped at now so a clock ahead of ours
+  # cannot place it after messages written later. Nil lets Rails stamp it.
+  def whatsapp_sent_at
+    seconds = baileys_extract_message_timestamp(@raw_message[:messageTimestamp])
+    [Time.zone.at(seconds).change(usec: 999_999), Time.current].min if seconds.positive?
   end
 
   # WhatsApp echoes back every message the session sends, including the ones Chatwoot itself

@@ -291,31 +291,8 @@ class Whatsapp::Baileys::HistoryImporter < Whatsapp::IncomingMessageBaileysServi
     @raw_message = raw
     @message = nil
 
-    message = build_and_save_message(conversation: conversation, sender: sender, attach_media: should_attach_media?)
-    backdate(message)
-  end
-
-  # Dated to when it was sent, not to when it was filed. The thread renders in `created_at`
-  # order, so rows written at today's timestamp would stack a year of conversation on top
-  # of this morning's. Applied after the insert because `webhook_message_attributes` takes
-  # no date, and safe there because SilentWrite has already suppressed the callbacks that
-  # would have read the wrong one.
-  #
-  # A shared-contacts message writes one row per card under a single provider id, so those
-  # are moved by id rather than through the one row the builder hands back.
-  def backdate(message)
-    return if message.blank?
-
-    sent_at = sent_at_of(@raw_message)
-    return message if sent_at.blank?
-
-    if message_type == 'contact'
-      inbox.messages.where(source_id: raw_message_id).update_all(created_at: sent_at) # rubocop:disable Rails/SkipsModelValidations
-      message.reload
-    else
-      message.update_column(:created_at, sent_at) # rubocop:disable Rails/SkipsModelValidations
-    end
-    message
+    # Dated to when it was sent by `webhook_message_attributes`, like a live arrival.
+    build_and_save_message(conversation: conversation, sender: sender, attach_media: should_attach_media?)
   end
 
   # History carries no media bytes, and the bridge does not fetch them for a dump either,
