@@ -69,7 +69,8 @@ RSpec.describe AutomationRules::ProcessPendingExecutionJob do
     # Reading that as "something happened after the arm" would push the row forward for ever and the
     # actions would never run.
     it 'fires on the activity it was armed from instead of rescheduling itself' do
-      conversation
+      # Quiet before the message: an older message never moves last_activity_at back.
+      conversation.update!(last_activity_at: 2.hours.ago)
       message = travel_to(61.minutes.ago) do
         create(:message, conversation: conversation, account: account, message_type: :incoming)
       end
