@@ -1,0 +1,16 @@
+<%# locals: (articles:) %>
+<%# Classic/Plain "Related articles" list at the end of an article. %>
+<% if articles.present? %>
+<section class="mt-12 pt-8 border-t border-solid border-slate-100 dark:border-slate-800">
+  <h2 class="mb-4 text-xl font-semibold text-slate-800 dark:text-slate-50"><%= I18n.t('public_portal.common.related_articles') %></h2>
+  <div class="flex flex-col gap-1">
+    <% articles.each do |article| %>
+    <a class="flex items-start justify-between gap-6 py-1 leading-7 text-slate-700 dark:text-slate-100 hover:underline"
+       href="<%= generate_article_link(@portal.slug, article.slug, @theme_from_params, @is_plain_layout_enabled) %>">
+      <%= article.title %>
+      <span class="flex items-center mt-1.5"><%= render partial: 'icons/chevron-right' %></span>
+    </a>
+    <% end %>
+  </div>
+</section>
+<% end %>

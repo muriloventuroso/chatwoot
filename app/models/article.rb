@@ -63,6 +63,7 @@ class Article < ApplicationRecord
 
   # Slugs that collide with help center routes (e.g. /hc/:slug/:locale/search)
   RESERVED_SLUGS = %w[search articles categories].freeze
+  RELATED_ARTICLES_LIMIT = 4
 
   validates :account_id, presence: true
   validates :author_id, presence: true
@@ -144,6 +145,20 @@ class Article < ApplicationRecord
 
   def public_locale
     category.present? ? category.locale : locale
+  end
+
+  # Published articles in the same locale, the ones sharing the most tags (case-insensitive) first,
+  # with articles from the same category filling the remaining slots.
+  def related_articles
+    shared_tags = self.class.sanitize_sql_array(
+      ["(SELECT count(*) FROM jsonb_array_elements_text(articles.meta -> 'tags') AS tag WHERE lower(tag) IN (?))",
+       Array(meta['tags']).map(&:downcase)]
+    )
+    candidates = portal.articles.published.where(locale: locale).where.not(id: id)
+    related = candidates.where("#{shared_tags} > 0")
+    related = related.or(candidates.where(category_id: category_id)) if category_id
+
+    related.includes(:category).reorder(Arel.sql("#{shared_tags} DESC"), :position).limit(RELATED_ARTICLES_LIMIT)
   end
 
   def draft!

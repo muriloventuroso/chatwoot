@@ -226,6 +226,19 @@ RSpec.describe 'Public Articles API', type: :request do
       expect(links).to include("/hc/#{portal.slug}/articles/#{translated_article.slug}")
     end
 
+    %w[classic documentation].each do |layout|
+      it "lists related articles at the end of the article in the #{layout} layout" do
+        portal.update!(config: portal.config.merge('layout' => layout))
+        article.update!(meta: { 'tags' => ['billing'] })
+        related = create(:article, category: nil, locale: 'en', portal: portal, author: agent, meta: { 'tags' => ['Billing'] })
+
+        get "/hc/#{portal.slug}/articles/#{article.slug}"
+
+        expect(response.body).to include(I18n.t('public_portal.common.related_articles'))
+        expect(response.body).to include(related.title)
+      end
+    end
+
     it 'hides the author in the documentation layout when show_author is off' do
       portal.update!(config: portal.config.merge('layout' => 'documentation', 'show_author' => false))
 

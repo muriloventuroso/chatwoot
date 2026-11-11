@@ -197,5 +197,7 @@ es:
       avg_customer_waiting_time: Tiempo promedio de espera del cliente
       resolution_count: Recuento de resoluciones
   public_portal:
+    common:
+      related_articles: Artículos relacionados
     hero:
       title: ¿Cómo podemos ayudarte?

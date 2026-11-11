@@ -3,6 +3,7 @@
 <div class="flex max-w-5xl w-full px-4 md:px-8 mx-auto <%= content_padding %>">
   <div class="flex-grow flex-2 max-w-3xl mx-auto w-full min-w-0 font-inter tracking-normal">
     <%= render 'public/api/v1/portals/articles/content', parsed_content: parsed_content %>
+    <%= render 'public/api/v1/portals/articles/related_articles', articles: @related_articles %>
   </div>
   <div class="flex-1" id="cw-hc-toc"></div>
 </div>

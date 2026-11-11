@@ -25,6 +25,7 @@ class Public::Api::V1::Portals::ArticlesController < Public::Api::V1::Portals::B
     set_locale_switch_urls
     @og_image_url = helpers.set_og_image_url(@portal.name, @article.title)
     @parsed_content = render_article_content(@article.content.to_s)
+    @related_articles = @article.related_articles
   end
 
   def show_markdown

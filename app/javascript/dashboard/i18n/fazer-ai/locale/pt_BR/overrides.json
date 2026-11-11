@@ -117,6 +117,10 @@
     "EDIT_ARTICLE_PAGE": {
       "EDIT_ARTICLE": {
         "EDITOR_PLACEHOLDER": "Escreva o conteúdo aqui. Digite '/' para opções de formatação."
+      },
+      "ARTICLE_PROPERTIES": {
+        "META_TAGS": "Tags",
+        "META_TAGS_PLACEHOLDER": "Adicionar tags (usadas no SEO e em artigos relacionados)"
       }
     }
   }

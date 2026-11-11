@@ -263,6 +263,34 @@ RSpec.describe Article do
     end
   end
 
+  describe '#related_articles' do
+    let(:article) { create(:article, portal: portal_1, category: category_1, author: user, meta: { 'tags' => %w[Billing Invoices] }) }
+    let(:other_category) { create(:category, slug: 'other', locale: 'en', portal_id: portal_1.id) }
+
+    it 'ranks articles by shared tags case-insensitively, then fills with the same category' do
+      one_tag = create(:article, portal: portal_1, category: other_category, author: user, meta: { 'tags' => ['billing'] })
+      two_tags = create(:article, portal: portal_1, category: other_category, author: user, meta: { 'tags' => %w[INVOICES billing] })
+      same_category = create(:article, portal: portal_1, category: category_1, author: user)
+      create(:article, portal: portal_1, category: other_category, author: user, meta: { 'tags' => ['shipping'] })
+
+      expect(article.related_articles).to eq([two_tags, one_tag, same_category])
+    end
+
+    it 'skips drafts and articles in other locales' do
+      create(:article, portal: portal_1, category: category_1, author: user, status: :draft, meta: { 'tags' => ['billing'] })
+      create(:article, portal: portal_1, locale: 'es', author: user, meta: { 'tags' => ['billing'] })
+
+      expect(article.related_articles).to be_empty
+    end
+
+    it 'falls back to the same category when the article has no tags' do
+      article.update!(meta: {})
+      same_category = create(:article, portal: portal_1, category: category_1, author: user)
+
+      expect(article.related_articles).to eq([same_category])
+    end
+  end
+
   describe '.update_positions' do
     let!(:article_a) { create(:article, portal: portal_1, category: category_1, author: user, position: 10) }
     let!(:article_b) { create(:article, portal: portal_1, category: category_1, author: user, position: 11) }

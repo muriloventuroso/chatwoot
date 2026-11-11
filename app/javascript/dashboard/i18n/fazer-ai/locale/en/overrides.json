@@ -6,5 +6,13 @@
     "CSAT": {
       "WHATSAPP_NOTE": "Note: You can create a new template (which will be sent for WhatsApp approval as Utility, though Meta may classify it as Marketing based on content) or use an existing approved template from your Meta template manager. Surveys are sent only once per conversation as per the survey rule."
     }
+  },
+  "HELP_CENTER": {
+    "EDIT_ARTICLE_PAGE": {
+      "ARTICLE_PROPERTIES": {
+        "META_TAGS": "Tags",
+        "META_TAGS_PLACEHOLDER": "Add tags (used for SEO and related articles)"
+      }
+    }
   }
 }

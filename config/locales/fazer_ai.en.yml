@@ -197,5 +197,7 @@ en:
       avg_customer_waiting_time: Avg customer waiting time
       resolution_count: Resolution Count
   public_portal:
+    common:
+      related_articles: Related articles
     hero:
       title: How can we help?
