@@ -1,7 +1,11 @@
 <script setup>
-import { reactive, watch, onMounted } from 'vue';
+import { reactive, ref, computed, watch, onMounted } from 'vue';
 import { useI18n } from 'vue-i18n';
+import { useRoute } from 'vue-router';
 import { debounce } from '@chatwoot/utils';
+import { useAlert } from 'dashboard/composables';
+import { useMapGetter, useStore } from 'dashboard/composables/store';
+import ArticlesAPI from 'dashboard/api/helpCenter/articles';
 
 import InlineInput from 'dashboard/components-next/inline-input/InlineInput.vue';
 import TextArea from 'dashboard/components-next/textarea/TextArea.vue';
@@ -51,8 +55,41 @@ watch(
   { deep: true }
 );
 
+const store = useStore();
+const route = useRoute();
+const getIntegration = useMapGetter('integrations/getIntegration');
+
+// Tag suggestions run on the account's OpenAI integration, not on Captain.
+const isOpenAIIntegrationEnabled = computed(() =>
+  (getIntegration.value('openai').hooks || []).some(hook => hook.status)
+);
+
+const isGeneratingTags = ref(false);
+
+const generateTags = async () => {
+  isGeneratingTags.value = true;
+  try {
+    const { data } = await ArticlesAPI.generateTags({
+      portalSlug: route.params.portalSlug,
+      articleId: props.article.id,
+    });
+    const current = state.tags.map(tag => tag.toLowerCase());
+    state.tags = [
+      ...state.tags,
+      ...data.tags.filter(tag => !current.includes(tag.toLowerCase())),
+    ];
+  } catch {
+    useAlert(
+      t('HELP_CENTER.EDIT_ARTICLE_PAGE.ARTICLE_PROPERTIES.GENERATE_TAGS_ERROR')
+    );
+  } finally {
+    isGeneratingTags.value = false;
+  }
+};
+
 onMounted(() => {
   updateState();
+  store.dispatch('integrations/get');
 });
 </script>
 
@@ -123,13 +160,29 @@ onMounted(() => {
           />
         </div>
         <div class="flex justify-between w-full gap-3 py-2">
-          <label
-            class="text-sm font-medium whitespace-nowrap min-w-[7.5rem] text-n-slate-12"
-          >
-            {{
-              t('HELP_CENTER.EDIT_ARTICLE_PAGE.ARTICLE_PROPERTIES.META_TAGS')
-            }}
-          </label>
+          <div class="flex flex-col items-start gap-1 min-w-[7.5rem]">
+            <label
+              class="text-sm font-medium whitespace-nowrap text-n-slate-12"
+            >
+              {{
+                t('HELP_CENTER.EDIT_ARTICLE_PAGE.ARTICLE_PROPERTIES.META_TAGS')
+              }}
+            </label>
+            <Button
+              v-if="isOpenAIIntegrationEnabled"
+              :label="
+                t(
+                  'HELP_CENTER.EDIT_ARTICLE_PAGE.ARTICLE_PROPERTIES.GENERATE_TAGS'
+                )
+              "
+              icon="i-lucide-sparkles"
+              size="xs"
+              variant="link"
+              :is-loading="isGeneratingTags"
+              :disabled="isGeneratingTags"
+              @click="generateTags"
+            />
+          </div>
           <TagInput
             v-model="state.tags"
             :placeholder="

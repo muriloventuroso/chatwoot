@@ -588,6 +588,7 @@ Rails.application.routes.draw do
             end
             resources :articles do
               post :reorder, on: :collection
+              post :generate_tags, on: :member
             end
           end
 

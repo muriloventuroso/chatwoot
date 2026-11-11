@@ -5,6 +5,7 @@ class Api::V1::Accounts::ArticlesController < Api::V1::Accounts::BaseController
   before_action :set_current_page, only: [:index]
   before_action :validate_author, only: [:create]
   before_action :discard_invalid_author, only: [:update]
+  before_action :ensure_openai_integration, only: [:generate_tags]
 
   def index
     @portal_articles = @portal.articles
@@ -46,7 +47,17 @@ class Api::V1::Accounts::ArticlesController < Api::V1::Accounts::BaseController
     render json: { positions: positions }
   end
 
+  def generate_tags
+    render json: { tags: Integrations::Openai::ArticleTagsService.new(article: @article).perform }
+  end
+
   private
+
+  def ensure_openai_integration
+    return if Current.account.hooks.exists?(app_id: 'openai', status: 'enabled')
+
+    render json: { error: 'OpenAI integration is not enabled' }, status: :unprocessable_entity
+  end
 
   def set_article_count
     # Search the params without status and author_id, use this to

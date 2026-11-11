@@ -75,6 +75,12 @@
         "CENTER": "Align center",
         "RIGHT": "Align right"
       }
+    },
+    "EDIT_ARTICLE_PAGE": {
+      "ARTICLE_PROPERTIES": {
+        "GENERATE_TAGS": "Generate with AI",
+        "GENERATE_TAGS_ERROR": "Could not generate tags. Check the OpenAI integration and try again."
+      }
     }
   }
 }

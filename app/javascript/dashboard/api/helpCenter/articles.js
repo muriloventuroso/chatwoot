@@ -75,6 +75,12 @@ class ArticlesAPI extends PortalsAPI {
     });
   }
 
+  generateTags({ portalSlug, articleId }) {
+    return axios.post(
+      `${this.url}/${portalSlug}/articles/${articleId}/generate_tags`
+    );
+  }
+
   deleteArticle({ articleId, portalSlug }) {
     return axios.delete(`${this.url}/${portalSlug}/articles/${articleId}`);
   }

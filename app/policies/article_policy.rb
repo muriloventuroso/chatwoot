@@ -26,6 +26,11 @@ class ArticlePolicy < ApplicationPolicy
   def reorder?
     @account_user.administrator?
   end
+
+  # Whoever can edit the article can ask for tag suggestions (Enterprise widens update? for custom roles).
+  def generate_tags?
+    update?
+  end
 end
 
 ArticlePolicy.prepend_mod_with('ArticlePolicy')
