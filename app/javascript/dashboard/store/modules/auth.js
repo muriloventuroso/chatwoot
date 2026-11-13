@@ -44,14 +44,6 @@ export const getters = {
     return currentAccount.availability;
   },
 
-  getCurrentUserAutoOffline($state, $getters) {
-    const { accounts = [] } = $state.currentUser;
-    const [currentAccount = {}] = accounts.filter(
-      account => account.id === $getters.getCurrentAccountId
-    );
-    return currentAccount.auto_offline;
-  },
-
   getCurrentAccountId(_, __, rootState) {
     if (rootState.route.params && rootState.route.params.accountId) {
       return Number(rootState.route.params.accountId);
@@ -194,21 +186,6 @@ export const actions = {
     }
   },
 
-  updateAutoOffline: async (
-    { commit, getters: _getters },
-    { accountId, autoOffline }
-  ) => {
-    const previousAutoOffline = _getters.getCurrentUserAutoOffline;
-
-    try {
-      commit(types.SET_CURRENT_USER_AUTO_OFFLINE, autoOffline);
-      const response = await authAPI.updateAutoOffline(accountId, autoOffline);
-      commit(types.SET_CURRENT_USER, response.data);
-    } catch (error) {
-      commit(types.SET_CURRENT_USER_AUTO_OFFLINE, previousAutoOffline);
-    }
-  },
-
   setCurrentUserAvailability({ commit, state: $state }, data) {
     if (data[$state.currentUser.id]) {
       commit(types.SET_CURRENT_USER_AVAILABILITY, data[$state.currentUser.id]);
@@ -251,19 +228,6 @@ export const mutations = {
       }
       return account;
     });
-    _state.currentUser = {
-      ..._state.currentUser,
-      accounts,
-    };
-  },
-  [types.SET_CURRENT_USER_AUTO_OFFLINE](_state, autoOffline) {
-    const accounts = _state.currentUser.accounts.map(account => {
-      if (account.id === _state.currentUser.account_id) {
-        return { ...account, autoOffline: autoOffline };
-      }
-      return account;
-    });
-
     _state.currentUser = {
       ..._state.currentUser,
       accounts,

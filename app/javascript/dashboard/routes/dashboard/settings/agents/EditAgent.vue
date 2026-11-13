@@ -6,6 +6,7 @@ import { useStore, useMapGetter } from 'dashboard/composables/store';
 import { useI18n } from 'vue-i18n';
 import { useAlert } from 'dashboard/composables';
 import Button from 'dashboard/components-next/button/Button.vue';
+import Switch from 'dashboard/components-next/switch/Switch.vue';
 import Auth from '../../../../api/auth';
 import wootConstants from 'dashboard/constants/globals';
 
@@ -38,6 +39,10 @@ const props = defineProps({
     type: Number,
     default: null,
   },
+  autoOffline: {
+    type: Boolean,
+    default: true,
+  },
 });
 
 const emit = defineEmits(['close']);
@@ -49,6 +54,7 @@ const { t } = useI18n();
 
 const agentName = ref(props.name);
 const agentAvailability = ref(props.availability);
+const agentAutoOffline = ref(props.autoOffline);
 const selectedRoleId = ref(props.customRoleId || props.type);
 const agentCredentials = ref({ email: props.email });
 
@@ -126,6 +132,7 @@ const editAgent = async () => {
       id: props.id,
       name: agentName.value,
       availability: agentAvailability.value,
+      auto_offline: agentAutoOffline.value,
     };
 
     if (selectedRole.value.name.startsWith('custom_')) {
@@ -202,6 +209,24 @@ const resetPassword = async () => {
             {{ $t('AGENT_MGMT.EDIT.FORM.AGENT_AVAILABILITY.ERROR') }}
           </span>
         </label>
+      </div>
+
+      <div class="flex items-center justify-between w-full gap-4 mb-4">
+        <div class="flex flex-col gap-1">
+          <span
+            id="agent-auto-offline-label"
+            class="text-sm font-medium text-n-slate-12"
+          >
+            {{ $t('AGENT_MGMT.EDIT.FORM.AUTO_OFFLINE.LABEL') }}
+          </span>
+          <span class="text-sm text-n-slate-11">
+            {{ $t('AGENT_MGMT.EDIT.FORM.AUTO_OFFLINE.HELP') }}
+          </span>
+        </div>
+        <Switch
+          v-model="agentAutoOffline"
+          aria-labelledby="agent-auto-offline-label"
+        />
       </div>
 
       <div class="flex flex-row justify-start w-full gap-2 px-0 py-2">

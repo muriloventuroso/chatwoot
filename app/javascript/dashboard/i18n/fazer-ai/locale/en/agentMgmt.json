@@ -1,0 +1,12 @@
+{
+  "AGENT_MGMT": {
+    "EDIT": {
+      "FORM": {
+        "AUTO_OFFLINE": {
+          "LABEL": "Mark offline automatically",
+          "HELP": "Shows the agent as offline when they close the dashboard or after 20 minutes without activity."
+        }
+      }
+    }
+  }
+}

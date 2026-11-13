@@ -96,50 +96,6 @@ describe('#actions', () => {
     });
   });
 
-  describe('#updateAutoOffline', () => {
-    it('sends correct actions if API is success', async () => {
-      axios.post.mockResolvedValue({
-        data: {
-          id: 1,
-          name: 'John',
-          accounts: [
-            {
-              account_id: 1,
-              auto_offline: false,
-            },
-          ],
-        },
-        headers: { expiry: 581842904 },
-      });
-      await actions.updateAutoOffline(
-        { commit, dispatch, getters: { getCurrentUserAutoOffline: true } },
-        { autoOffline: false, accountId: 1 }
-      );
-      expect(commit.mock.calls).toEqual([
-        [types.SET_CURRENT_USER_AUTO_OFFLINE, false],
-        [
-          types.SET_CURRENT_USER,
-          {
-            id: 1,
-            name: 'John',
-            accounts: [{ account_id: 1, auto_offline: false }],
-          },
-        ],
-      ]);
-    });
-    it('sends correct actions if API is failure', async () => {
-      axios.post.mockRejectedValue({ error: 'Authentication Failure' });
-      await actions.updateAutoOffline(
-        { commit, dispatch, getters: { getCurrentUserAutoOffline: true } },
-        { autoOffline: false, accountId: 1 }
-      );
-      expect(commit.mock.calls).toEqual([
-        [types.SET_CURRENT_USER_AUTO_OFFLINE, false],
-        [types.SET_CURRENT_USER_AUTO_OFFLINE, true],
-      ]);
-    });
-  });
-
   describe('#updateUISettings', () => {
     it('sends correct actions if API is success', async () => {
       axios.put.mockResolvedValue({

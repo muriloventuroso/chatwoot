@@ -1,0 +1,12 @@
+{
+  "AGENT_MGMT": {
+    "EDIT": {
+      "FORM": {
+        "AUTO_OFFLINE": {
+          "LABEL": "Marcar como desconectado automáticamente",
+          "HELP": "Muestra al agente como desconectado cuando cierra el panel o tras 20 minutos sin actividad."
+        }
+      }
+    }
+  }
+}

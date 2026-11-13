@@ -1,0 +1,12 @@
+{
+  "AGENT_MGMT": {
+    "EDIT": {
+      "FORM": {
+        "AUTO_OFFLINE": {
+          "LABEL": "Ficar offline automaticamente",
+          "HELP": "Mostra o agente como offline quando ele fecha o painel ou após 20 minutos sem atividade."
+        }
+      }
+    }
+  }
+}
