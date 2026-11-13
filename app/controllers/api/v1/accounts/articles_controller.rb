@@ -51,6 +51,10 @@ class Api::V1::Accounts::ArticlesController < Api::V1::Accounts::BaseController
     render json: { tags: Integrations::Openai::ArticleTagsService.new(article: @article).perform }
   end
 
+  def preview_token
+    render json: { preview_token: @article.preview_token }
+  end
+
   private
 
   def ensure_llm_integration

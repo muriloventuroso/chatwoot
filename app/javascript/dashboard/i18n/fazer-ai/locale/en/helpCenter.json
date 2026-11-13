@@ -95,7 +95,11 @@
         "SLUG_REDIRECT_DELETE": "Remove redirect",
         "SLUG_REDIRECT_DELETE_ERROR": "Could not remove the redirect. Please try again."
       },
-      "SWITCH_LANGUAGE": "Switch language"
+      "SWITCH_LANGUAGE": "Switch language",
+      "HEADER": {
+        "PREVIEW_ERROR": "Could not open the preview. Please try again.",
+        "PREVIEW_POPUP_BLOCKED": "Allow popups for this site to open the preview."
+      }
     }
   }
 }

@@ -11,6 +11,7 @@ import {
 import { useStore, useMapGetter } from 'dashboard/composables/store';
 import { rendersIdentically } from 'dashboard/helper/articleDiffHelper';
 import allLocales from 'shared/constants/locales.js';
+import ArticlesAPI from 'dashboard/api/helpCenter/articles';
 
 import ArticleEditor from 'dashboard/components-next/HelpCenter/Pages/ArticleEditorPage/ArticleEditor.vue';
 
@@ -156,11 +157,34 @@ const fetchArticleDetails = () => {
   });
 };
 
-const previewArticle = () => {
-  window.open(articleLink.value, '_blank');
-  useTrack(PORTALS_EVENTS.PREVIEW_ARTICLE, {
-    status: article.value?.status,
-  });
+const previewArticle = async () => {
+  const status = article.value.status;
+  const previewUrl = new URL(articleLink.value);
+
+  // Open during the click so a slow token request cannot trigger popup blocking.
+  const previewTab = window.open('about:blank', '_blank');
+  if (!previewTab) {
+    useAlert(t('HELP_CENTER.EDIT_ARTICLE_PAGE.HEADER.PREVIEW_POPUP_BLOCKED'));
+    return;
+  }
+
+  previewTab.opener = null;
+
+  try {
+    if (status !== ARTICLE_STATUSES.PUBLISHED) {
+      const { data } = await ArticlesAPI.getPreviewToken({
+        id: articleSlug,
+        portalSlug,
+      });
+      previewUrl.searchParams.set('preview_token', data.preview_token);
+    }
+
+    previewTab.location.replace(previewUrl.toString());
+    useTrack(PORTALS_EVENTS.PREVIEW_ARTICLE, { status });
+  } catch {
+    previewTab.close();
+    useAlert(t('HELP_CENTER.EDIT_ARTICLE_PAGE.HEADER.PREVIEW_ERROR'));
+  }
 };
 
 // The route view remounts this page for the new article, which loads its categories.

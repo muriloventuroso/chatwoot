@@ -31,6 +31,10 @@ class ArticlePolicy < ApplicationPolicy
   def generate_tags?
     update?
   end
+
+  def preview_token?
+    show?
+  end
 end
 
 ArticlePolicy.prepend_mod_with('ArticlePolicy')

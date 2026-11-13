@@ -95,7 +95,11 @@
         "SLUG_REDIRECT_DELETE": "Eliminar redirección",
         "SLUG_REDIRECT_DELETE_ERROR": "No se pudo eliminar la redirección. Inténtalo de nuevo."
       },
-      "SWITCH_LANGUAGE": "Cambiar idioma"
+      "SWITCH_LANGUAGE": "Cambiar idioma",
+      "HEADER": {
+        "PREVIEW_ERROR": "No se pudo abrir la vista previa. Inténtalo de nuevo.",
+        "PREVIEW_POPUP_BLOCKED": "Permite las ventanas emergentes en este sitio para abrir la vista previa."
+      }
     }
   }
 }

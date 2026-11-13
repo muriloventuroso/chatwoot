@@ -590,6 +590,7 @@ Rails.application.routes.draw do
               post :reorder, on: :collection
               post :generate_tags, on: :member
               resources :slug_redirects, only: [:destroy], module: :articles
+              get :preview_token, on: :member
             end
           end
 

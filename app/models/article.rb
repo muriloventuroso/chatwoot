@@ -65,6 +65,7 @@ class Article < ApplicationRecord
   # Slugs that collide with help center routes (e.g. /hc/:slug/:locale/search)
   RESERVED_SLUGS = %w[search articles categories].freeze
   RELATED_ARTICLES_LIMIT = 4
+  PREVIEW_TOKEN_EXPIRY = 1.hour
 
   validates :account_id, presence: true
   validates :author_id, presence: true
@@ -160,6 +161,10 @@ class Article < ApplicationRecord
     related = related.or(candidates.where(category_id: category_id)) if category_id
 
     related.includes(:category).reorder(Arel.sql("#{shared_tags} DESC"), :position).limit(RELATED_ARTICLES_LIMIT)
+  end
+
+  def preview_token
+    signed_id(purpose: :preview, expires_in: PREVIEW_TOKEN_EXPIRY)
   end
 
   def draft!
