@@ -20,7 +20,7 @@
 
 ## About
 
-Chatwoot fazer.ai is a fork of official Chatwoot, maintained by fazer.ai (FAZER.AI LTDA), Chatwoot's official partner in Brazil. Chatwoot Inc. develops the original product and is a separate company.
+Chatwoot fazer.ai is a fork of official Chatwoot, maintained by fazer.ai (FAZER.AI LTDA). Chatwoot Inc. develops the original product and is a separate company.
 
 The fork follows official Chatwoot releases and adds features for teams that set up and operate WhatsApp customer support. You can use the open-source edition for free or subscribe to Chatwoot fazer.ai Pro to add the sales Kanban.
 
@@ -87,11 +87,19 @@ See changes for each version in the [release notes](https://fazer.ai/chatwoot-re
 
 Explore the [Pro Kanban](https://fazer.ai/kanban) and activate your license at [app.fazer.ai](https://app.fazer.ai). A Chatwoot fazer.ai Pro license is included at no extra charge with a Pro subscription to the [Comunidade Lucas Moreira](https://www.lucasmoreira.ai).
 
+A Chatwoot fazer.ai Pro license covers one installation (one domain), with no user limit, and applies to all accounts within that installation. You can serve your own clients through accounts in your installation, including giving them access to the dashboard. Each separate installation needs its own license; see the [terms of use](https://fazer.ai/termos-kanban).
+
 ### Chatwoot Enterprise
 
 fazer.ai licenses do not include Chatwoot Enterprise features. SSO and Captain, along with audit logs and custom roles, are licensed by Chatwoot Inc.
 
-To use these features with the fork, purchase a license from Chatwoot Inc. and use the `ghcr.io/fazer-ai/chatwoot:latest-ee` image. The image with the `-ee` suffix does not replace the license. The partnership offers a [licensing discount](https://fazer.ai/parceria-chatwoot).
+To use these features with the fork, purchase a license from Chatwoot Inc. and set `CW_EDITION=ee` on the web and Sidekiq services of the `ghcr.io/fazer-ai/chatwoot` image. The variable does not replace the license.
+
+With `CW_EDITION=ee`, the container downloads at boot the `enterprise/` directory from the official Chatwoot tag that matches the image version, checks its contents against the hash pinned at build time, and keeps a copy in `storage/.cw-enterprise`. The first boot of each version needs access to `codeload.github.com`, and later boots use the stored copy. If the download or the check fails, the container does not start and the log says why; the tuning variables are described in `docker/entrypoints/helpers/enterprise.sh`.
+
+With `CW_EDITION=ee`, the Enterprise code runs exactly as Chatwoot Inc. publishes it for that version, without any modifications or patches from the fork. The fork's super admin “Branding” page is only available without Enterprise; with Enterprise enabled, branding follows its own rules: customization is a premium feature, and the community plan resets the branding keys to their defaults. See [CUSTOM_BRANDING.md](CUSTOM_BRANDING.md) for details.
+
+This applies to the Docker image. In an installation run from source, the checkout's `enterprise/` directory is loaded whenever it exists, with or without `CW_EDITION`; to run the Community edition, remove the directory.
 
 ## Install
 
@@ -129,6 +137,8 @@ To run the connector as a separate service in your stack, set `WHATSAPP_CONNECTO
 
 To pin a version, use its release tag instead of `latest`.
 
+`-ee` tags are no longer published; existing installations using them keep running but stay on the last published version without updates. To keep receiving updates, switch to `ghcr.io/fazer-ai/chatwoot`, using `latest` or a version tag without `-ee`, and set `CW_EDITION=ee` on web and Sidekiq. With this setting, the first boot of each version downloads the Enterprise code from the official Chatwoot tag and takes a few extra seconds: it needs outbound access to GitHub and a persistent `/app/storage` volume shared by web and Sidekiq, already provided by the example Compose configurations and the installer. If you use the standard image without Enterprise, nothing changes; see [Chatwoot Enterprise](#chatwoot-enterprise) for details.
+
 ### Migrate from official Chatwoot
 
 1. Choose a fork version equal to or newer than your installed version.
@@ -161,4 +171,4 @@ See [NOTICE](NOTICE) and [LICENSE](LICENSE) for the full terms.
 - [Official Chatwoot](https://www.chatwoot.com)
 - [Official Chatwoot source code](https://github.com/chatwoot/chatwoot)
 
-Maintained by fazer.ai, Chatwoot's official partner in Brazil.
+Maintained by fazer.ai.

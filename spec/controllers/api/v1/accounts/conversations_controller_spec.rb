@@ -886,6 +886,24 @@ RSpec.describe 'Conversations API', type: :request do
         expect(conversation.reload.status).to eq('resolved')
       end
 
+      # Opening a bot conversation self-assigns the agent, which is a claim.
+      it 'answers 409 when opening a bot conversation while the inbox is closed' do
+        conversation.update!(status: 'pending', assignee: nil)
+        conversation.inbox.update!(working_hours_enabled: true, restrict_assignment_to_working_hours: true)
+
+        travel_to(Time.utc(2026, 11, 8, 12)) do
+          post "/api/v1/accounts/#{account.id}/conversations/#{conversation.display_id}/toggle_status",
+               headers: agent.create_new_auth_token,
+               params: { status: 'open' },
+               as: :json
+        end
+
+        expect(response).to have_http_status(:conflict)
+        expect(response.parsed_body['reason']).to eq('outside_working_hours')
+        expect(conversation.reload.assignee).to be_nil
+        expect(conversation.status).to eq('pending')
+      end
+
       # Regression: reopening self-assigns the agent, and that used to be a
       # second save. `previous_changes` only carries the last save, so the
       # status callbacks (reopen activity message, automations, reporting) went
@@ -2397,6 +2415,42 @@ RSpec.describe 'Conversations API', type: :request do
 
         expect(response).to have_http_status(:ok)
       end
+    end
+  end
+
+  describe 'POST /api/v1/accounts/{account.id}/conversations/:id/fetch_history_media' do
+    let(:channel) { create(:channel_whatsapp, account: account, provider: 'native', validate_provider_config: false, sync_templates: false) }
+    let(:conversation) { create(:conversation, account: account, inbox: channel.inbox) }
+    let(:url) { "/api/v1/accounts/#{account.id}/conversations/#{conversation.display_id}/fetch_history_media" }
+    let(:agent) { create(:user, account: account, role: :agent) }
+
+    it 'queues the files of the conversation for whoever reads it' do
+      create(:inbox_member, user: agent, inbox: channel.inbox)
+
+      expect do
+        post url, headers: agent.create_new_auth_token, as: :json
+      end.to have_enqueued_job(Whatsapp::Session::ConversationHistoryMediaJob).with(conversation)
+
+      expect(response).to have_http_status(:accepted)
+    end
+
+    it 'refuses an agent who cannot see the inbox' do
+      expect do
+        post url, headers: agent.create_new_auth_token, as: :json
+      end.not_to have_enqueued_job(Whatsapp::Session::ConversationHistoryMediaJob)
+
+      expect(response).to have_http_status(:unauthorized)
+    end
+
+    it 'refuses an inbox the session layer does not serve' do
+      cloud = create(:channel_whatsapp, account: account, provider: 'whatsapp_cloud', validate_provider_config: false, sync_templates: false)
+      create(:inbox_member, user: agent, inbox: cloud.inbox)
+      other = create(:conversation, account: account, inbox: cloud.inbox)
+
+      post "/api/v1/accounts/#{account.id}/conversations/#{other.display_id}/fetch_history_media",
+           headers: agent.create_new_auth_token, as: :json
+
+      expect(response).to have_http_status(:unprocessable_entity)
     end
   end
 end

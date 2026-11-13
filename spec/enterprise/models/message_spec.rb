@@ -12,8 +12,6 @@ RSpec.describe Message do
     # In the test, we will check whether the time is within the range
     expect(conversation.waiting_since).to be_within(0.000001.seconds).of(conversation.created_at)
 
-    # Captain answers while it owns the conversation (pending)
-    conversation.update!(status: :pending)
     create(:message, message_type: :outgoing, conversation: conversation, sender: captain_assistant)
 
     # Captain::Assistant responses clear waiting_since (like AgentBot)

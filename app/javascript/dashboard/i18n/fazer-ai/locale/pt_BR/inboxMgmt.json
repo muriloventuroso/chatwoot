@@ -91,8 +91,16 @@
             "PROXY_URL": {
               "LABEL": "Proxy (opcional)",
               "PLACEHOLDER": "socks5://usuario:senha{'@'}host:porta",
-              "DESCRIPTION": "O WhatsApp desta caixa de entrada sai por este endereço. Deixe vazio para conectar direto. As ligações do WhatsApp não passam por proxy: salvar um proxy desliga as chamadas desta caixa de entrada.",
+              "DESCRIPTION": "O WhatsApp desta caixa de entrada sai por este endereço. Deixe vazio para conectar direto.",
               "ERROR": "Use um endereço http, https ou socks5 com host"
+            },
+            "HISTORY_MEDIA": {
+              "TITLE": "Arquivos do histórico importado",
+              "DESCRIPTION": "O histórico importado chega sem os arquivos. Com esta opção ligada, imagens, áudios e documentos são baixados em segundo plano depois da importação, dos mais novos para os mais antigos, enquanto o WhatsApp ainda os tiver. Arquivos mais antigos podem ser baixados pela conversa.",
+              "FETCH_LABEL": "Baixar os arquivos automaticamente",
+              "DAYS_LABEL": "Só arquivos dos últimos (dias)",
+              "DAYS_ERROR": "Informe um número inteiro de dias maior que zero.",
+              "SAVE": "Salvar"
             }
           }
         },
@@ -256,16 +264,6 @@
         "SUCCESS_MESSAGE": "Continuidade da conversa atualizada com sucesso"
       }
     },
-    "WHATSAPP_CALLING": {
-      "ENABLE": {
-        "PAIRED_DESCRIPTION": "Permite que os agentes recebam e façam ligações de WhatsApp nesta caixa, pelo celular pareado com ela. Os clientes podem ligar para este número direto pelo WhatsApp.",
-        "PROXY_BLOCKED": "Esta caixa de entrada sai por um proxy, e as ligações do WhatsApp não passam por proxy: a voz vai direto do servidor para o WhatsApp. Para ativar as chamadas, remova o proxy na aba {tab}.",
-        "CONNECTOR_WITHOUT_CALLS": "O conector de WhatsApp desta instalação não transmite a voz das ligações. Para ativar as chamadas, defina WAC_CALLS_UDP_PORT (por exemplo 40000) e publique essa porta em UDP no contêiner onde o conector roda (o worker do Sidekiq, no modo embutido). Atrás de NAT, defina também WAC_CALLS_PUBLIC_IP com o IP público do servidor."
-      },
-      "INBOUND_PHONE": {
-        "DESCRIPTION": "Permite que os clientes liguem para este número e que a chamada toque para os agentes aqui. Quando desativado, o Chatwoot não toca e as chamadas continuam tocando apenas no celular pareado. Os agentes ainda podem fazer chamadas de saída."
-      }
-    },
     "BUSINESS_HOURS": {
       "HOLIDAYS": {
         "TITLE": "Feriados",
@@ -280,7 +278,9 @@
         "MESSAGE_PLACEHOLDER": "Deixe vazio para usar a mensagem de indisponibilidade padrão",
         "REMOVE": "Remover feriado",
         "DATE_REQUIRED": "Escolha uma data para este feriado."
-      }
+      },
+      "RESTRICT_ASSIGNMENT": "Só atribuir conversas dentro do horário de funcionamento",
+      "RESTRICT_ASSIGNMENT_HELP": "Fora do horário acima, os agentes não conseguem atribuir conversas desta caixa, nem a si mesmos nem a outras pessoas, e a atribuição automática não as distribui. Com a atribuição V2, o que chegou com a caixa fechada é distribuído quando ela abre. Administradores continuam podendo atribuir a qualquer hora."
     }
   }
 }

@@ -20,7 +20,6 @@ module Enterprise::SearchService
   def build_where_conditions
     conditions = { account_id: current_account.id }
     conditions[:inbox_id] = accessable_inbox_ids unless should_skip_inbox_filtering?
-    conditions[:conversation_id] = searched_conversation.id if params[:conversation_id].present?
     conditions
   end
 
@@ -48,17 +47,14 @@ module Enterprise::SearchService
 
   def apply_time_range_filter(where_conditions)
     time_conditions = {}
-    since = enforce_time_limit(params[:since])
-    time_conditions[:gte] = since if since
+    time_conditions[:gte] = enforce_time_limit(params[:since])
     time_conditions[:lte] = cap_until_time(params[:until]) if params[:until].present?
 
     where_conditions[:created_at] = time_conditions if time_conditions.any?
   end
 
   def enforce_time_limit(since_param)
-    return cap_since_time(since_param) if since_param.present?
-
-    search_window_start if params[:conversation_id].blank?
+    since_param.present? ? cap_since_time(since_param) : search_window_start
   end
 
   def apply_inbox_filter(where_conditions)

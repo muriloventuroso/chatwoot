@@ -27,9 +27,13 @@
     },
     "ASSIGNMENT_CONFLICT": {
       "TITLE": "Conversa já atribuída",
-      "DESCRIPTION": "{agentName} já está atendendo a esta conversa. Peça para ele liberá-la ou peça a um administrador para reatribuí-la.",
-      "DESCRIPTION_UNKNOWN_AGENT": "Outro agente já está atendendo a esta conversa. Peça para ele liberá-la ou peça a um administrador para reatribuí-la.",
-      "CONFIRM": "Entendi"
+      "DESCRIPTION": "{agentName} já está atendendo esta conversa. Peça para liberar, ou peça a um administrador para reatribuir.",
+      "DESCRIPTION_UNKNOWN_AGENT": "Outro agente já está atendendo esta conversa. Peça para liberar, ou peça a um administrador para reatribuir.",
+      "CONFIRM": "Entendi",
+      "OUTSIDE_WORKING_HOURS": {
+        "TITLE": "Caixa fora do horário de funcionamento",
+        "DESCRIPTION": "As conversas desta caixa só podem ser atribuídas dentro do horário de funcionamento. Tente de novo quando ela abrir, ou peça a um administrador."
+      }
     },
     "CHANGE_TEAM_FAILED": "Falha ao alterar a equipe",
     "MESSAGE_DELETED_BY_CONTACT": "Apagada pelo contato",
@@ -115,7 +119,6 @@
       }
     },
     "HEADER": {
-      "WHATSAPP_CALL_GROUP_UNSUPPORTED": "Não é possível ligar para um grupo pelo WhatsApp",
       "MESSAGE_SEARCH": {
         "BUTTON": "Buscar nesta conversa",
         "PLACEHOLDER": "Buscar mensagens nesta conversa",
@@ -124,7 +127,17 @@
         "ERROR": "Não foi possível buscar as mensagens. Tente de novo."
       }
     },
-    "WHATSAPP_NUMBER_MISSING_BANNER": "Este número não tinha WhatsApp na verificação de {date}. Mensagens enviadas para ele não são entregues."
+    "WHATSAPP_NUMBER_MISSING_BANNER": "Este número não tinha WhatsApp na verificação de {date}. Mensagens enviadas para ele não são entregues.",
+    "HISTORY_MEDIA": {
+      "PENDING": "Este arquivo do histórico importado ainda não foi baixado.",
+      "DOWNLOAD": "Baixar arquivo",
+      "REQUESTED": "Download solicitado. O arquivo aparece aqui quando chegar.",
+      "ERROR": "Não foi possível pedir o download. Tente de novo.",
+      "UNAVAILABLE": "Este arquivo não está mais disponível no WhatsApp.",
+      "DOWNLOAD_ALL": "Baixar arquivos do histórico",
+      "DOWNLOAD_ALL_REQUESTED": "Baixando os arquivos do histórico desta conversa. Eles aparecem conforme chegarem.",
+      "DOWNLOAD_ALL_ERROR": "Não foi possível pedir os arquivos do histórico. Tente de novo."
+    }
   },
   "CONVERSATION_SIDEBAR": {
     "ACCORDION": {

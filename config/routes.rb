@@ -201,6 +201,7 @@ Rails.application.routes.draw do
                   post :translate
                   post :retry
                   patch :edit_content
+                  post :fetch_media
                 end
                 resources :attachments, only: [:update]
                 scope module: :messages do
@@ -240,6 +241,7 @@ Rails.application.routes.draw do
               get :attachments
               get :inbox_assistant
               post :sync_history
+              post :fetch_history_media
               post :recheck_whatsapp_number
               get :reporting_events if ChatwootApp.enterprise?
             end
@@ -387,7 +389,6 @@ Rails.application.routes.draw do
               end
               collection do
                 post :initiate
-                patch :ai_voice, to: 'whatsapp_ai_voice#update'
               end
             end
           end
@@ -421,7 +422,6 @@ Rails.application.routes.draw do
               end
               post :enable_whatsapp_calling, on: :member
               post :disable_whatsapp_calling, on: :member
-              get :whatsapp_calling_status, on: :member
               post :set_inbound_calls, on: :member
               post :set_call_recording, on: :member
             end

@@ -1,8 +1,4 @@
 class Sla::BusinessHoursService
-  # Upper bound when scanning for the next business day, so long holiday
-  # stretches (e.g. Christmas through New Year plus weekends) are skipped.
-  MAX_BUSINESS_DAY_SEARCH = 366
-
   pattr_initialize [:inbox!, :start_time!, :threshold_seconds!, { working_hours_by_day_cache: nil }]
 
   def deadline
@@ -45,23 +41,7 @@ class Sla::BusinessHoursService
   end
 
   def closed_day?(working_hour)
-    working_hour.nil? || working_hour.closed_all_day? || holiday?(@current_time.to_date)
-  end
-
-  def holiday?(date)
-    specific_holiday_dates.include?(date) || recurring_holiday_month_days.include?([date.month, date.day])
-  end
-
-  def specific_holiday_dates
-    @specific_holiday_dates ||= holidays.reject(&:recurring?).to_set { |holiday| Date.new(holiday.year, holiday.month, holiday.day) }
-  end
-
-  def recurring_holiday_month_days
-    @recurring_holiday_month_days ||= holidays.select(&:recurring?).to_set { |holiday| [holiday.month, holiday.day] }
-  end
-
-  def holidays
-    @holidays ||= inbox.inbox_holidays.to_a
+    working_hour.nil? || working_hour.closed_all_day?
   end
 
   # Returns true if current_time was adjusted within the same day, false if moved to next day
@@ -109,11 +89,9 @@ class Sla::BusinessHoursService
 
   def next_business_day_start(current_time)
     next_day = (current_time + 1.day).beginning_of_day
-    MAX_BUSINESS_DAY_SEARCH.times do
+    7.times do
       working_hour = working_hour_for(next_day)
-      if working_hour && !working_hour.closed_all_day? && !holiday?(next_day.to_date)
-        return time_on_date(next_day, working_hour.open_hour, working_hour.open_minutes)
-      end
+      return time_on_date(next_day, working_hour.open_hour, working_hour.open_minutes) if working_hour && !working_hour.closed_all_day?
 
       next_day += 1.day
     end

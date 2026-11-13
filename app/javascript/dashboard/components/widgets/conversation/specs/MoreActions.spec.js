@@ -12,7 +12,10 @@ const openDialog = vi.fn();
 vi.mock('vuex', () => ({
   useStore: () => ({
     dispatch,
-    getters: { getSelectedChat: { id: 42, status: 'open', muted: false } },
+    getters: {
+      getSelectedChat: { id: 42, status: 'open', muted: false },
+      'inboxes/getInbox': () => ({}),
+    },
   }),
 }));
 vi.mock('vue-router', () => ({ useRouter: () => ({ push }) }));
