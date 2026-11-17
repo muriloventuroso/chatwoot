@@ -149,6 +149,16 @@ const previewArticle = () => {
   });
 };
 
+// Categories are loaded per locale by the route view, so reload them for the
+// translation's locale; the route view remounts this page for the new article.
+const switchTranslation = ({ id, locale }) => {
+  store.dispatch('categories/index', { portalSlug, locale });
+  router.push({
+    name: 'portals_articles_edit',
+    params: { portalSlug, locale, articleSlug: id },
+  });
+};
+
 onMounted(fetchArticleDetails);
 </script>
 
@@ -160,5 +170,6 @@ onMounted(fetchArticleDetails);
     @save-article="saveArticle"
     @preview-article="previewArticle"
     @go-back="goBackToArticles"
+    @switch-translation="switchTranslation"
   />
 </template>

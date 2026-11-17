@@ -3,12 +3,15 @@ import { ref, computed, watch, onBeforeUnmount, useTemplateRef } from 'vue';
 import { useTimeoutFn, useStorage } from '@vueuse/core';
 import { onBeforeRouteLeave } from 'vue-router';
 import { useI18n } from 'vue-i18n';
+import { OnClickOutside } from '@vueuse/components';
 import { useAlert } from 'dashboard/composables';
 import { ARTICLE_EDITOR_MENU_OPTIONS } from 'dashboard/constants/editor';
+import allLocales from 'shared/constants/locales.js';
 
 import HelpCenterLayout from 'dashboard/components-next/HelpCenter/HelpCenterLayout.vue';
 import TextArea from 'dashboard/components-next/textarea/TextArea.vue';
 import Button from 'dashboard/components-next/button/Button.vue';
+import DropdownMenu from 'dashboard/components-next/dropdown-menu/DropdownMenu.vue';
 import FullEditor from 'dashboard/components/widgets/WootWriter/FullEditor.vue';
 import ArticleEditorHeader from 'dashboard/components-next/HelpCenter/Pages/ArticleEditorPage/ArticleEditorHeader.vue';
 import ArticleEditorControls from 'dashboard/components-next/HelpCenter/Pages/ArticleEditorPage/ArticleEditorControls.vue';
@@ -36,6 +39,7 @@ const emit = defineEmits([
   'setCategory',
   'previewArticle',
   'createArticle',
+  'switchTranslation',
 ]);
 
 const { t } = useI18n();
@@ -71,6 +75,35 @@ const toggleMarkdownMode = () => {
     return;
   }
   isMarkdownMode.value = !isMarkdownMode.value;
+};
+
+// The payload carries the whole translation family except this article.
+const translations = computed(() => props.article?.associatedArticles ?? []);
+const showLocaleMenu = ref(false);
+
+const localeLabel = code => `${allLocales[code] || code} (${code})`;
+
+const localeMenuItems = computed(() =>
+  [props.article, ...translations.value].map(({ id, locale }) => ({
+    label: localeLabel(locale),
+    value: id,
+    action: 'switchTranslation',
+    isSelected: id === props.article.id,
+  }))
+);
+
+const switchTranslation = ({ value }) => {
+  showLocaleMenu.value = false;
+  if (value === props.article.id) return;
+  // Switching remounts the editor, which would drop its in-flight uploads.
+  if (hasPendingUploads()) {
+    useAlert(t('HELP_CENTER.EDIT_ARTICLE_PAGE.HEADER.UPLOAD_IN_PROGRESS'));
+    return;
+  }
+  emit(
+    'switchTranslation',
+    translations.value.find(({ id }) => id === value)
+  );
 };
 
 // Files picked between the create dispatch and its redirect would die with
@@ -244,19 +277,39 @@ const handleCreateArticle = event => {
             @set-category="setCategoryId"
             @preview-article="previewArticle"
           />
-          <Button
-            :label="
-              isMarkdownMode
-                ? t('HELP_CENTER.ARTICLE_EDITOR.VISUAL_MODE')
-                : t('HELP_CENTER.ARTICLE_EDITOR.MARKDOWN_MODE')
-            "
-            :icon="isMarkdownMode ? 'i-lucide-pencil-line' : 'i-lucide-code'"
-            variant="ghost"
-            color="slate"
-            size="sm"
-            class="flex-shrink-0"
-            @click="toggleMarkdownMode"
-          />
+          <div class="flex items-center flex-shrink-0 gap-2">
+            <div v-if="translations.length" class="relative">
+              <OnClickOutside @trigger="showLocaleMenu = false">
+                <Button
+                  :label="localeLabel(article.locale)"
+                  :title="t('HELP_CENTER.EDIT_ARTICLE_PAGE.SWITCH_LANGUAGE')"
+                  icon="i-lucide-languages"
+                  variant="ghost"
+                  color="slate"
+                  size="sm"
+                  @click="showLocaleMenu = !showLocaleMenu"
+                />
+                <DropdownMenu
+                  v-if="showLocaleMenu"
+                  :menu-items="localeMenuItems"
+                  class="w-56 mt-2 z-[100] ltr:right-0 rtl:left-0 top-full"
+                  @action="switchTranslation"
+                />
+              </OnClickOutside>
+            </div>
+            <Button
+              :label="
+                isMarkdownMode
+                  ? t('HELP_CENTER.ARTICLE_EDITOR.VISUAL_MODE')
+                  : t('HELP_CENTER.ARTICLE_EDITOR.MARKDOWN_MODE')
+              "
+              :icon="isMarkdownMode ? 'i-lucide-pencil-line' : 'i-lucide-code'"
+              variant="ghost"
+              color="slate"
+              size="sm"
+              @click="toggleMarkdownMode"
+            />
+          </div>
         </div>
       </div>
       <TextArea

@@ -82,7 +82,8 @@
       "ARTICLE_PROPERTIES": {
         "GENERATE_TAGS": "Generar con IA",
         "GENERATE_TAGS_ERROR": "No se pudieron generar las etiquetas. Revisa la integración con OpenAI e inténtalo de nuevo."
-      }
+      },
+      "SWITCH_LANGUAGE": "Cambiar idioma"
     }
   }
 }

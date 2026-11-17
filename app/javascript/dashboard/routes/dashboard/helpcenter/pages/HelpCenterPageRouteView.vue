@@ -69,7 +69,9 @@ watch(
       v-if="isHelpCenterEnabled"
       class="flex flex-1 h-full px-0 overflow-hidden bg-n-surface-1"
     >
-      <router-view />
+      <!-- The edit page reads its article id once; remount it per article so
+           a queued autosave can't land on another translation. -->
+      <router-view :key="route.params.articleSlug" />
     </section>
     <UpgradePage v-else />
   </div>
