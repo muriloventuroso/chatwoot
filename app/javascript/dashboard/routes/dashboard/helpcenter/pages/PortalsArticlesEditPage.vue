@@ -135,10 +135,16 @@ const goBackToArticles = () => {
   }
 };
 
+// Categories in the store may belong to another locale (the article a
+// translation was created from), and picking one would move this article there.
 const fetchArticleDetails = () => {
   store.dispatch('articles/show', {
     id: articleSlug,
     portalSlug,
+  });
+  store.dispatch('categories/index', {
+    portalSlug,
+    locale: route.params.locale,
   });
 };
 
@@ -149,10 +155,8 @@ const previewArticle = () => {
   });
 };
 
-// Categories are loaded per locale by the route view, so reload them for the
-// translation's locale; the route view remounts this page for the new article.
+// The route view remounts this page for the new article, which loads its categories.
 const switchTranslation = ({ id, locale }) => {
-  store.dispatch('categories/index', { portalSlug, locale });
   router.push({
     name: 'portals_articles_edit',
     params: { portalSlug, locale, articleSlug: id },
