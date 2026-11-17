@@ -1,6 +1,6 @@
 <script setup>
 import { ref, computed, watch, onBeforeUnmount, useTemplateRef } from 'vue';
-import { useTimeoutFn } from '@vueuse/core';
+import { useTimeoutFn, useStorage } from '@vueuse/core';
 import { onBeforeRouteLeave } from 'vue-router';
 import { useI18n } from 'vue-i18n';
 import { useAlert } from 'dashboard/composables';
@@ -8,6 +8,7 @@ import { ARTICLE_EDITOR_MENU_OPTIONS } from 'dashboard/constants/editor';
 
 import HelpCenterLayout from 'dashboard/components-next/HelpCenter/HelpCenterLayout.vue';
 import TextArea from 'dashboard/components-next/textarea/TextArea.vue';
+import Button from 'dashboard/components-next/button/Button.vue';
 import FullEditor from 'dashboard/components/widgets/WootWriter/FullEditor.vue';
 import ArticleEditorHeader from 'dashboard/components-next/HelpCenter/Pages/ArticleEditorPage/ArticleEditorHeader.vue';
 import ArticleEditorControls from 'dashboard/components-next/HelpCenter/Pages/ArticleEditorPage/ArticleEditorControls.vue';
@@ -59,6 +60,18 @@ const diffPanelRef = ref(null);
 const editorRef = useTemplateRef('editorRef');
 
 const hasPendingUploads = () => !!editorRef.value?.hasPendingUploads();
+
+// Content is stored as markdown, so the raw mode edits the same value directly.
+const isMarkdownMode = useStorage('help-center:article-markdown-mode', false);
+
+const toggleMarkdownMode = () => {
+  // Unmounting the rich editor would drop its in-flight uploads.
+  if (hasPendingUploads()) {
+    useAlert(t('HELP_CENTER.EDIT_ARTICLE_PAGE.HEADER.UPLOAD_IN_PROGRESS'));
+    return;
+  }
+  isMarkdownMode.value = !isMarkdownMode.value;
+};
 
 // Files picked between the create dispatch and its redirect would die with
 // this editor instance; hold them off for that window.
@@ -223,15 +236,44 @@ const handleCreateArticle = event => {
           :autofocus="isNewArticle"
           @blur="handleCreateArticle"
         />
-        <ArticleEditorControls
-          :article="article"
-          @save-article="values => emit('saveArticle', values)"
-          @set-author="setAuthorId"
-          @set-category="setCategoryId"
-          @preview-article="previewArticle"
-        />
+        <div class="flex items-center justify-between gap-4">
+          <ArticleEditorControls
+            :article="article"
+            @save-article="values => emit('saveArticle', values)"
+            @set-author="setAuthorId"
+            @set-category="setCategoryId"
+            @preview-article="previewArticle"
+          />
+          <Button
+            :label="
+              isMarkdownMode
+                ? t('HELP_CENTER.ARTICLE_EDITOR.VISUAL_MODE')
+                : t('HELP_CENTER.ARTICLE_EDITOR.MARKDOWN_MODE')
+            "
+            :icon="isMarkdownMode ? 'i-lucide-pencil-line' : 'i-lucide-code'"
+            variant="ghost"
+            color="slate"
+            size="sm"
+            class="flex-shrink-0"
+            @click="toggleMarkdownMode"
+          />
+        </div>
       </div>
+      <TextArea
+        v-if="isMarkdownMode"
+        v-model="articleContent"
+        auto-height
+        min-height="60vh"
+        max-height="none"
+        class="pb-10 pl-4 rtl:pr-4 rtl:pl-0"
+        custom-text-area-class="font-mono !text-sm !leading-6"
+        :placeholder="
+          t('HELP_CENTER.EDIT_ARTICLE_PAGE.EDIT_ARTICLE.EDITOR_PLACEHOLDER')
+        "
+        :autofocus="!isNewArticle"
+      />
       <FullEditor
+        v-else
         ref="editorRef"
         v-model="articleContent"
         :editor-id="editorSessionId"

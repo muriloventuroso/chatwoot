@@ -74,7 +74,9 @@
         "LEFT": "Align left",
         "CENTER": "Align center",
         "RIGHT": "Align right"
-      }
+      },
+      "MARKDOWN_MODE": "Edit as Markdown",
+      "VISUAL_MODE": "Visual editor"
     },
     "EDIT_ARTICLE_PAGE": {
       "ARTICLE_PROPERTIES": {
