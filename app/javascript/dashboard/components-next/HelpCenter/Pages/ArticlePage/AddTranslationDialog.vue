@@ -7,7 +7,8 @@ import { useAlert } from 'dashboard/composables';
 import categoriesAPI from 'dashboard/api/helpCenter/categories.js';
 
 import Dialog from 'dashboard/components-next/dialog/Dialog.vue';
-import ComboBox from 'dashboard/components-next/combobox/ComboBox.vue';
+import ProjectSelect from 'dashboard/routes/dashboard/projects/components/ProjectSelect.vue';
+import { provideDropdownTeleport } from 'dashboard/components-next/dropdown-menu/base/provider';
 
 const props = defineProps({
   article: {
@@ -21,6 +22,9 @@ const props = defineProps({
 });
 
 const emit = defineEmits(['translationCreated']);
+
+// Selects open over the dialog instead of scrolling inside its body.
+provideDropdownTeleport();
 
 const { t } = useI18n();
 const store = useStore();
@@ -151,13 +155,12 @@ defineExpose({ dialogRef });
         <span class="text-sm font-medium text-n-slate-12">
           {{ t('HELP_CENTER.ARTICLES_PAGE.ADD_TRANSLATION.LOCALE_LABEL') }}
         </span>
-        <ComboBox
+        <ProjectSelect
           v-model="selectedLocale"
           :options="localeOptions"
           :placeholder="
             t('HELP_CENTER.ARTICLES_PAGE.ADD_TRANSLATION.LOCALE_PLACEHOLDER')
           "
-          class="[&>div>button:not(.focused)]:!outline-n-slate-5 [&>div>button:not(.focused)]:dark:!outline-n-slate-5"
         />
       </div>
       <div class="flex flex-col gap-2">
@@ -167,14 +170,19 @@ defineExpose({ dialogRef });
             {{ t('HELP_CENTER.ARTICLES_PAGE.ADD_TRANSLATION.OPTIONAL') }}
           </span>
         </span>
-        <ComboBox
+        <ProjectSelect
           v-model="selectedCategoryId"
           :options="categoryOptions"
-          :disabled="!selectedLocale || isFetchingCategories"
           :placeholder="
             t('HELP_CENTER.ARTICLES_PAGE.ADD_TRANSLATION.CATEGORY_PLACEHOLDER')
           "
-          class="[&>div>button:not(.focused)]:!outline-n-slate-5 [&>div>button:not(.focused)]:dark:!outline-n-slate-5"
+          :trigger-class="[
+            'h-10 bg-n-solid-1 text-n-slate-12',
+            {
+              'pointer-events-none opacity-50':
+                !selectedLocale || isFetchingCategories,
+            },
+          ]"
         />
       </div>
     </div>
