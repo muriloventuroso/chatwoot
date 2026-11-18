@@ -248,6 +248,36 @@ RSpec.describe Integrations::Hook do
     end
   end
 
+  describe '#llm_credential' do
+    let(:account) { create(:account) }
+
+    before do
+      allow(Integrations::Openai::KeyValidator).to receive(:valid?).and_return(true)
+      allow(Integrations::Claude::KeyValidator).to receive(:valid?).and_return(true)
+    end
+
+    it 'returns the anthropic credential with the model chosen in the settings' do
+      hook = create(:integrations_hook, :claude, account: account,
+                                                 settings: { 'api_key' => 'claude-key', 'model' => 'claude-sonnet-4-5' })
+
+      expect(hook.llm_credential).to eq(
+        { api_key: 'claude-key', source: :hook, provider: 'anthropic', model: 'claude-sonnet-4-5' }
+      )
+    end
+
+    it 'defaults the model for claude hooks connected before the setting existed' do
+      hook = create(:integrations_hook, :claude, account: account, settings: { 'api_key' => 'claude-key' })
+
+      expect(hook.llm_credential[:model]).to eq('claude-haiku-4-5')
+    end
+
+    it 'returns the openai credential without a model' do
+      hook = create(:integrations_hook, :openai, account: account, settings: { 'api_key' => 'openai-key' })
+
+      expect(hook.llm_credential).to eq({ api_key: 'openai-key', source: :hook, provider: 'openai' })
+    end
+  end
+
   describe 'claude api key validation' do
     let(:account) { create(:account) }
 

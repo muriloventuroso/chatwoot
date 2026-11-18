@@ -401,7 +401,7 @@ RSpec.describe Captain::BaseTaskService do
         create(:integrations_hook, :claude, account: account, settings: { 'api_key' => 'claude-key' })
 
         expect(hook_opted_service.send(:llm_credential)).to eq(
-          { api_key: 'claude-key', source: :hook, provider: 'anthropic' }
+          { api_key: 'claude-key', source: :hook, provider: 'anthropic', model: 'claude-haiku-4-5' }
         )
       end
 
@@ -429,6 +429,53 @@ RSpec.describe Captain::BaseTaskService do
         )
 
         expect(result[:message]).to eq('Response')
+      end
+
+      it 'uses the model chosen in the claude settings' do
+        create(:integrations_hook, :claude, account: account,
+                                            settings: { 'api_key' => 'claude-key', 'model' => 'claude-sonnet-4-5' })
+        mock_chat = instance_double(RubyLLM::Chat)
+        mock_context = instance_double(RubyLLM::Context)
+        mock_response = instance_double(
+          RubyLLM::Message, content: 'Response', tokens: RubyLLM::Tokens.new(input: 10, output: 20)
+        )
+        allow(mock_context).to receive(:chat).with(model: 'claude-sonnet-4-5').and_return(mock_chat)
+        allow(mock_chat).to receive(:with_instructions)
+        allow(mock_chat).to receive(:ask).and_return(mock_response)
+        allow(Llm::Config).to receive(:with_api_key).with('claude-key', provider: 'anthropic').and_yield(mock_context)
+
+        result = hook_opted_service.send(
+          :make_api_call, messages: [{ role: 'system', content: 'Test' }, { role: 'user', content: 'Hello' }]
+        )
+
+        expect(result[:message]).to eq('Response')
+      end
+
+      it 'falls back to the openai hook when the Claude call fails' do
+        create(:integrations_hook, :claude, account: account, settings: { 'api_key' => 'claude-key' })
+        create(:integrations_hook, :openai, account: account, settings: { 'api_key' => 'openai-key' })
+        claude_chat = instance_double(RubyLLM::Chat)
+        openai_chat = instance_double(RubyLLM::Chat)
+        claude_context = instance_double(RubyLLM::Context)
+        openai_context = instance_double(RubyLLM::Context)
+        mock_response = instance_double(
+          RubyLLM::Message, content: 'Fallback response', tokens: RubyLLM::Tokens.new(input: 10, output: 20)
+        )
+        allow(claude_context).to receive(:chat).and_return(claude_chat)
+        allow(claude_chat).to receive(:with_instructions)
+        allow(claude_chat).to receive(:ask).and_raise(StandardError, 'Claude is down')
+        allow(openai_context).to receive(:chat).with(model: 'gpt-4.1-mini', protocol: :responses).and_return(openai_chat)
+        allow(openai_chat).to receive(:with_instructions)
+        allow(openai_chat).to receive(:ask).and_return(mock_response)
+        allow(Llm::Config).to receive(:with_api_key) do |api_key, **_options, &block|
+          block.call(api_key == 'claude-key' ? claude_context : openai_context)
+        end
+
+        result = hook_opted_service.send(
+          :make_api_call, messages: [{ role: 'system', content: 'Test' }, { role: 'user', content: 'Hello' }]
+        )
+
+        expect(result[:message]).to eq('Fallback response')
       end
     end
 

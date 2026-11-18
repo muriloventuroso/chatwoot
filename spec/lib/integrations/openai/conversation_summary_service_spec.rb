@@ -84,7 +84,7 @@ RSpec.describe Integrations::Openai::ConversationSummaryService do
       described_class.new(conversation: conversation, user: user).perform
 
       expect(Integrations::Claude::ChatService).to have_received(:new)
-        .with(api_key: 'claude-key', messages: array_including(hash_including(role: 'system')))
+        .with(api_key: 'claude-key', model: 'claude-haiku-4-5', messages: array_including(hash_including(role: 'system')))
       expect(conversation.messages.where(private: true).last.content).to include('Customer is waiting for a missing order.')
       expect(openai_client).not_to have_received(:chat)
     end
@@ -96,6 +96,34 @@ RSpec.describe Integrations::Openai::ConversationSummaryService do
 
       expect(Integrations::Claude::ChatService).to have_received(:new).with(hash_including(api_key: 'claude-key'))
       expect(openai_client).not_to have_received(:chat)
+    end
+
+    it 'uses the model chosen in the claude settings' do
+      create(:integrations_hook, :claude, account: account, settings: { 'api_key' => 'claude-key', 'model' => 'claude-sonnet-4-5' })
+
+      described_class.new(conversation: conversation, user: user).perform
+
+      expect(Integrations::Claude::ChatService).to have_received(:new).with(hash_including(model: 'claude-sonnet-4-5'))
+    end
+
+    it 'falls back to OpenAI when the Claude call fails' do
+      create(:integrations_hook, :claude, account: account, settings: { 'api_key' => 'claude-key' })
+      allow(claude_chat).to receive(:perform).and_raise(Faraday::UnauthorizedError)
+
+      described_class.new(conversation: conversation, user: user).perform
+
+      expect(openai_client).to have_received(:chat)
+      expect(conversation.messages.where(private: true).last.content).to include('Customer is waiting for a missing order.')
+    end
+
+    it 'raises when the Claude call fails and OpenAI is not connected' do
+      account.hooks.find_by(app_id: 'openai').destroy!
+      create(:integrations_hook, :claude, account: account, settings: { 'api_key' => 'claude-key' })
+      allow(claude_chat).to receive(:perform).and_raise(Faraday::UnauthorizedError)
+
+      expect do
+        described_class.new(conversation: conversation, user: user).perform
+      end.to raise_error(Faraday::UnauthorizedError)
     end
 
     it 'does not summarize when the claude hook was turned off after the request' do

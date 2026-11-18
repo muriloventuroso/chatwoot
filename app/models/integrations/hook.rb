@@ -62,6 +62,18 @@ class Integrations::Hook < ApplicationRecord
     hooks.find_by(app_id: 'claude') || hooks.find_by(app_id: 'openai')
   end
 
+  # The credential the Captain editor tasks run with when this hook is the
+  # account's LLM hook: its key, which provider it belongs to and, for Claude,
+  # the model chosen in the integration settings.
+  def llm_credential
+    key = settings&.dig('api_key').presence
+    return unless key
+
+    credential = { api_key: key, source: :hook, provider: claude? ? 'anthropic' : 'openai' }
+    credential[:model] = Integrations::Claude::ChatService.selected_model(settings) if claude?
+    credential
+  end
+
   def app
     @app ||= Integrations::App.find(id: app_id)
   end

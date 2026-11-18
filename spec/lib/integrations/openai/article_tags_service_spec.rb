@@ -49,6 +49,14 @@ RSpec.describe Integrations::Openai::ArticleTagsService do
       expect(Integrations::Claude::ChatService).to have_received(:new).with(hash_including(api_key: 'claude-key'))
       expect(openai_client).not_to have_received(:chat)
     end
+
+    it 'falls back to OpenAI when the Claude call fails' do
+      create(:integrations_hook, :claude, account: account, settings: { 'api_key' => 'claude-key' })
+      allow(claude_chat).to receive(:perform).and_raise(Faraday::TimeoutError)
+
+      expect(described_class.new(article: article).perform).to eq(%w[Billing Invoices])
+      expect(openai_client).to have_received(:chat)
+    end
   end
 
   it 'sends the draft content and offers the tags already used in the portal locale' do

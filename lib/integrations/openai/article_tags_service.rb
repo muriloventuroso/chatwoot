@@ -15,9 +15,18 @@ class Integrations::Openai::ArticleTagsService
   private
 
   def reply_content
-    return claude_reply if llm_hook.claude?
+    return openai_reply(llm_hook) unless llm_hook.claude?
 
-    response = client.chat(
+    claude_reply
+  rescue Faraday::Error => e
+    raise unless llm_hook.claude? && openai_hook
+
+    Rails.logger.warn("[claude] Article tags failed (#{e.class}), falling back to OpenAI")
+    openai_reply(openai_hook)
+  end
+
+  def openai_reply(hook)
+    response = client_for(hook).chat(
       parameters: {
         model: Llm::Config::DEFAULT_MODEL,
         response_format: { type: 'json_object' },
@@ -29,7 +38,9 @@ class Integrations::Openai::ArticleTagsService
 
   def claude_reply
     content = Integrations::Claude::ChatService.new(
-      api_key: llm_hook.settings['api_key'], messages: prompt_messages
+      api_key: llm_hook.settings['api_key'],
+      model: Integrations::Claude::ChatService.selected_model(llm_hook.settings),
+      messages: prompt_messages
     ).perform
     # Claude has no JSON mode, so it may wrap the reply in a code fence despite the prompt.
     content.to_s.sub(/\A```(?:json)?\s*/, '').sub(/\s*```\z/, '')
@@ -65,9 +76,13 @@ class Integrations::Openai::ArticleTagsService
                   article.account.hooks.find_by!(app_id: 'openai', status: 'enabled')
   end
 
-  def client
+  def openai_hook
+    @openai_hook ||= article.account.hooks.enabled.find_by(app_id: 'openai')
+  end
+
+  def client_for(hook)
     OpenAI::Client.new(
-      access_token: llm_hook.settings['api_key'],
+      access_token: hook.settings['api_key'],
       uri_base: InstallationConfig.find_by(name: 'CAPTAIN_OPEN_AI_ENDPOINT')&.value.presence || 'https://api.openai.com/'
     )
   end

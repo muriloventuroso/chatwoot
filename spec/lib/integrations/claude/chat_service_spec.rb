@@ -43,6 +43,21 @@ RSpec.describe Integrations::Claude::ChatService do
     end.to raise_error(Faraday::UnauthorizedError)
   end
 
+  describe '.selected_model' do
+    it 'returns the model chosen in the integration settings' do
+      expect(described_class.selected_model({ 'model' => 'claude-sonnet-4-5' })).to eq('claude-sonnet-4-5')
+    end
+
+    it 'falls back to the default model when none was chosen' do
+      expect(described_class.selected_model({})).to eq('claude-haiku-4-5')
+      expect(described_class.selected_model(nil)).to eq('claude-haiku-4-5')
+    end
+
+    it 'falls back to the default model for an unknown model' do
+      expect(described_class.selected_model({ 'model' => 'claude-unknown-9' })).to eq('claude-haiku-4-5')
+    end
+  end
+
   it 'returns nil when the reply has no text' do
     stub_request(:post, messages_url).to_return(status: 200, body: { content: [] }.to_json)
 

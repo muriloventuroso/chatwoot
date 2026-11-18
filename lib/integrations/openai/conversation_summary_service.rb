@@ -37,9 +37,26 @@ class Integrations::Openai::ConversationSummaryService
   end
 
   def summarize
-    return Integrations::Claude::ChatService.new(api_key: llm_hook.settings['api_key'], messages: prompt_messages).perform if llm_hook.claude?
+    return openai_summary(llm_hook) unless llm_hook.claude?
 
-    response = client.chat(parameters: { model: Llm::Config::DEFAULT_MODEL, messages: prompt_messages })
+    claude_summary
+  rescue Faraday::Error => e
+    raise unless llm_hook.claude? && openai_hook
+
+    Rails.logger.warn("[claude] Conversation summary failed (#{e.class}), falling back to OpenAI")
+    openai_summary(openai_hook)
+  end
+
+  def claude_summary
+    Integrations::Claude::ChatService.new(
+      api_key: llm_hook.settings['api_key'],
+      model: Integrations::Claude::ChatService.selected_model(llm_hook.settings),
+      messages: prompt_messages
+    ).perform
+  end
+
+  def openai_summary(hook)
+    response = client_for(hook).chat(parameters: { model: Llm::Config::DEFAULT_MODEL, messages: prompt_messages })
     response.dig('choices', 0, 'message', 'content')
   end
 
@@ -74,9 +91,13 @@ class Integrations::Openai::ConversationSummaryService
     @llm_hook ||= Integrations::Hook.preferred_llm_hook(conversation.account)
   end
 
-  def client
+  def openai_hook
+    @openai_hook ||= conversation.account.hooks.enabled.find_by(app_id: 'openai')
+  end
+
+  def client_for(hook)
     OpenAI::Client.new(
-      access_token: llm_hook.settings['api_key'],
+      access_token: hook.settings['api_key'],
       uri_base: InstallationConfig.find_by(name: 'CAPTAIN_OPEN_AI_ENDPOINT')&.value.presence || 'https://api.openai.com/'
     )
   end

@@ -189,6 +189,11 @@ RSpec.describe Integrations::App do
         expect(app.params[:settings_json_schema]['required']).to eq(['api_key'])
       end
 
+      it 'offers the models the chat service can call' do
+        expect(app.params[:settings_json_schema]['properties']['model']['enum'])
+          .to eq(Integrations::Claude::ChatService::MODELS)
+      end
+
       it 'returns true if the account has hooks for the app' do
         create(:integrations_hook, :claude, account: account)
         expect(app.enabled?(account)).to be true

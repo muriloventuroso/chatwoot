@@ -58,7 +58,7 @@ class Captain::BaseTaskService
 
   def resolved_model(model:, feature:)
     # A model from another provider cannot be called with the Claude hook key.
-    return Integrations::Claude::ChatService::DEFAULT_MODEL if llm_credential&.dig(:provider) == 'anthropic'
+    return llm_credential[:model] || Integrations::Claude::ChatService::DEFAULT_MODEL if llm_credential&.dig(:provider) == 'anthropic'
     return model if feature.blank?
 
     route = Llm::FeatureRouter.resolve(feature: feature, account: account)
@@ -69,6 +69,18 @@ class Captain::BaseTaskService
 
   def execute_ruby_llm_request(model:, messages:, schema: nil, tools: [], feature: nil)
     credential = llm_credential
+    request = { model: model, messages: messages, schema: schema, tools: tools, feature: feature }
+    response = perform_ruby_llm_request(credential, request)
+    # When the Claude call fails, the account's OpenAI hook is the fallback. The
+    # installation key is not one: it would silently spend Captain credits.
+    fallback = account.hooks.enabled.find_by(app_id: 'openai')&.llm_credential if credential&.dig(:provider) == 'anthropic'
+    return response unless response[:error] && fallback
+
+    perform_ruby_llm_request(fallback, request.merge(model: Llm::Config::DEFAULT_MODEL))
+  end
+
+  def perform_ruby_llm_request(credential, request)
+    model, messages, schema, tools, feature = request.values_at(:model, :messages, :schema, :tools, :feature)
     key_options = credential[:provider] == 'anthropic' ? { provider: 'anthropic' } : { api_base: api_base }
 
     Llm::Config.with_api_key(credential[:api_key], **key_options) do |context|
@@ -174,13 +186,9 @@ class Captain::BaseTaskService
     llm_credential&.dig(:source) != :hook
   end
 
-  def api_key_configured?
-    llm_credential.present?
-  end
+  def api_key_configured? = llm_credential.present?
 
-  def api_key
-    llm_credential&.dig(:api_key)
-  end
+  def api_key = llm_credential&.dig(:api_key)
 
   def llm_credential
     @llm_credential ||= if use_account_openai_hook?
@@ -195,9 +203,7 @@ class Captain::BaseTaskService
   end
 
   def hook_llm_credential
-    hook = Integrations::Hook.preferred_llm_hook(account)
-    key = hook&.settings&.dig('api_key').presence
-    { api_key: key, source: :hook, provider: hook.claude? ? 'anthropic' : 'openai' } if key
+    Integrations::Hook.preferred_llm_hook(account)&.llm_credential
   end
 
   def system_llm_credential
@@ -234,8 +240,7 @@ class Captain::BaseTaskService
 
   def extract_original_context(messages)
     # Get the most recent user message for follow-up context
-    user_msg = messages.reverse.find { |m| m[:role] == 'user' }
-    user_msg ? user_msg[:content] : nil
+    messages.reverse.find { |m| m[:role] == 'user' }&.dig(:content)
   end
 end
 Captain::BaseTaskService.prepend_mod_with('Captain::BaseTaskService')

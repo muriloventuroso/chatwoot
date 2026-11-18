@@ -6,10 +6,19 @@ class Integrations::Claude::ChatService
   # Required by the Anthropic API on every request.
   ANTHROPIC_VERSION = '2023-06-01'.freeze
   DEFAULT_MODEL = 'claude-haiku-4-5'.freeze
+  # Keep in sync with the model options in config/integration/apps.yml.
+  MODELS = %w[claude-haiku-4-5 claude-sonnet-4-5 claude-opus-4-5].freeze
   MAX_TOKENS = 2048
   TIMEOUT_SECONDS = 60
 
   pattr_initialize [:api_key!, :messages!, { model: DEFAULT_MODEL }]
+
+  # The model chosen in the integration settings, or the default when the hook
+  # was connected before the setting existed or holds an unknown value.
+  def self.selected_model(settings)
+    model = settings&.dig('model') || settings&.dig(:model)
+    MODELS.include?(model) ? model : DEFAULT_MODEL
+  end
 
   def perform
     text = response_body.fetch('content', []).filter_map do |block|
