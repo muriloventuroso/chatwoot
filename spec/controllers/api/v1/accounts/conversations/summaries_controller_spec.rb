@@ -44,12 +44,27 @@ RSpec.describe 'Conversation Summary API', type: :request do
       end
     end
 
-    context 'when the account has no OpenAI integration' do
+    context 'when the account has the Claude integration' do
+      before do
+        allow(Integrations::Claude::KeyValidator).to receive(:valid?).and_return(true)
+        create(:integrations_hook, :claude, account: account)
+      end
+
+      it 'enqueues the summary for the requesting agent' do
+        expect do
+          post summary_url, headers: agent.create_new_auth_token, as: :json
+        end.to have_enqueued_job(Integrations::Openai::ConversationSummaryJob).with(conversation, agent)
+
+        expect(response).to have_http_status(:accepted)
+      end
+    end
+
+    context 'when the account has no AI integration' do
       it 'refuses the request' do
         post summary_url, headers: agent.create_new_auth_token, as: :json
 
         expect(response).to have_http_status(:unprocessable_entity)
-        expect(response.parsed_body['error']).to eq('OpenAI integration is not enabled')
+        expect(response.parsed_body['error']).to eq('AI integration is not enabled')
         expect(Integrations::Openai::ConversationSummaryJob).not_to have_been_enqueued
       end
     end

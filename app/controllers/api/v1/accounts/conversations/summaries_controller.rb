@@ -1,8 +1,8 @@
-# An agent asks for the conversation to be summarized with the account's OpenAI integration
-# key. The work runs in a job and the summary reaches the thread as a private note, through
-# the message's creation event.
+# An agent asks for the conversation to be summarized with the account's AI integration
+# key (Claude preferred over OpenAI). The work runs in a job and the summary reaches the
+# thread as a private note, through the message's creation event.
 class Api::V1::Accounts::Conversations::SummariesController < Api::V1::Accounts::Conversations::BaseController
-  before_action :ensure_openai_integration
+  before_action :ensure_llm_integration
   before_action :ensure_summarizable
 
   def create
@@ -12,10 +12,10 @@ class Api::V1::Accounts::Conversations::SummariesController < Api::V1::Accounts:
 
   private
 
-  def ensure_openai_integration
-    return if Current.account.hooks.exists?(app_id: 'openai', status: 'enabled')
+  def ensure_llm_integration
+    return if Integrations::Hook.preferred_llm_hook(Current.account)
 
-    render json: { error: 'OpenAI integration is not enabled' }, status: :unprocessable_entity
+    render json: { error: 'AI integration is not enabled' }, status: :unprocessable_entity
   end
 
   def ensure_summarizable

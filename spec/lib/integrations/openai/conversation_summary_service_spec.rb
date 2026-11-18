@@ -69,6 +69,46 @@ RSpec.describe Integrations::Openai::ConversationSummaryService do
     end
   end
 
+  describe 'with the Claude integration' do
+    let(:claude_chat) { instance_double(Integrations::Claude::ChatService, perform: 'Customer is waiting for a missing order.') }
+
+    before do
+      allow(Integrations::Claude::KeyValidator).to receive(:valid?).and_return(true)
+      allow(Integrations::Claude::ChatService).to receive(:new).and_return(claude_chat)
+    end
+
+    it 'summarizes with Claude when only Claude is connected' do
+      account.hooks.find_by(app_id: 'openai').destroy!
+      create(:integrations_hook, :claude, account: account, settings: { 'api_key' => 'claude-key' })
+
+      described_class.new(conversation: conversation, user: user).perform
+
+      expect(Integrations::Claude::ChatService).to have_received(:new)
+        .with(api_key: 'claude-key', messages: array_including(hash_including(role: 'system')))
+      expect(conversation.messages.where(private: true).last.content).to include('Customer is waiting for a missing order.')
+      expect(openai_client).not_to have_received(:chat)
+    end
+
+    it 'prefers Claude when both integrations are connected' do
+      create(:integrations_hook, :claude, account: account, settings: { 'api_key' => 'claude-key' })
+
+      described_class.new(conversation: conversation, user: user).perform
+
+      expect(Integrations::Claude::ChatService).to have_received(:new).with(hash_including(api_key: 'claude-key'))
+      expect(openai_client).not_to have_received(:chat)
+    end
+
+    it 'does not summarize when the claude hook was turned off after the request' do
+      account.hooks.find_by(app_id: 'openai').destroy!
+      create(:integrations_hook, :claude, account: account, settings: { 'api_key' => 'claude-key' }, status: :disabled)
+
+      described_class.new(conversation: conversation, user: user).perform
+
+      expect(Integrations::Claude::ChatService).not_to have_received(:new)
+      expect(conversation.messages.where(private: true)).to be_empty
+    end
+  end
+
   describe '.summarizable?' do
     it 'is false for a conversation without public messages' do
       empty_conversation = create(:conversation, account: account)

@@ -31,9 +31,9 @@ class HookListener < BaseListener
     # Only trigger for status changes is resolved
     return unless conversation.status == 'resolved'
 
-    # Leave an AI summary note on every resolution when the account has the OpenAI integration on.
+    # Leave an AI summary note on every resolution when the account has an AI integration on.
     # The resolving agent is not known here (async listener), so the assignee authors the note.
-    if conversation.account.hooks.enabled.exists?(app_id: 'openai')
+    if Integrations::Hook.preferred_llm_hook(conversation.account)
       Integrations::Openai::ConversationSummaryJob.perform_later(conversation, conversation.assignee)
     end
 

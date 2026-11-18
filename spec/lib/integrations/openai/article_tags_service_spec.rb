@@ -23,6 +23,34 @@ RSpec.describe Integrations::Openai::ArticleTagsService do
     expect(OpenAI::Client).to have_received(:new).with(hash_including(access_token: 'account-key'))
   end
 
+  context 'with the Claude integration' do
+    let(:claude_chat) do
+      instance_double(Integrations::Claude::ChatService, perform: "```json\n{\"tags\": [\"Billing\", \"Invoices\"]}\n```")
+    end
+
+    before do
+      allow(Integrations::Claude::KeyValidator).to receive(:valid?).and_return(true)
+      allow(Integrations::Claude::ChatService).to receive(:new).and_return(claude_chat)
+    end
+
+    it 'returns the tags suggested by Claude, unwrapping a code fence' do
+      account.hooks.find_by(app_id: 'openai').destroy!
+      create(:integrations_hook, :claude, account: account, settings: { 'api_key' => 'claude-key' })
+
+      expect(described_class.new(article: article).perform).to eq(%w[Billing Invoices])
+      expect(Integrations::Claude::ChatService).to have_received(:new).with(hash_including(api_key: 'claude-key'))
+    end
+
+    it 'prefers Claude when both integrations are connected' do
+      create(:integrations_hook, :claude, account: account, settings: { 'api_key' => 'claude-key' })
+
+      described_class.new(article: article).perform
+
+      expect(Integrations::Claude::ChatService).to have_received(:new).with(hash_including(api_key: 'claude-key'))
+      expect(openai_client).not_to have_received(:chat)
+    end
+  end
+
   it 'sends the draft content and offers the tags already used in the portal locale' do
     create(:article, account: account, portal: portal, meta: { 'tags' => ['Payments'] })
     create(:article, account: account, portal: portal, locale: 'es', meta: { 'tags' => ['Pagos'] })

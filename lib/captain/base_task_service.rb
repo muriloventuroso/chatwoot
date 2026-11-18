@@ -57,6 +57,8 @@ class Captain::BaseTaskService
   end
 
   def resolved_model(model:, feature:)
+    # A model from another provider cannot be called with the Claude hook key.
+    return Integrations::Claude::ChatService::DEFAULT_MODEL if llm_credential&.dig(:provider) == 'anthropic'
     return model if feature.blank?
 
     route = Llm::FeatureRouter.resolve(feature: feature, account: account)
@@ -67,8 +69,9 @@ class Captain::BaseTaskService
 
   def execute_ruby_llm_request(model:, messages:, schema: nil, tools: [], feature: nil)
     credential = llm_credential
+    key_options = credential[:provider] == 'anthropic' ? { provider: 'anthropic' } : { api_base: api_base }
 
-    Llm::Config.with_api_key(credential[:api_key], api_base: api_base) do |context|
+    Llm::Config.with_api_key(credential[:api_key], **key_options) do |context|
       chat = build_chat(context, model: model, messages: messages, schema: schema, tools: tools, feature: feature)
 
       conversation_messages = messages.reject { |m| m[:role] == 'system' }
@@ -192,16 +195,13 @@ class Captain::BaseTaskService
   end
 
   def hook_llm_credential
-    key = openai_hook&.settings&.dig('api_key').presence
-    { api_key: key, source: :hook } if key
+    hook = Integrations::Hook.preferred_llm_hook(account)
+    key = hook&.settings&.dig('api_key').presence
+    { api_key: key, source: :hook, provider: hook.claude? ? 'anthropic' : 'openai' } if key
   end
 
   def system_llm_credential
     { api_key: system_api_key, source: :system } if system_api_key.present?
-  end
-
-  def openai_hook
-    @openai_hook ||= account.hooks.find_by(app_id: 'openai', status: 'enabled')
   end
 
   def system_api_key

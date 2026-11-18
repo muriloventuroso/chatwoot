@@ -381,6 +381,57 @@ RSpec.describe Captain::BaseTaskService do
       end
     end
 
+    context 'when the account connected Claude' do
+      let(:hook_opted_service_class) do
+        Class.new(described_class) do
+          def event_name
+            'test_event'
+          end
+
+          def use_account_openai_hook?
+            true
+          end
+        end
+      end
+      let(:hook_opted_service) { hook_opted_service_class.new(account: account, conversation_display_id: conversation.display_id) }
+
+      before { allow(Integrations::Claude::KeyValidator).to receive(:valid?).and_return(true) }
+
+      it 'uses the claude hook key with the anthropic provider' do
+        create(:integrations_hook, :claude, account: account, settings: { 'api_key' => 'claude-key' })
+
+        expect(hook_opted_service.send(:llm_credential)).to eq(
+          { api_key: 'claude-key', source: :hook, provider: 'anthropic' }
+        )
+      end
+
+      it 'prefers the claude hook over the openai hook' do
+        create(:integrations_hook, :openai, account: account, settings: { 'api_key' => 'openai-key' })
+        create(:integrations_hook, :claude, account: account, settings: { 'api_key' => 'claude-key' })
+
+        expect(hook_opted_service.send(:api_key)).to eq('claude-key')
+      end
+
+      it 'calls RubyLLM with the anthropic key and a Claude model' do
+        create(:integrations_hook, :claude, account: account, settings: { 'api_key' => 'claude-key' })
+        mock_chat = instance_double(RubyLLM::Chat)
+        mock_context = instance_double(RubyLLM::Context)
+        mock_response = instance_double(
+          RubyLLM::Message, content: 'Response', tokens: RubyLLM::Tokens.new(input: 10, output: 20)
+        )
+        allow(mock_context).to receive(:chat).with(model: 'claude-haiku-4-5').and_return(mock_chat)
+        allow(mock_chat).to receive(:with_instructions)
+        allow(mock_chat).to receive(:ask).and_return(mock_response)
+        expect(Llm::Config).to receive(:with_api_key).with('claude-key', provider: 'anthropic').and_yield(mock_context)
+
+        result = hook_opted_service.send(
+          :make_api_call, messages: [{ role: 'system', content: 'Test' }, { role: 'user', content: 'Hello' }]
+        )
+
+        expect(result[:message]).to eq('Response')
+      end
+    end
+
     context 'when openai hook is not configured' do
       it 'uses system api key' do
         expect(service.send(:api_key)).to eq('test-key')

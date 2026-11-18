@@ -13,4 +13,18 @@ RSpec.describe Llm::Config do
       RubyLLM.configure { |config| config.openai_api_base = original_base }
     end
   end
+
+  describe '.with_api_key' do
+    it 'configures the anthropic key for the anthropic provider' do
+      described_class.with_api_key('claude-key', provider: 'anthropic') do |context|
+        expect(context.config.anthropic_api_key).to eq('claude-key')
+      end
+    end
+
+    it 'configures the openai key by default' do
+      described_class.with_api_key('openai-key') do |context|
+        expect(context.config.openai_api_key).to eq('openai-key')
+      end
+    end
+  end
 end

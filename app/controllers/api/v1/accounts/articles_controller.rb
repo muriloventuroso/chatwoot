@@ -5,7 +5,7 @@ class Api::V1::Accounts::ArticlesController < Api::V1::Accounts::BaseController
   before_action :set_current_page, only: [:index]
   before_action :validate_author, only: [:create]
   before_action :discard_invalid_author, only: [:update]
-  before_action :ensure_openai_integration, only: [:generate_tags]
+  before_action :ensure_llm_integration, only: [:generate_tags]
 
   def index
     @portal_articles = @portal.articles
@@ -53,10 +53,10 @@ class Api::V1::Accounts::ArticlesController < Api::V1::Accounts::BaseController
 
   private
 
-  def ensure_openai_integration
-    return if Current.account.hooks.exists?(app_id: 'openai', status: 'enabled')
+  def ensure_llm_integration
+    return if Integrations::Hook.preferred_llm_hook(Current.account)
 
-    render json: { error: 'OpenAI integration is not enabled' }, status: :unprocessable_entity
+    render json: { error: 'AI integration is not enabled' }, status: :unprocessable_entity
   end
 
   def set_article_count

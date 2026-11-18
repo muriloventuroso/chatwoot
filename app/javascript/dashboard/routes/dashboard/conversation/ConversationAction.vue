@@ -41,9 +41,11 @@ const teams = useMapGetter('teams/getTeams');
 const getIntegration = useMapGetter('integrations/getIntegration');
 const { uiSettings, updateUISettings } = useUISettings();
 
-// The AI summary runs on the account's OpenAI integration, not on Captain.
-const isOpenAIIntegrationEnabled = computed(() =>
-  (getIntegration.value('openai').hooks || []).some(hook => hook.status)
+// The AI summary runs on the account's AI integration (Claude or OpenAI), not on Captain.
+const isAIIntegrationEnabled = computed(() =>
+  ['claude', 'openai'].some(id =>
+    (getIntegration.value(id).hooks || []).some(hook => hook.status)
+  )
 );
 
 const isSummarizing = ref(false);
@@ -148,11 +150,7 @@ const assignedAgent = computed({
         assigneeType === 'User' &&
         agent.id !== currentUser.value.id &&
         agent.id !== previousAssigneeId;
-      if (
-        isHandoff &&
-        isOpenAIIntegrationEnabled.value &&
-        summaryOnHandoff.value
-      ) {
+      if (isHandoff && isAIIntegrationEnabled.value && summaryOnHandoff.value) {
         requestSummary();
       }
     } catch (error) {
@@ -373,7 +371,7 @@ const rejectSuggestedLabel = ({ title }) => {
         "
         @select="onClickAssignAgent"
       />
-      <div v-if="isOpenAIIntegrationEnabled" class="mt-2">
+      <div v-if="isAIIntegrationEnabled" class="mt-2">
         <NextButton
           sm
           icon="i-ph-sparkle-fill"

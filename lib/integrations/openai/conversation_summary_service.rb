@@ -1,10 +1,11 @@
-# Summarizes a conversation with the account's OpenAI integration key, on an agent's request,
-# and saves the result as a private note in the conversation. Used both by the manual
-# "summarize" action, by the automatic handoff summary when a conversation changes agent, and on
-# every resolution (HookListener). Without a user, as on an unassigned resolution, the note has no sender.
+# Summarizes a conversation with the account's AI integration key (Claude preferred over
+# OpenAI), on an agent's request, and saves the result as a private note in the conversation.
+# Used both by the manual "summarize" action, by the automatic handoff summary when a
+# conversation changes agent, and on every resolution (HookListener). Without a user, as on
+# an unassigned resolution, the note has no sender.
 #
 # Captain's SummaryService does a similar call, but it runs on Captain's installation key and
-# credits and is stripped from CE images; this one only needs the OpenAI integration hook.
+# credits and is stripped from CE images; this one only needs the AI integration hook.
 class Integrations::Openai::ConversationSummaryService
   MESSAGE_LIMIT = 50
 
@@ -16,7 +17,7 @@ class Integrations::Openai::ConversationSummaryService
 
   def perform
     # The integration can be turned off between the request and the job.
-    return if openai_hook.blank?
+    return if llm_hook.blank?
     return unless self.class.summarizable?(conversation)
 
     summary = summarize
@@ -36,6 +37,8 @@ class Integrations::Openai::ConversationSummaryService
   end
 
   def summarize
+    return Integrations::Claude::ChatService.new(api_key: llm_hook.settings['api_key'], messages: prompt_messages).perform if llm_hook.claude?
+
     response = client.chat(parameters: { model: Llm::Config::DEFAULT_MODEL, messages: prompt_messages })
     response.dig('choices', 0, 'message', 'content')
   end
@@ -67,13 +70,13 @@ class Integrations::Openai::ConversationSummaryService
     "#{message.incoming? ? 'Customer' : 'Agent'}: #{text}" if text.present?
   end
 
-  def openai_hook
-    @openai_hook ||= conversation.account.hooks.find_by(app_id: 'openai', status: 'enabled')
+  def llm_hook
+    @llm_hook ||= Integrations::Hook.preferred_llm_hook(conversation.account)
   end
 
   def client
     OpenAI::Client.new(
-      access_token: openai_hook.settings['api_key'],
+      access_token: llm_hook.settings['api_key'],
       uri_base: InstallationConfig.find_by(name: 'CAPTAIN_OPEN_AI_ENDPOINT')&.value.presence || 'https://api.openai.com/'
     )
   end

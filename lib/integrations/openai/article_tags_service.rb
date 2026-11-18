@@ -1,5 +1,6 @@
-# Suggests tags for a help center article with the account's OpenAI integration key. The tags already used
-# in the portal are offered to the model first, because related articles are matched on shared tags.
+# Suggests tags for a help center article with the account's AI integration key (Claude
+# preferred over OpenAI). The tags already used in the portal are offered to the model first,
+# because related articles are matched on shared tags.
 class Integrations::Openai::ArticleTagsService
   EXISTING_TAGS_LIMIT = 200
   CONTENT_LIMIT = 20_000
@@ -7,18 +8,36 @@ class Integrations::Openai::ArticleTagsService
   pattr_initialize [:article!]
 
   def perform
-    response = client.chat(
-      parameters: {
-        model: Llm::Config::DEFAULT_MODEL,
-        response_format: { type: 'json_object' },
-        messages: [{ role: 'system', content: system_prompt }, { role: 'user', content: article_text }]
-      }
-    )
-    tags = JSON.parse(response.dig('choices', 0, 'message', 'content'))['tags']
+    tags = JSON.parse(reply_content)['tags']
     Array(tags).map { |tag| tag.to_s.strip }.compact_blank.uniq(&:downcase)
   end
 
   private
+
+  def reply_content
+    return claude_reply if llm_hook.claude?
+
+    response = client.chat(
+      parameters: {
+        model: Llm::Config::DEFAULT_MODEL,
+        response_format: { type: 'json_object' },
+        messages: prompt_messages
+      }
+    )
+    response.dig('choices', 0, 'message', 'content')
+  end
+
+  def claude_reply
+    content = Integrations::Claude::ChatService.new(
+      api_key: llm_hook.settings['api_key'], messages: prompt_messages
+    ).perform
+    # Claude has no JSON mode, so it may wrap the reply in a code fence despite the prompt.
+    content.to_s.sub(/\A```(?:json)?\s*/, '').sub(/\s*```\z/, '')
+  end
+
+  def prompt_messages
+    [{ role: 'system', content: system_prompt }, { role: 'user', content: article_text }]
+  end
 
   def system_prompt
     <<~PROMPT
@@ -41,9 +60,14 @@ class Integrations::Openai::ArticleTagsService
            .pluck(:meta).flat_map { |meta| meta['tags'] || [] }.uniq(&:downcase).first(EXISTING_TAGS_LIMIT)
   end
 
+  def llm_hook
+    @llm_hook ||= Integrations::Hook.preferred_llm_hook(article.account) ||
+                  article.account.hooks.find_by!(app_id: 'openai', status: 'enabled')
+  end
+
   def client
     OpenAI::Client.new(
-      access_token: article.account.hooks.find_by!(app_id: 'openai', status: 'enabled').settings['api_key'],
+      access_token: llm_hook.settings['api_key'],
       uri_base: InstallationConfig.find_by(name: 'CAPTAIN_OPEN_AI_ENDPOINT')&.value.presence || 'https://api.openai.com/'
     )
   end

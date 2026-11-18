@@ -11,6 +11,11 @@ en:
       todo: To do
       in_progress: In progress
       done: Done
+  integration_apps:
+    claude:
+      name: 'Claude'
+      short_description: 'Connect your Anthropic Claude API key to this account.'
+      description: 'Claude is the AI assistant from Anthropic. Connect your own Anthropic API key so this account can use Claude-powered features.'
   integrations:
     openai:
       summary_note_title: AI-generated conversation summary
@@ -20,6 +25,8 @@ en:
     messages:
       deleted: This message was deleted
   errors:
+    claude:
+      invalid_api_key: 'Claude API key is invalid or revoked. Please check your key in the Anthropic Console.'
     articles:
       invalid_sort: Unknown article order. Use updated_at, created_at, title or views, prefixed with - for descending.
     request:

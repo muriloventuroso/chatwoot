@@ -59,9 +59,11 @@ const store = useStore();
 const route = useRoute();
 const getIntegration = useMapGetter('integrations/getIntegration');
 
-// Tag suggestions run on the account's OpenAI integration, not on Captain.
-const isOpenAIIntegrationEnabled = computed(() =>
-  (getIntegration.value('openai').hooks || []).some(hook => hook.status)
+// Tag suggestions run on the account's AI integration (Claude or OpenAI), not on Captain.
+const isAIIntegrationEnabled = computed(() =>
+  ['claude', 'openai'].some(id =>
+    (getIntegration.value(id).hooks || []).some(hook => hook.status)
+  )
 );
 
 const isGeneratingTags = ref(false);
@@ -169,7 +171,7 @@ onMounted(() => {
               }}
             </label>
             <Button
-              v-if="isOpenAIIntegrationEnabled"
+              v-if="isAIIntegrationEnabled"
               :label="
                 t(
                   'HELP_CENTER.EDIT_ARTICLE_PAGE.ARTICLE_PROPERTIES.GENERATE_TAGS'

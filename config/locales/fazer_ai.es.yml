@@ -11,6 +11,11 @@ es:
       todo: Por hacer
       in_progress: En progreso
       done: Hecho
+  integration_apps:
+    claude:
+      name: 'Claude'
+      short_description: 'Conecta tu clave de API de Claude (Anthropic) a esta cuenta.'
+      description: 'Claude es el asistente de IA de Anthropic. Conecta tu propia clave de API de Anthropic para que esta cuenta use funciones con Claude.'
   integrations:
     openai:
       summary_note_title: Resumen de la conversación generado por IA
@@ -20,6 +25,8 @@ es:
     messages:
       deleted: Este mensaje fue eliminado
   errors:
+    claude:
+      invalid_api_key: 'La clave de API de Claude no es válida o fue revocada. Verifica tu clave en la consola de Anthropic.'
     articles:
       invalid_sort: Orden de artículos desconocido. Usa updated_at, created_at, title o views, con - delante para orden descendente.
     request:

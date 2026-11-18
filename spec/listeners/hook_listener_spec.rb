@@ -65,6 +65,14 @@ describe HookListener do
         .to have_enqueued_job(Integrations::Openai::ConversationSummaryJob).with(conversation, user)
     end
 
+    it 'enqueues the AI summary when only the Claude integration is enabled' do
+      allow(Integrations::Claude::KeyValidator).to receive(:valid?).and_return(true)
+      create(:integrations_hook, :claude, account: account)
+
+      expect { listener.conversation_resolved(resolved_event) }
+        .to have_enqueued_job(Integrations::Openai::ConversationSummaryJob).with(conversation, user)
+    end
+
     it 'does not enqueue the AI summary when the OpenAI integration is disabled' do
       allow(Integrations::Openai::KeyValidator).to receive(:valid?).and_return(true)
       create(:integrations_hook, :openai, account: account, status: :disabled)

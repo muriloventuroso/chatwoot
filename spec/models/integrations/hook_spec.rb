@@ -215,6 +215,80 @@ RSpec.describe Integrations::Hook do
     end
   end
 
+  describe '.preferred_llm_hook' do
+    let(:account) { create(:account) }
+
+    before do
+      allow(Integrations::Openai::KeyValidator).to receive(:valid?).and_return(true)
+      allow(Integrations::Claude::KeyValidator).to receive(:valid?).and_return(true)
+    end
+
+    it 'returns nil when the account has no AI integration' do
+      expect(described_class.preferred_llm_hook(account)).to be_nil
+    end
+
+    it 'returns the openai hook when only OpenAI is connected' do
+      hook = create(:integrations_hook, :openai, account: account)
+
+      expect(described_class.preferred_llm_hook(account)).to eq(hook)
+    end
+
+    it 'prefers the claude hook when both integrations are connected' do
+      create(:integrations_hook, :openai, account: account)
+      claude_hook = create(:integrations_hook, :claude, account: account)
+
+      expect(described_class.preferred_llm_hook(account)).to eq(claude_hook)
+    end
+
+    it 'falls back to openai when the claude hook is disabled' do
+      openai_hook = create(:integrations_hook, :openai, account: account)
+      create(:integrations_hook, :claude, account: account, status: :disabled)
+
+      expect(described_class.preferred_llm_hook(account)).to eq(openai_hook)
+    end
+  end
+
+  describe 'claude api key validation' do
+    let(:account) { create(:account) }
+
+    it 'prevents saving a claude hook with an invalid key' do
+      allow(Integrations::Claude::KeyValidator).to receive(:valid?).and_return(false)
+
+      hook = build(:integrations_hook, :claude, account: account, settings: { 'api_key' => 'sk-ant-bad' })
+
+      expect(hook).not_to be_valid
+      expect(hook.errors[:base]).to include(I18n.t('errors.claude.invalid_api_key'))
+    end
+
+    it 'allows saving a claude hook with a valid key' do
+      allow(Integrations::Claude::KeyValidator).to receive(:valid?).and_return(true)
+
+      hook = build(:integrations_hook, :claude, account: account, settings: { 'api_key' => 'sk-ant-good' })
+
+      expect(hook).to be_valid
+    end
+
+    it 'skips validation when an enabled claude hook is saved without changing the api key' do
+      allow(Integrations::Claude::KeyValidator).to receive(:valid?).and_return(true)
+      hook = create(:integrations_hook, :claude, account: account, settings: { 'api_key' => 'sk-ant-good' })
+
+      allow(Integrations::Claude::KeyValidator).to receive(:valid?).and_return(false)
+
+      expect(hook.save).to be true
+    end
+
+    it 'validates when a disabled claude hook is re-enabled' do
+      allow(Integrations::Claude::KeyValidator).to receive(:valid?).and_return(true)
+      hook = create(:integrations_hook, :claude, account: account, settings: { 'api_key' => 'sk-ant-bad' })
+      hook.update!(status: :disabled)
+
+      allow(Integrations::Claude::KeyValidator).to receive(:valid?).with('sk-ant-bad').and_return(false)
+
+      expect(hook.update(status: :enabled)).to be false
+      expect(hook.errors[:base]).to include(I18n.t('errors.claude.invalid_api_key'))
+    end
+  end
+
   describe 'cloudflare realtimekit credential validation' do
     let(:account) { create(:account) }
     let(:settings) { { 'account_id' => 'account_id', 'app_id' => 'app_id', 'api_token' => 'api_token' } }

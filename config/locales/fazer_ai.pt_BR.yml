@@ -11,6 +11,11 @@ pt_BR:
       todo: A fazer
       in_progress: Em andamento
       done: Concluído
+  integration_apps:
+    claude:
+      name: 'Claude'
+      short_description: 'Conecte sua chave da API do Claude (Anthropic) a esta conta.'
+      description: 'O Claude é o assistente de IA da Anthropic. Conecte sua própria chave da API da Anthropic para esta conta usar recursos com o Claude.'
   integrations:
     openai:
       summary_note_title: Resumo da conversa gerado por IA
@@ -20,6 +25,8 @@ pt_BR:
     messages:
       deleted: Esta mensagem foi excluída
   errors:
+    claude:
+      invalid_api_key: 'A chave da API do Claude é inválida ou foi revogada. Verifique sua chave no console da Anthropic.'
     articles:
       invalid_sort: Ordenação de artigos desconhecida. Use updated_at, created_at, title ou views, com - na frente para ordem decrescente.
     request:

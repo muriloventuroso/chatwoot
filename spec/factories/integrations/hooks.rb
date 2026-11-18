@@ -27,6 +27,11 @@ FactoryBot.define do
       settings { { api_key: 'api_key' } }
     end
 
+    trait :claude do
+      app_id { 'claude' }
+      settings { { api_key: 'api_key' } }
+    end
+
     trait :linear do
       app_id { 'linear' }
       access_token { SecureRandom.hex }

@@ -179,6 +179,22 @@ RSpec.describe Integrations::App do
       end
     end
 
+    context 'when the app is claude' do
+      let(:app_name) { 'claude' }
+
+      before { allow(Integrations::Claude::KeyValidator).to receive(:valid?).and_return(true) }
+
+      it 'exposes the translated name and the api_key settings schema' do
+        expect(app.name).to eq('Claude')
+        expect(app.params[:settings_json_schema]['required']).to eq(['api_key'])
+      end
+
+      it 'returns true if the account has hooks for the app' do
+        create(:integrations_hook, :claude, account: account)
+        expect(app.enabled?(account)).to be true
+      end
+    end
+
     context 'when the app is shopify' do
       let(:app_name) { 'shopify' }
 

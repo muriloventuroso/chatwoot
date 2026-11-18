@@ -342,6 +342,16 @@ RSpec.describe 'Api::V1::Accounts::Articles', type: :request do
       expect(response.parsed_body['tags']).to eq(%w[billing invoices])
     end
 
+    it 'returns the suggested tags when only the Claude integration is enabled' do
+      allow(Integrations::Claude::KeyValidator).to receive(:valid?).and_return(true)
+      create(:integrations_hook, :claude, account: account)
+
+      post url, headers: admin.create_new_auth_token, as: :json
+
+      expect(response).to have_http_status(:success)
+      expect(response.parsed_body['tags']).to eq(%w[billing invoices])
+    end
+
     it 'returns unprocessable entity without the OpenAI integration' do
       post url, headers: admin.create_new_auth_token, as: :json
 

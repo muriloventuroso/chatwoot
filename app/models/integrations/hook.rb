@@ -37,6 +37,7 @@ class Integrations::Hook < ApplicationRecord
   validate :validate_settings_json_schema
   validate :ensure_feature_enabled
   validate :validate_openai_api_key, if: :validate_openai_api_key?
+  validate :validate_claude_api_key, if: :validate_claude_api_key?
   validate :validate_cloudflare_realtimekit_credentials, if: :validate_cloudflare_realtimekit_credentials?
   validate :validate_google_translate_credentials, on: :create, if: :google_translate?
   validates :app_id, uniqueness: { scope: [:account_id], unless: -> { app.present? && app.params[:allow_multiple_hooks].present? } }
@@ -53,6 +54,13 @@ class Integrations::Hook < ApplicationRecord
 
   scope :account_hooks, -> { where(hook_type: 'account') }
   scope :inbox_hooks, -> { where(hook_type: 'inbox') }
+
+  # The account-level LLM hook used by the AI features (summary, reply suggestions,
+  # article tags). Claude takes precedence when both integrations are connected.
+  def self.preferred_llm_hook(account)
+    hooks = account.hooks.enabled
+    hooks.find_by(app_id: 'claude') || hooks.find_by(app_id: 'openai')
+  end
 
   def app
     @app ||= Integrations::App.find(id: app_id)
@@ -74,6 +82,10 @@ class Integrations::Hook < ApplicationRecord
 
   def openai?
     app_id == 'openai'
+  end
+
+  def claude?
+    app_id == 'claude'
   end
 
   def dyte?
@@ -139,7 +151,11 @@ class Integrations::Hook < ApplicationRecord
   # TODO: When adding credential validation for other integrations (dialogflow, dyte, etc.),
   # extract this into an app-level config flag in apps.yml instead of hardcoding app_id checks.
   def validate_openai_api_key?
-    openai? && enabled? && (new_record? || openai_api_key_changed? || will_save_change_to_status?)
+    openai? && enabled? && (new_record? || api_key_changed? || will_save_change_to_status?)
+  end
+
+  def validate_claude_api_key?
+    claude? && enabled? && (new_record? || api_key_changed? || will_save_change_to_status?)
   end
 
   def validate_cloudflare_realtimekit_credentials?
@@ -147,7 +163,7 @@ class Integrations::Hook < ApplicationRecord
       (new_record? || cloudflare_realtimekit_credentials_changed? || will_save_change_to_status?)
   end
 
-  def openai_api_key_changed?
+  def api_key_changed?
     settings_api_key(settings) != settings_api_key(settings_in_database)
   end
 
@@ -170,6 +186,12 @@ class Integrations::Hook < ApplicationRecord
     return if Integrations::Openai::KeyValidator.valid?(settings_api_key(settings))
 
     errors.add(:base, I18n.t('errors.openai.invalid_api_key'))
+  end
+
+  def validate_claude_api_key
+    return if Integrations::Claude::KeyValidator.valid?(settings_api_key(settings))
+
+    errors.add(:base, I18n.t('errors.claude.invalid_api_key'))
   end
 
   def validate_cloudflare_realtimekit_credentials
