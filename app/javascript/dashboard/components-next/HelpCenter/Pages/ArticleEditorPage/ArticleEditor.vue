@@ -16,6 +16,7 @@ import FullEditor from 'dashboard/components/widgets/WootWriter/FullEditor.vue';
 import ArticleEditorHeader from 'dashboard/components-next/HelpCenter/Pages/ArticleEditorPage/ArticleEditorHeader.vue';
 import ArticleEditorControls from 'dashboard/components-next/HelpCenter/Pages/ArticleEditorPage/ArticleEditorControls.vue';
 import ArticleDiffPanel from 'dashboard/components-next/HelpCenter/Pages/ArticleEditorPage/ArticleDiffPanel.vue';
+import AddTranslationDialog from 'dashboard/components-next/HelpCenter/Pages/ArticlePage/AddTranslationDialog.vue';
 
 const props = defineProps({
   article: {
@@ -29,6 +30,10 @@ const props = defineProps({
   isSaved: {
     type: Boolean,
     default: false,
+  },
+  allowedLocales: {
+    type: Array,
+    default: () => [],
   },
 });
 
@@ -83,14 +88,36 @@ const showLocaleMenu = ref(false);
 
 const localeLabel = code => `${allLocales[code] || code} (${code})`;
 
-const localeMenuItems = computed(() =>
-  [props.article, ...translations.value].map(({ id, locale }) => ({
-    label: localeLabel(locale),
-    value: id,
-    action: 'switchTranslation',
-    isSelected: id === props.article.id,
-  }))
-);
+const addTranslationDialogRef = ref(null);
+const ADD_TRANSLATION = 'add-translation';
+
+const canAddTranslation = computed(() => {
+  const familyLocales = [props.article, ...translations.value].map(
+    ({ locale }) => locale
+  );
+  return props.allowedLocales.some(({ code }) => !familyLocales.includes(code));
+});
+
+const localeMenuItems = computed(() => {
+  const items = [props.article, ...translations.value].map(
+    ({ id, locale }) => ({
+      label: localeLabel(locale),
+      value: id,
+      action: 'switchTranslation',
+      isSelected: id === props.article.id,
+    })
+  );
+  if (!canAddTranslation.value) return items;
+  return [
+    ...items,
+    {
+      label: t('HELP_CENTER.ARTICLES_PAGE.ADD_TRANSLATION.TITLE'),
+      value: ADD_TRANSLATION,
+      action: 'addTranslation',
+      icon: 'i-lucide-file-plus-2',
+    },
+  ];
+});
 
 const switchTranslation = ({ value }) => {
   showLocaleMenu.value = false;
@@ -98,6 +125,10 @@ const switchTranslation = ({ value }) => {
   // Switching remounts the editor, which would drop its in-flight uploads.
   if (hasPendingUploads()) {
     useAlert(t('HELP_CENTER.EDIT_ARTICLE_PAGE.HEADER.UPLOAD_IN_PROGRESS'));
+    return;
+  }
+  if (value === ADD_TRANSLATION) {
+    addTranslationDialogRef.value?.dialogRef?.open();
     return;
   }
   emit(
@@ -278,7 +309,10 @@ const handleCreateArticle = event => {
             @preview-article="previewArticle"
           />
           <div class="flex items-center flex-shrink-0 gap-2">
-            <div v-if="translations.length" class="relative">
+            <div
+              v-if="translations.length || canAddTranslation"
+              class="relative"
+            >
               <OnClickOutside @trigger="showLocaleMenu = false">
                 <Button
                   :label="localeLabel(article.locale)"
@@ -337,6 +371,15 @@ const handleCreateArticle = event => {
         :enabled-menu-options="ARTICLE_EDITOR_MENU_OPTIONS"
         :uploads-blocked-message="uploadsBlockedMessage"
         :autofocus="!isNewArticle"
+      />
+      <AddTranslationDialog
+        ref="addTranslationDialogRef"
+        :article="article"
+        :allowed-locales="allowedLocales"
+        @translation-created="
+          ({ articleId, locale }) =>
+            emit('switchTranslation', { id: articleId, locale })
+        "
       />
     </template>
   </HelpCenterLayout>

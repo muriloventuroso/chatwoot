@@ -10,6 +10,7 @@ import {
 } from 'dashboard/helper/portalHelper';
 import { useStore, useMapGetter } from 'dashboard/composables/store';
 import { rendersIdentically } from 'dashboard/helper/articleDiffHelper';
+import allLocales from 'shared/constants/locales.js';
 
 import ArticleEditor from 'dashboard/components-next/HelpCenter/Pages/ArticleEditorPage/ArticleEditor.vue';
 
@@ -27,6 +28,13 @@ const article = computed(() => articleById.value(articleSlug));
 const portalBySlug = useMapGetter('portals/portalBySlug');
 
 const portal = computed(() => portalBySlug.value(portalSlug));
+
+const allowedLocales = computed(() =>
+  (portal.value?.config.allowed_locales ?? []).map(({ code }) => ({
+    code,
+    name: allLocales[code],
+  }))
+);
 
 const isUpdating = ref(false);
 const isSaved = ref(false);
@@ -171,6 +179,7 @@ onMounted(fetchArticleDetails);
     :article="article"
     :is-updating="isUpdating"
     :is-saved="isSaved"
+    :allowed-locales="allowedLocales"
     @save-article="saveArticle"
     @preview-article="previewArticle"
     @go-back="goBackToArticles"

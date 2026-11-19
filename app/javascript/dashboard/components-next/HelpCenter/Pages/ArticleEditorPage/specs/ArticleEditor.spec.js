@@ -6,6 +6,7 @@ vi.mock('vue-i18n', () => ({ useI18n: () => ({ t: key => key }) }));
 vi.mock('dashboard/composables', () => ({ useAlert: vi.fn() }));
 
 let uploading = false;
+const openDialog = vi.fn();
 
 const article = {
   id: 1,
@@ -27,6 +28,10 @@ const mountEditor = props =>
         ArticleEditorHeader: true,
         ArticleEditorControls: true,
         ArticleDiffPanel: true,
+        AddTranslationDialog: {
+          template: '<div />',
+          setup: () => ({ dialogRef: { open: openDialog } }),
+        },
         FullEditor: {
           template: '<div />',
           methods: { hasPendingUploads: () => uploading },
@@ -50,6 +55,7 @@ const mountEditor = props =>
 describe('ArticleEditor language switch', () => {
   beforeEach(() => {
     uploading = false;
+    openDialog.mockClear();
   });
 
   it('lists the article and its translations and emits the chosen one', async () => {
@@ -81,6 +87,38 @@ describe('ArticleEditor language switch', () => {
     await wrapper.find('button').trigger('click');
     await wrapper.findAll('li')[1].trigger('click');
     expect(wrapper.emitted('switchTranslation')).toBeUndefined();
+  });
+
+  it('offers to add a translation for a missing portal locale', async () => {
+    const wrapper = mountEditor({
+      article: { ...article, associatedArticles: [] },
+      allowedLocales: [
+        { code: 'en', name: 'English' },
+        { code: 'es', name: 'Spanish' },
+      ],
+    });
+    await wrapper.find('button').trigger('click');
+
+    const items = wrapper.findAll('li');
+    expect(items.map(item => item.text())).toEqual([
+      'English (en)',
+      'HELP_CENTER.ARTICLES_PAGE.ADD_TRANSLATION.TITLE',
+    ]);
+
+    await items[1].trigger('click');
+    expect(openDialog).toHaveBeenCalled();
+    expect(wrapper.emitted('switchTranslation')).toBeUndefined();
+  });
+
+  it('does not offer to add a translation when every locale exists', async () => {
+    const wrapper = mountEditor({
+      allowedLocales: [
+        { code: 'en', name: 'English' },
+        { code: 'pt_BR', name: 'Portuguese' },
+      ],
+    });
+    await wrapper.find('button').trigger('click');
+    expect(wrapper.text()).not.toContain('ADD_TRANSLATION');
   });
 
   it('hides the switch when there are no translations', () => {
