@@ -76,7 +76,13 @@
         "RIGHT": "Align right"
       },
       "MARKDOWN_MODE": "Edit as Markdown",
-      "VISUAL_MODE": "Visual editor"
+      "VISUAL_MODE": "Visual editor",
+      "LINK_EDIT": {
+        "PLACEHOLDER": "https://example.com",
+        "OPEN": "Open link",
+        "REMOVE": "Remove link",
+        "SAVE": "Save"
+      }
     },
     "EDIT_ARTICLE_PAGE": {
       "ARTICLE_PROPERTIES": {

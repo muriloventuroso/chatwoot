@@ -38,6 +38,7 @@ import { useMapGetter } from 'dashboard/composables/store';
 import { useUISettings } from 'dashboard/composables/useUISettings';
 import SlashCommandMenu from './SlashCommandMenu.vue';
 import VideoEmbedInput from './VideoEmbedInput.vue';
+import LinkEditInput from './LinkEditInput.vue';
 
 const MAXIMUM_FILE_UPLOAD_SIZE = 4; // in MB
 // Drop and paste bypass the file input's accept filter, so bucketFor gates
@@ -51,6 +52,33 @@ const ALLOWED_IMAGE_TYPES = [
 ];
 const ACCEPTED_FILE_TYPES = [...ALLOWED_IMAGE_TYPES, 'video/mp4'].join(', ');
 const SLASH_MENU_OFFSET = 4;
+
+// The whole run of text carrying the link mark the caret is in or next to.
+const linkRangeAt = ($pos, linkType) => {
+  const { parent } = $pos;
+  let hit = parent.childAfter($pos.parentOffset);
+  if (!hit.node || !linkType.isInSet(hit.node.marks)) {
+    hit = parent.childBefore($pos.parentOffset);
+  }
+  const mark = hit.node && linkType.isInSet(hit.node.marks);
+  if (!mark) return null;
+  let startIndex = hit.index;
+  let from = $pos.start() + hit.offset;
+  let endIndex = hit.index + 1;
+  let to = from + hit.node.nodeSize;
+  while (startIndex > 0 && mark.isInSet(parent.child(startIndex - 1).marks)) {
+    startIndex -= 1;
+    from -= parent.child(startIndex).nodeSize;
+  }
+  while (
+    endIndex < parent.childCount &&
+    mark.isInSet(parent.child(endIndex).marks)
+  ) {
+    to += parent.child(endIndex).nodeSize;
+    endIndex += 1;
+  }
+  return { from, to, mark };
+};
 // Longest a slow autosave response can realistically lag behind its request.
 const STALE_ECHO_WINDOW = 30000; // in ms
 const createState = (
@@ -75,7 +103,7 @@ const createState = (
 };
 
 export default {
-  components: { SlashCommandMenu, VideoEmbedInput },
+  components: { SlashCommandMenu, VideoEmbedInput, LinkEditInput },
   props: {
     modelValue: { type: String, default: '' },
     editorId: { type: String, default: '' },
@@ -117,6 +145,7 @@ export default {
       showVideoInput: false,
       videoInputPosition: null,
       acceptedFileTypes: ACCEPTED_FILE_TYPES,
+      linkEdit: null,
     };
   },
   computed: {
@@ -379,6 +408,44 @@ export default {
       this.emitOnChange();
       this.editorView.focus();
     },
+    updateLinkEdit() {
+      const { selection, schema } = this.editorView.state;
+      const range = linkRangeAt(selection.$from, schema.marks.link);
+      if (!range || selection.to > range.to) {
+        this.linkEdit = null;
+        return;
+      }
+      this.linkEdit = {
+        ...range,
+        href: range.mark.attrs.href,
+        position: this.popoverPositionAt(range.from),
+      };
+    },
+    saveLink(href) {
+      const { from, to, mark } = this.linkEdit;
+      const { link } = this.editorView.state.schema.marks;
+      this.editorView.dispatch(
+        this.editorView.state.tr
+          .removeMark(from, to, link)
+          .addMark(from, to, link.create({ ...mark.attrs, href }))
+      );
+      this.editorView.focus();
+    },
+    removeLink() {
+      const { from, to } = this.linkEdit;
+      this.editorView.dispatch(
+        this.editorView.state.tr.removeMark(
+          from,
+          to,
+          this.editorView.state.schema.marks.link
+        )
+      );
+      this.editorView.focus();
+    },
+    cancelLinkEdit() {
+      this.linkEdit = null;
+      this.editorView.focus();
+    },
     cancelVideoInput() {
       this.closeVideoInput();
       this.editorView?.focus();
@@ -505,6 +572,7 @@ export default {
           if (tx.docChanged) {
             this.emitOnChange();
           }
+          if (tx.docChanged || tx.selectionSet) this.updateLinkEdit();
         },
         handleDrop: (view, event, slice, moved) => {
           if (moved) return false;
@@ -529,6 +597,12 @@ export default {
           keyup: this.onKeyup,
           focus: this.onFocus,
           blur: this.onBlur,
+          // A plain click puts the caret in the link to edit it; only
+          // Cmd/Ctrl+Click (openLinkOnClick) should open it.
+          click: (view, event) => {
+            if (event.target.closest('a')) event.preventDefault();
+            return false;
+          },
           keydown: this.onKeydown,
           paste: (view, event) => {
             const files = Array.from(event.clipboardData?.files || []);
@@ -623,6 +697,15 @@ export default {
         @submit="insertVideoEmbed"
         @upload="insertVideoFile"
         @cancel="cancelVideoInput"
+      />
+      <LinkEditInput
+        v-if="linkEdit && !showSlashMenu && !showVideoInput"
+        :key="`${linkEdit.from}-${linkEdit.href}`"
+        :href="linkEdit.href"
+        :position="linkEdit.position"
+        @save="saveLink"
+        @remove="removeLink"
+        @cancel="cancelLinkEdit"
       />
       <input
         ref="imageUploadInput"

@@ -76,7 +76,13 @@
         "RIGHT": "Alinhar à direita"
       },
       "MARKDOWN_MODE": "Editar em Markdown",
-      "VISUAL_MODE": "Editor visual"
+      "VISUAL_MODE": "Editor visual",
+      "LINK_EDIT": {
+        "PLACEHOLDER": "https://exemplo.com",
+        "OPEN": "Abrir link",
+        "REMOVE": "Remover link",
+        "SAVE": "Salvar"
+      }
     },
     "EDIT_ARTICLE_PAGE": {
       "ARTICLE_PROPERTIES": {

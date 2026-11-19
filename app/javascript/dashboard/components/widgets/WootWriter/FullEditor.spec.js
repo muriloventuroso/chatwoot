@@ -1509,6 +1509,59 @@ describe('FullEditor', () => {
     });
   });
 
+  describe('link editing', () => {
+    const linkInput = () => wrapper.findComponent({ name: 'LinkEditInput' });
+
+    const openLinkInput = async () => {
+      mountEditor({ modelValue: 'See [the docs](https://a.test/docs) now' });
+      placeCursor(8);
+      await wrapper.vm.$nextTick();
+    };
+
+    it('shows the link destination when the caret is inside a link', async () => {
+      await openLinkInput();
+
+      expect(linkInput().props('href')).toBe('https://a.test/docs');
+    });
+
+    it('hides when the caret leaves the link', async () => {
+      await openLinkInput();
+      placeCursor(2);
+      await wrapper.vm.$nextTick();
+
+      expect(linkInput().exists()).toBe(false);
+    });
+
+    it('changes the destination of the whole link on save', async () => {
+      await openLinkInput();
+      linkInput().vm.$emit('save', 'https://b.test/new');
+      await wrapper.vm.$nextTick();
+
+      expect(lastEmittedValue()).toBe('See [the docs](https://b.test/new) now');
+      expect(linkInput().props('href')).toBe('https://b.test/new');
+    });
+
+    it('keeps the text and drops the link on remove', async () => {
+      await openLinkInput();
+      linkInput().vm.$emit('remove');
+      await wrapper.vm.$nextTick();
+
+      expect(lastEmittedValue()).toBe('See the docs now');
+      expect(linkInput().exists()).toBe(false);
+    });
+
+    it('does not follow the link on a plain click', async () => {
+      await openLinkInput();
+      const click = new MouseEvent('click', {
+        bubbles: true,
+        cancelable: true,
+      });
+      view.dom.querySelector('a').dispatchEvent(click);
+
+      expect(click.defaultPrevented).toBe(true);
+    });
+  });
+
   describe('editor events', () => {
     it('forwards focus, blur, keyup and keydown', async () => {
       mountEditor({ autofocus: false });
