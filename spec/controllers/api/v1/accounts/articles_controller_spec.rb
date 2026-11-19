@@ -270,6 +270,52 @@ RSpec.describe 'Api::V1::Accounts::Articles', type: :request do
         expect(response).to have_http_status(:unprocessable_entity)
         expect(response.parsed_body['message']).to include('too long')
       end
+
+      it 'creates a slug redirect when create_redirect is true' do
+        old_slug = article.slug
+        new_slug = "#{old_slug}-renamed"
+
+        put "/api/v1/accounts/#{account.id}/portals/#{portal.slug}/articles/#{article.id}",
+            params: { article: { slug: new_slug, create_redirect: true } },
+            headers: admin.create_new_auth_token
+
+        expect(response).to have_http_status(:success)
+        expect(article.reload.slug).to eq(new_slug)
+        expect(article.slug_redirects.pluck(:slug)).to eq([old_slug])
+        expect(response.parsed_body.dig('payload', 'slug_redirects').pluck('slug')).to eq([old_slug])
+      end
+
+      it 'does not create a slug redirect by default' do
+        old_slug = article.slug
+
+        put "/api/v1/accounts/#{account.id}/portals/#{portal.slug}/articles/#{article.id}",
+            params: { article: { slug: "#{old_slug}-renamed" } },
+            headers: admin.create_new_auth_token
+
+        expect(response).to have_http_status(:success)
+        expect(article.reload.slug_redirects).to be_empty
+      end
+    end
+  end
+
+  describe 'DELETE /api/v1/accounts/{account.id}/portals/{portal.slug}/articles/{article.id}/slug_redirects/{id}' do
+    let!(:slug_redirect) do
+      create(:article_slug_redirect, article: article, account: account, slug: '1111111111-old-slug')
+    end
+
+    it 'deletes the slug redirect' do
+      delete "/api/v1/accounts/#{account.id}/portals/#{portal.slug}/articles/#{article.id}/slug_redirects/#{slug_redirect.id}",
+             headers: admin.create_new_auth_token
+
+      expect(response).to have_http_status(:ok)
+      expect(ArticleSlugRedirect.exists?(slug_redirect.id)).to be(false)
+    end
+
+    it 'returns unauthorized for agents' do
+      delete "/api/v1/accounts/#{account.id}/portals/#{portal.slug}/articles/#{article.id}/slug_redirects/#{slug_redirect.id}",
+             headers: agent.create_new_auth_token
+
+      expect(response).to have_http_status(:unauthorized)
     end
   end
 

@@ -174,6 +174,22 @@ export const actions = {
     }
   },
 
+  deleteSlugRedirect: async (
+    { commit, state },
+    { portalSlug, articleId, redirectId }
+  ) => {
+    await articlesAPI.deleteSlugRedirect({ portalSlug, articleId, redirectId });
+    const article = state.articles.byId[articleId];
+    if (!article) return;
+
+    commit(types.UPDATE_ARTICLE, {
+      id: articleId,
+      slugRedirects: (article.slugRedirects || []).filter(
+        redirect => redirect.id !== redirectId
+      ),
+    });
+  },
+
   attachImage: async (_, { file, onProgress, signal }) => {
     const { fileUrl } = await uploadFile(file, undefined, onProgress, signal);
     return fileUrl;

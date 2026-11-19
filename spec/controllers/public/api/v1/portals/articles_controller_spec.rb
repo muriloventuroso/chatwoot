@@ -143,6 +143,16 @@ RSpec.describe 'Public Articles API', type: :request do
       expect(article.reload.views).to eq 0 # View count should not increment on show
     end
 
+    it 'redirects permanently from an old slug redirect to the current slug' do
+      old_slug = article.slug
+      article.update!(slug: "#{old_slug}-current", create_redirect: true)
+
+      get "/hc/#{portal.slug}/articles/#{old_slug}"
+
+      expect(response).to have_http_status(:moved_permanently)
+      expect(response).to redirect_to("/hc/#{portal.slug}/articles/#{article.slug}")
+    end
+
     it 'does not increment the view count if the article is not published' do
       draft_article = create(:article, category: category, status: :draft, portal: portal, account_id: account.id, author_id: agent.id, views: 0)
       get "/hc/#{portal.slug}/articles/#{draft_article.slug}"

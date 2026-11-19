@@ -81,7 +81,13 @@
     "EDIT_ARTICLE_PAGE": {
       "ARTICLE_PROPERTIES": {
         "GENERATE_TAGS": "Gerar com IA",
-        "GENERATE_TAGS_ERROR": "Não foi possível gerar as tags. Verifique a integração com a OpenAI e tente novamente."
+        "GENERATE_TAGS_ERROR": "Não foi possível gerar as tags. Verifique a integração com a OpenAI e tente novamente.",
+        "SLUG_WARNING_WITH_REDIRECT": "Um redirecionamento 301 manterá a URL antiga funcionando e enviará os visitantes para a nova.",
+        "SLUG_CREATE_REDIRECT": "Criar um redirecionamento 301 a partir da URL atual",
+        "SLUG_REDIRECTS_TITLE": "Redirecionamentos de slug",
+        "SLUG_REDIRECTS_HELP": "Estas URLs antigas redirecionam permanentemente para o slug atual do artigo.",
+        "SLUG_REDIRECT_DELETE": "Remover redirecionamento",
+        "SLUG_REDIRECT_DELETE_ERROR": "Não foi possível remover o redirecionamento. Tente novamente."
       },
       "SWITCH_LANGUAGE": "Trocar idioma"
     }

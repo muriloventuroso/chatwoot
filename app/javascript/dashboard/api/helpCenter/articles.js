@@ -85,6 +85,12 @@ class ArticlesAPI extends PortalsAPI {
     return axios.delete(`${this.url}/${portalSlug}/articles/${articleId}`);
   }
 
+  deleteSlugRedirect({ portalSlug, articleId, redirectId }) {
+    return axios.delete(
+      `${this.url}/${portalSlug}/articles/${articleId}/slug_redirects/${redirectId}`
+    );
+  }
+
   reorderArticles({ portalSlug, reorderedGroup, categorySlug }) {
     return axios.post(`${this.url}/${portalSlug}/articles/reorder`, {
       positions_hash: reorderedGroup,

@@ -589,6 +589,7 @@ Rails.application.routes.draw do
             resources :articles do
               post :reorder, on: :collection
               post :generate_tags, on: :member
+              resources :slug_redirects, only: [:destroy], module: :articles
             end
           end
 

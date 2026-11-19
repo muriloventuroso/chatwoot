@@ -291,6 +291,53 @@ RSpec.describe Article do
     end
   end
 
+  describe 'slug redirects' do
+    let!(:article) do
+      create(:article, category_id: category_1.id, portal_id: portal_1.id, author_id: user.id,
+                       slug: '1111111111-original-slug', title: 'Original')
+    end
+
+    it 'creates a redirect from the previous slug when create_redirect is set' do
+      article.update!(slug: '1111111111-new-slug', create_redirect: true)
+
+      expect(article.slug_redirects.pluck(:slug)).to eq(['1111111111-original-slug'])
+    end
+
+    it 'does not create a redirect when create_redirect is not set' do
+      article.update!(slug: '1111111111-new-slug')
+
+      expect(article.slug_redirects).to be_empty
+    end
+
+    it 'keeps multiple redirects across successive slug changes' do
+      article.update!(slug: '1111111111-second-slug', create_redirect: true)
+      article.update!(slug: '1111111111-third-slug', create_redirect: true)
+
+      expect(article.slug_redirects.pluck(:slug)).to contain_exactly(
+        '1111111111-original-slug',
+        '1111111111-second-slug'
+      )
+    end
+
+    it 'reclaims its own redirect slug without conflict' do
+      article.update!(slug: '1111111111-new-slug', create_redirect: true)
+      article.update!(slug: '1111111111-original-slug')
+
+      expect(article.reload.slug).to eq('1111111111-original-slug')
+      expect(article.slug_redirects.pluck(:slug)).to eq(['1111111111-new-slug'])
+    end
+
+    it 'rejects a slug taken by another article redirect' do
+      other = create(:article, category_id: category_1.id, portal_id: portal_1.id, author_id: user.id,
+                               slug: '1111111111-other-slug', title: 'Other')
+      other.update!(slug: '1111111111-other-new', create_redirect: true)
+
+      article.slug = '1111111111-other-slug'
+      expect(article).not_to be_valid
+      expect(article.errors[:slug]).to include('has already been taken')
+    end
+  end
+
   describe '.update_positions' do
     let!(:article_a) { create(:article, portal: portal_1, category: category_1, author: user, position: 10) }
     let!(:article_b) { create(:article, portal: portal_1, category: category_1, author: user, position: 11) }

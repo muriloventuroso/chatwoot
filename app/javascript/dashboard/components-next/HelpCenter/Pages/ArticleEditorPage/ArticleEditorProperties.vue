@@ -120,7 +120,7 @@ onMounted(() => {
       <div>
         <ArticleSlugField
           :article="article"
-          @save-slug="slug => emit('saveSlug', slug)"
+          @save-slug="(slug, options) => emit('saveSlug', slug, options)"
           @preview-article="emit('previewArticle')"
         />
         <div class="flex justify-between w-full gap-4 py-2">

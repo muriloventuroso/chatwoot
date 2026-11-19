@@ -25,6 +25,14 @@ end
 
 json.views article.views
 
+json.slug_redirects do
+  json.array! article.slug_redirects.order(:created_at) do |redirect|
+    json.id redirect.id
+    json.slug redirect.slug
+    json.created_at redirect.created_at.to_i
+  end
+end
+
 if article.author&.current_account_user
   json.author do
     json.partial! 'api/v1/models/agent', formats: [:json], resource: article.author

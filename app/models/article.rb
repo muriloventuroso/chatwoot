@@ -37,6 +37,7 @@
 class Article < ApplicationRecord
   include PgSearch::Model
   include LlmFormattable
+  include ArticleSlugRedirectable
 
   # The search tsvector is as large as the content itself and only text_search reads it, in SQL.
   self.ignored_columns += ['search_vector']

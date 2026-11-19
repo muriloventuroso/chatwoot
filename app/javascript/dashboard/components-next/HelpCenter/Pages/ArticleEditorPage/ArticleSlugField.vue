@@ -1,12 +1,15 @@
 <script setup>
 import { ref, computed, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
-import { useMapGetter } from 'dashboard/composables/store';
+import { useMapGetter, useStore } from 'dashboard/composables/store';
+import { useAlert } from 'dashboard/composables';
 import { convertToArticleSlug } from 'dashboard/helper/commons';
+import { useRoute } from 'vue-router';
 
 import InlineInput from 'dashboard/components-next/inline-input/InlineInput.vue';
 import Button from 'dashboard/components-next/button/Button.vue';
 import Banner from 'dashboard/components-next/banner/Banner.vue';
+import Checkbox from 'dashboard/components-next/checkbox/Checkbox.vue';
 
 const props = defineProps({
   article: {
@@ -18,6 +21,8 @@ const props = defineProps({
 const emit = defineEmits(['saveSlug', 'previewArticle']);
 
 const { t } = useI18n();
+const store = useStore();
+const route = useRoute();
 const uiFlags = useMapGetter('articles/uiFlags');
 
 // The generated timestamp prefix keeps slugs globally unique, so only the rest is editable.
@@ -30,6 +35,8 @@ const slugSuffix = computed(() =>
 
 const slug = ref('');
 const isUpdated = ref(false);
+const createRedirect = ref(true);
+const deletingRedirectId = ref(null);
 
 const newSlug = computed(() => convertToArticleSlug(slug.value));
 const titleSlug = computed(() =>
@@ -42,6 +49,7 @@ const canUseTitle = computed(
   () => !!titleSlug.value && titleSlug.value !== newSlug.value
 );
 const isUpdating = computed(() => uiFlags.value(props.article.id).isUpdating);
+const slugRedirects = computed(() => props.article.slugRedirects || []);
 
 const resetSlug = () => {
   slug.value = slugSuffix.value;
@@ -52,6 +60,7 @@ watch(
   (_slug, previousSlug) => {
     resetSlug();
     isUpdated.value = !!previousSlug;
+    createRedirect.value = true;
   },
   { immediate: true }
 );
@@ -62,7 +71,30 @@ const normalizeSlug = () => {
 
 const saveSlug = () => {
   if (!isChanged.value || isUpdating.value) return;
-  emit('saveSlug', `${slugPrefix.value}${newSlug.value}`);
+  emit('saveSlug', `${slugPrefix.value}${newSlug.value}`, {
+    create_redirect: createRedirect.value,
+  });
+};
+
+const deleteRedirect = async redirectId => {
+  if (deletingRedirectId.value) return;
+  deletingRedirectId.value = redirectId;
+  try {
+    await store.dispatch('articles/deleteSlugRedirect', {
+      portalSlug: route.params.portalSlug,
+      articleId: props.article.id,
+      redirectId,
+    });
+  } catch (error) {
+    useAlert(
+      error?.message ||
+        t(
+          'HELP_CENTER.EDIT_ARTICLE_PAGE.ARTICLE_PROPERTIES.SLUG_REDIRECT_DELETE_ERROR'
+        )
+    );
+  } finally {
+    deletingRedirectId.value = null;
+  }
 };
 </script>
 
@@ -117,7 +149,29 @@ const saveSlug = () => {
       :is-loading="isUpdating"
       @action="saveSlug"
     >
-      {{ t('HELP_CENTER.EDIT_ARTICLE_PAGE.ARTICLE_PROPERTIES.SLUG_WARNING') }}
+      <div class="flex flex-col gap-2">
+        <p>
+          {{
+            createRedirect
+              ? t(
+                  'HELP_CENTER.EDIT_ARTICLE_PAGE.ARTICLE_PROPERTIES.SLUG_WARNING_WITH_REDIRECT'
+                )
+              : t(
+                  'HELP_CENTER.EDIT_ARTICLE_PAGE.ARTICLE_PROPERTIES.SLUG_WARNING'
+                )
+          }}
+        </p>
+        <label class="flex items-center gap-2 cursor-pointer">
+          <Checkbox v-model="createRedirect" :disabled="isUpdating" />
+          <span>
+            {{
+              t(
+                'HELP_CENTER.EDIT_ARTICLE_PAGE.ARTICLE_PROPERTIES.SLUG_CREATE_REDIRECT'
+              )
+            }}
+          </span>
+        </label>
+      </div>
     </Banner>
     <Banner
       v-else-if="isUpdated"
@@ -130,5 +184,49 @@ const saveSlug = () => {
     >
       {{ t('HELP_CENTER.EDIT_ARTICLE_PAGE.ARTICLE_PROPERTIES.SLUG_UPDATED') }}
     </Banner>
+    <div
+      v-if="slugRedirects.length"
+      class="flex flex-col gap-2 py-2 border-t border-n-slate-4"
+    >
+      <p class="text-sm font-medium text-n-slate-12">
+        {{
+          t(
+            'HELP_CENTER.EDIT_ARTICLE_PAGE.ARTICLE_PROPERTIES.SLUG_REDIRECTS_TITLE'
+          )
+        }}
+      </p>
+      <p class="text-xs text-n-slate-11">
+        {{
+          t(
+            'HELP_CENTER.EDIT_ARTICLE_PAGE.ARTICLE_PROPERTIES.SLUG_REDIRECTS_HELP'
+          )
+        }}
+      </p>
+      <ul class="flex flex-col gap-1">
+        <li
+          v-for="redirect in slugRedirects"
+          :key="redirect.id"
+          class="flex items-center justify-between gap-2 py-1"
+        >
+          <code class="text-xs truncate text-n-slate-11">{{
+            redirect.slug
+          }}</code>
+          <Button
+            v-tooltip.top="
+              t(
+                'HELP_CENTER.EDIT_ARTICLE_PAGE.ARTICLE_PROPERTIES.SLUG_REDIRECT_DELETE'
+              )
+            "
+            icon="i-lucide-trash-2"
+            size="xs"
+            variant="ghost"
+            color="slate"
+            :is-loading="deletingRedirectId === redirect.id"
+            :disabled="!!deletingRedirectId"
+            @click="deleteRedirect(redirect.id)"
+          />
+        </li>
+      </ul>
+    </div>
   </div>
 </template>

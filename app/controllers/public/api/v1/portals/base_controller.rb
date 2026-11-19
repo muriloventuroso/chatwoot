@@ -52,6 +52,7 @@ class Public::Api::V1::Portals::BaseController < PublicController
 
   def switch_locale_with_article(&)
     article = Article.find_by(slug: params[:article_slug])
+    article ||= ArticleSlugRedirect.find_by(slug: params[:article_slug])&.article
     Rails.logger.info "Article: not found for slug: #{params[:article_slug]}"
     render_404 && return if article.blank?
 

@@ -81,7 +81,13 @@
     "EDIT_ARTICLE_PAGE": {
       "ARTICLE_PROPERTIES": {
         "GENERATE_TAGS": "Generate with AI",
-        "GENERATE_TAGS_ERROR": "Could not generate tags. Check the OpenAI integration and try again."
+        "GENERATE_TAGS_ERROR": "Could not generate tags. Check the OpenAI integration and try again.",
+        "SLUG_WARNING_WITH_REDIRECT": "A 301 redirect will keep the old URL working and send visitors to the new one.",
+        "SLUG_CREATE_REDIRECT": "Create a 301 redirect from the current URL",
+        "SLUG_REDIRECTS_TITLE": "Slug redirects",
+        "SLUG_REDIRECTS_HELP": "These old URLs permanently redirect to the current article slug.",
+        "SLUG_REDIRECT_DELETE": "Remove redirect",
+        "SLUG_REDIRECT_DELETE_ERROR": "Could not remove the redirect. Please try again."
       },
       "SWITCH_LANGUAGE": "Switch language"
     }

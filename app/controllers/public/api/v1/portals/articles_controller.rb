@@ -35,7 +35,7 @@ class Public::Api::V1::Portals::ArticlesController < Public::Api::V1::Portals::B
   end
 
   def tracking_pixel
-    @article = @portal.articles.find_by(slug: permitted_params[:article_slug])
+    @article = find_portal_article_by_slug(permitted_params[:article_slug])
     return head :not_found unless @article
 
     @article.increment_view_count if @article.published?
@@ -75,7 +75,27 @@ class Public::Api::V1::Portals::ArticlesController < Public::Api::V1::Portals::B
   end
 
   def set_article
-    @article = @portal.articles.find_by!(slug: permitted_params[:article_slug])
+    slug = permitted_params[:article_slug]
+    @article = @portal.articles.find_by(slug: slug)
+    return if @article
+
+    redirected = article_from_slug_redirect(slug)
+    raise ActiveRecord::RecordNotFound if redirected.blank?
+
+    redirect_to helpers.generate_article_link(
+      @portal.slug,
+      redirected.slug,
+      @theme_from_params,
+      @is_plain_layout_enabled
+    ), status: :moved_permanently
+  end
+
+  def find_portal_article_by_slug(slug)
+    @portal.articles.find_by(slug: slug) || article_from_slug_redirect(slug)
+  end
+
+  def article_from_slug_redirect(slug)
+    ArticleSlugRedirect.joins(:article).find_by(slug: slug, articles: { portal_id: @portal.id })&.article
   end
 
   def set_locale_switch_urls

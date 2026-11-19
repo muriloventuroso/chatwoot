@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.2].define(version: 2026_11_07_002546) do
+ActiveRecord::Schema[7.2].define(version: 2026_11_19_025350) do
   # These extensions should be enabled to support this database
   enable_extension "pg_stat_statements"
   enable_extension "pg_trgm"
@@ -216,6 +216,17 @@ ActiveRecord::Schema[7.2].define(version: 2026_11_07_002546) do
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.index ["embedding"], name: "index_article_embeddings_on_embedding", using: :ivfflat
+  end
+
+  create_table "article_slug_redirects", force: :cascade do |t|
+    t.bigint "account_id", null: false
+    t.bigint "article_id", null: false
+    t.string "slug", null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["account_id"], name: "index_article_slug_redirects_on_account_id"
+    t.index ["article_id"], name: "index_article_slug_redirects_on_article_id"
+    t.index ["slug"], name: "index_article_slug_redirects_on_slug", unique: true
   end
 
   create_table "articles", force: :cascade do |t|
