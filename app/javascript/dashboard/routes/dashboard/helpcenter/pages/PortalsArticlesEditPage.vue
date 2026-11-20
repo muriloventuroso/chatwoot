@@ -148,13 +148,13 @@ const goBackToArticles = () => {
 // Categories in the store may belong to another locale (the article a
 // translation was created from), and picking one would move this article there.
 const fetchArticleDetails = () => {
+  store.dispatch('categories/index', {
+    portalSlug: portalSlug.value,
+    locale: route.params.locale,
+  });
   store.dispatch('articles/show', {
     id: articleSlug.value,
     portalSlug: portalSlug.value,
-  });
-  store.dispatch('categories/index', {
-    portalSlug,
-    locale: route.params.locale,
   });
 };
 
@@ -174,8 +174,8 @@ const previewArticle = async () => {
   try {
     if (status !== ARTICLE_STATUSES.PUBLISHED) {
       const { data } = await ArticlesAPI.getPreviewToken({
-        id: articleSlug,
-        portalSlug,
+        id: articleSlug.value,
+        portalSlug: portalSlug.value,
       });
       previewUrl.searchParams.set('preview_token', data.preview_token);
     }
@@ -188,11 +188,11 @@ const previewArticle = async () => {
   }
 };
 
-// The route view remounts this page for the new article, which loads its categories.
+// fetchArticleDetails follows the new slug and loads the categories of its locale.
 const switchTranslation = ({ id, locale }) => {
   router.push({
     name: 'portals_articles_edit',
-    params: { portalSlug, locale, articleSlug: id },
+    params: { portalSlug: portalSlug.value, locale, articleSlug: id },
   });
 };
 

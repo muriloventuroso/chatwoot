@@ -117,7 +117,7 @@ describe('PortalsArticlesEditPage signed previews', () => {
     );
   });
 
-  it('opens the tab before a slow token request', async () => {
+  it('opens the tab before a slow request and preserves the clicked article after navigation', async () => {
     let resolveToken;
     articlesAPI.getPreviewToken.mockImplementationOnce(
       () =>
@@ -130,11 +130,26 @@ describe('PortalsArticlesEditPage signed previews', () => {
 
     expect(open).toHaveBeenCalledTimes(1);
     expect(previewTab.location.replace).not.toHaveBeenCalled();
+    route.params.articleSlug = '2';
+    await flushPromises();
+    expect(dispatch).toHaveBeenLastCalledWith('articles/show', {
+      id: '2',
+      portalSlug: 'help',
+    });
     resolveToken({ data: { preview_token: 'token-1' } });
     await flushPromises();
 
     expect(previewTab.location.replace).toHaveBeenCalledWith(
       'https://app.example.com/hc/help/articles/article-1?preview_token=token-1'
+    );
+    wrapper.findComponent({ name: 'ArticleEditor' }).vm.$emit('previewArticle');
+    await flushPromises();
+    expect(articlesAPI.getPreviewToken).toHaveBeenLastCalledWith({
+      id: '2',
+      portalSlug: 'help',
+    });
+    expect(previewTab.location.replace).toHaveBeenLastCalledWith(
+      'https://app.example.com/hc/help/articles/article-2?preview_token=token-2'
     );
   });
 

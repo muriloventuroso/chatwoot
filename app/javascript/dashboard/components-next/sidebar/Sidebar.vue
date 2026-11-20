@@ -83,7 +83,8 @@ const isMonitorsAvailable = computed(
 
 const { uiSettings } = useUISettings();
 const hasCommandBarV2 = computed(
-  () => uiSettings.value.command_bar_v2 === true
+  // On for everyone; a user with command_bar_v2: false keeps the old bar.
+  () => uiSettings.value.command_bar_v2 !== false
 );
 
 const hasAdvancedAssignment = computed(() => {

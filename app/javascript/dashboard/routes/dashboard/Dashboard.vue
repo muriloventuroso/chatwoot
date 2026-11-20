@@ -79,7 +79,8 @@ export default {
       return this.upgradePageRef?.isAccountPaywalled;
     },
     hasCommandBarV2() {
-      return this.uiSettings.command_bar_v2 === true;
+      // On for everyone; a user with command_bar_v2: false keeps the old bar.
+      return this.uiSettings.command_bar_v2 !== false;
     },
     bypassUpgradePage() {
       return isUpgradePageBypassRoute(this.$route.name);

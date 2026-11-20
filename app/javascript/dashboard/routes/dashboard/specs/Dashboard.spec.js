@@ -82,9 +82,10 @@ describe('Dashboard', () => {
   const mountDashboard = async ({
     paywalled = false,
     routeName = 'home',
-    commandBarV2 = false,
+    commandBarV2,
   } = {}) => {
-    uiSettingsState.current = { command_bar_v2: commandBarV2 };
+    uiSettingsState.current =
+      commandBarV2 === undefined ? {} : { command_bar_v2: commandBarV2 };
     const isPaywalled = ref(paywalled);
     const commandBar = { mounts: 0, opens: 0 };
     const router = createRouter({
@@ -138,15 +139,15 @@ describe('Dashboard', () => {
       expect(commandBar.mounts).toBe(1);
     });
 
-    it('mounts ninja-keys until the user enables the v2 command bar', async () => {
-      await mountDashboard();
+    it('keeps ninja-keys for a user who turned the v2 command bar off', async () => {
+      await mountDashboard({ commandBarV2: false });
 
       expect(wrapper.find('.command-bar.CommandBar').exists()).toBe(true);
       expect(wrapper.find('.command-bar.CommandBarV2').exists()).toBe(false);
     });
 
-    it('mounts the v2 command bar when the user enables it', async () => {
-      const { commandBar } = await mountDashboard({ commandBarV2: true });
+    it('mounts the v2 command bar by default', async () => {
+      const { commandBar } = await mountDashboard();
 
       expect(wrapper.find('.command-bar.CommandBarV2').exists()).toBe(true);
       expect(wrapper.find('.command-bar.CommandBar').exists()).toBe(false);
