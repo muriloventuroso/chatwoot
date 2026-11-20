@@ -1,6 +1,6 @@
 <%
   version = Chatwoot.config[:version]
-  # Internal::CheckNewVersionsJob keeps the newest release here.
+  # Always empty: Internal::CheckNewVersionsJob clears it, since this fork ships its own versions.
   latest_version = begin
     Redis::Alfred.get(Redis::Alfred::LATEST_CHATWOOT_VERSION).presence
   rescue Redis::BaseConnectionError

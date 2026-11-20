@@ -1,28 +1,11 @@
 class Internal::CheckNewVersionsJob < ApplicationJob
   queue_as :scheduled_jobs
 
+  # This fork ships its own versions, so fazer.ai's latest release is not an update for it and the
+  # dashboard banner and the Super Admin dot must stay off. Deleting also drops a version stored
+  # before this change, which never expires. The job stays scheduled for what Enterprise adds to it.
   def perform
-    return unless Rails.env.production?
-
-    latest_version = fetch_latest_github_release
-    ::Redis::Alfred.set(::Redis::Alfred::LATEST_CHATWOOT_VERSION, latest_version) if latest_version.present?
-  end
-
-  private
-
-  def fetch_latest_github_release
-    # `max_retries: 0` alongside the ceiling: `Net::HTTP` repeats an idempotent request
-    # once by default, so 5 seconds was 10 against a GitHub that accepts and stalls.
-    response = HTTParty.get('https://api.github.com/repos/fazer-ai/chatwoot/releases/latest', timeout: 5, max_retries: 0)
-    unless response.success?
-      Rails.logger.error "Failed to fetch latest GitHub release: HTTP #{response.code} - #{response.body}"
-      return nil
-    end
-
-    response['tag_name']&.sub(/^v/, '')
-  rescue StandardError => e
-    Rails.logger.error "Failed to fetch latest GitHub release: #{e.message}"
-    nil
+    ::Redis::Alfred.delete(::Redis::Alfred::LATEST_CHATWOOT_VERSION)
   end
 end
 
