@@ -55,7 +55,8 @@ class ArticlesAPI extends PortalsAPI {
   updateArticle({ portalSlug, articleId, articleObj }) {
     return axios.patch(
       `${this.url}/${portalSlug}/articles/${articleId}`,
-      articleObj
+      // Nested explicitly: Rails only auto-wraps column names, so create_redirect would be dropped.
+      { article: articleObj }
     );
   }
 

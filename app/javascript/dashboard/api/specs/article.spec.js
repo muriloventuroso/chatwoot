@@ -123,7 +123,7 @@ describe('#PortalAPI', () => {
       expect(axiosMock.patch).toHaveBeenCalledWith(
         '/api/v1/portals/room-rental/articles/1',
         {
-          title: 'Update shipping address',
+          article: { title: 'Update shipping address' },
         }
       );
     });
